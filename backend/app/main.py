@@ -26,16 +26,6 @@ def get_db() -> MiniatureDB:
     return MiniatureDB()
 
 
-@app.get("/")
-def read_root() -> dict:
-    """Root endpoint with API information."""
-    return {
-        "message": "Welcome to the Miniature Tracker API! Track your Warhammer miniature collection and painting progress.",
-        "docs": "/docs",
-        "version": "0.1.0"
-    }
-
-
 @app.post("/miniatures", response_model=Miniature, status_code=status.HTTP_201_CREATED)
 def create_miniature(
     miniature: MiniatureCreate,
@@ -105,6 +95,7 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "https://*.railway.app",  # Railway domains
+        "https://*.onrender.com",  # Render domains
         "*"  # Allow all origins in production (you can restrict this later)
     ],
     allow_credentials=True,
@@ -121,10 +112,24 @@ if os.path.exists(static_dir):
     def serve_react_app(full_path: str):
         """Serve React app for all non-API routes."""
         # Don't serve React app for API routes
-        if full_path.startswith("miniatures") or full_path.startswith("docs") or full_path.startswith("openapi"):
+        if (full_path.startswith("api/") or 
+            full_path.startswith("miniatures") or 
+            full_path.startswith("docs") or 
+            full_path.startswith("openapi.json") or
+            full_path.startswith("redoc")):
             raise HTTPException(status_code=404, detail="Not found")
             
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
-        raise HTTPException(status_code=404, detail="Not found") 
+        raise HTTPException(status_code=404, detail="Not found")
+else:
+    # Fallback API endpoint when no static files are available
+    @app.get("/")
+    def read_root() -> dict:
+        """Root endpoint with API information."""
+        return {
+            "message": "Welcome to the Miniature Tracker API! Track your Warhammer miniature collection and painting progress.",
+            "docs": "/docs",
+            "version": "0.1.0"
+        } 
