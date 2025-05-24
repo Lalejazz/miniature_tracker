@@ -128,15 +128,38 @@ class PostgreSQLDatabase(DatabaseInterface):
             CREATE TABLE IF NOT EXISTS miniatures (
                 id UUID PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                faction VARCHAR(100) NOT NULL,
-                model_type VARCHAR(100) NOT NULL,
+                description TEXT,
                 status VARCHAR(100) NOT NULL DEFAULT 'want_to_buy',
-                notes TEXT,
                 user_id UUID NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
+        # Migrate miniatures table schema if needed
+        try:
+            # Check if new columns exist, if not add them
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS faction VARCHAR(100)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS model_type VARCHAR(100)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS notes TEXT")
+            
+            # Copy description to notes if notes is empty and description exists
+            await self._pool.execute("""
+                UPDATE miniatures 
+                SET notes = description 
+                WHERE notes IS NULL AND description IS NOT NULL
+            """)
+            
+            # Set default values for required columns if they're NULL
+            await self._pool.execute("UPDATE miniatures SET faction = 'Unknown' WHERE faction IS NULL")
+            await self._pool.execute("UPDATE miniatures SET model_type = 'Unknown' WHERE model_type IS NULL")
+            
+            # Now make faction and model_type NOT NULL
+            await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN faction SET NOT NULL")
+            await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN model_type SET NOT NULL")
+            
+        except Exception as e:
+            print(f"Migration warning: {e}")  # Log but don't fail
         
         # Create status log entries table
         await self._pool.execute("""
