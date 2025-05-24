@@ -104,9 +104,9 @@ app.add_middleware(
 )
 
 # Serve static files (React build) in production
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static", "build")
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 if os.path.exists(static_dir):
-    # Mount React's static assets
+    # Mount React's static assets (CSS, JS)
     react_static_dir = os.path.join(static_dir, "static")
     if os.path.exists(react_static_dir):
         app.mount("/static", StaticFiles(directory=react_static_dir), name="static")
@@ -122,6 +122,7 @@ if os.path.exists(static_dir):
             full_path.startswith("redoc")):
             raise HTTPException(status_code=404, detail="Not found")
             
+        # Serve index.html for all other routes (React Router)
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
