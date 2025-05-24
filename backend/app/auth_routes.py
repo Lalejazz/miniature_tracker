@@ -10,6 +10,8 @@ from app.auth_dependencies import get_current_active_user, get_user_db
 from app.auth_models import User, UserCreate, LoginRequest, Token
 from app.auth_utils import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.user_crud import UserDB
+from app.models import PasswordResetRequest, PasswordReset
+from app.email_service import email_service
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -90,6 +92,71 @@ def login_for_access_token(
     )
     
     return Token(access_token=access_token)
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: PasswordResetRequest,
+    user_db: UserDB = Depends(get_user_db)
+) -> dict:
+    """Request a password reset email."""
+    # Always return success to prevent email enumeration
+    # but only send email if user exists
+    user = user_db.get_user_by_email(request.email)
+    
+    if user:
+        # Create password reset token
+        reset_token = user_db.create_password_reset_token(user.id)
+        
+        # Send password reset email
+        email_sent = await email_service.send_password_reset_email(
+            request.email, 
+            reset_token.token
+        )
+        
+        if not email_sent:
+            # Log error but don't expose it to user
+            print(f"Failed to send password reset email to {request.email}")
+    
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+
+@router.post("/reset-password")
+def reset_password(
+    request: PasswordReset,
+    user_db: UserDB = Depends(get_user_db)
+) -> dict:
+    """Reset password using a valid token."""
+    # Validate the reset token
+    reset_token = user_db.get_password_reset_token(request.token)
+    
+    if not reset_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Get the user
+    user = user_db.get_user_by_id(reset_token.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+    
+    # Update the user's password
+    success = user_db.update_user_password(user.id, request.new_password)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password"
+        )
+    
+    # Mark the token as used
+    user_db.use_password_reset_token(request.token)
+    
+    return {"message": "Password has been reset successfully"}
 
 
 @router.get("/me", response_model=User)

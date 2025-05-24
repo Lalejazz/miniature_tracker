@@ -8,6 +8,7 @@ import { LoginRequest } from '../types';
 interface LoginFormProps {
   onLogin: (credentials: LoginRequest) => Promise<void>;
   onSwitchToRegister: () => void;
+  onForgotPassword: () => void;
   isLoading: boolean;
   error: string | null;
 }
@@ -15,6 +16,7 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,
   onSwitchToRegister,
+  onForgotPassword,
   isLoading,
   error,
 }) => {
@@ -62,6 +64,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             placeholder="Enter your password"
             minLength={6}
           />
+        </div>
+
+        <div className="forgot-password-link">
+          <button 
+            type="button" 
+            className="link-button" 
+            onClick={onForgotPassword}
+            disabled={isLoading}
+          >
+            Forgot your password?
+          </button>
         </div>
 
         <button 

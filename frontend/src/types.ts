@@ -11,6 +11,38 @@ export enum PaintingStatus {
   PARADE_READY = "parade_ready"
 }
 
+export interface StatusLogEntry {
+  id: string;
+  from_status?: PaintingStatus;
+  to_status: PaintingStatus;
+  date: string;
+  notes?: string;
+  is_manual: boolean;
+  created_at: string;
+}
+
+export interface StatusLogEntryCreate {
+  from_status?: PaintingStatus;
+  to_status: PaintingStatus;
+  date: string;
+  notes?: string;
+  is_manual?: boolean;
+}
+
+export interface StatusLogEntryUpdate {
+  date?: string;
+  notes?: string;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordReset {
+  token: string;
+  new_password: string;
+}
+
 export interface MiniatureBase {
   name: string;
   faction: string;
@@ -32,23 +64,26 @@ export interface MiniatureUpdate {
 export interface Miniature extends MiniatureBase {
   id: string;
   user_id: string;
+  status_history: StatusLogEntry[];
   created_at: string;
   updated_at: string;
 }
 
-// Authentication types
+// User management types
 export interface User {
   id: string;
-  email: string;
   username: string;
+  email: string;
+  full_name?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface UserCreate {
-  email: string;
   username: string;
+  email: string;
+  full_name?: string;
   password: string;
 }
 
@@ -62,49 +97,42 @@ export interface Token {
   token_type: string;
 }
 
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
-// UI Helper types
-export interface StatusInfo {
-  label: string;
-  color: string;
-  description: string;
-}
-
-export const STATUS_INFO: Record<PaintingStatus, StatusInfo> = {
+// Status information for UI
+export const STATUS_INFO = {
   [PaintingStatus.WANT_TO_BUY]: {
     label: "Want to Buy",
-    color: "#6b7280",
-    description: "On wishlist"
+    description: "Miniature you want to purchase",
+    color: "#e0e0e0",
+    textColor: "#000"
   },
   [PaintingStatus.PURCHASED]: {
-    label: "Purchased", 
-    color: "#3b82f6",
-    description: "Bought but not assembled"
+    label: "Purchased",
+    description: "Miniature has been bought but not assembled",
+    color: "#ff9800",
+    textColor: "#fff"
   },
   [PaintingStatus.ASSEMBLED]: {
     label: "Assembled",
-    color: "#f59e0b", 
-    description: "Built and ready for primer"
+    description: "Miniature is assembled and ready for priming",
+    color: "#2196f3",
+    textColor: "#fff"
   },
   [PaintingStatus.PRIMED]: {
-    label: "Primed",
-    color: "#8b5cf6",
-    description: "Primer applied"
+    label: "Primed", 
+    description: "Miniature has been primed and ready for painting",
+    color: "#9c27b0",
+    textColor: "#fff"
   },
   [PaintingStatus.GAME_READY]: {
     label: "Game Ready",
-    color: "#10b981",
-    description: "Painted enough for tabletop"
+    description: "Miniature is painted to tabletop standard",
+    color: "#4caf50",
+    textColor: "#fff"
   },
   [PaintingStatus.PARADE_READY]: {
-    label: "Parade Ready", 
-    color: "#ef4444",
-    description: "Fully detailed and complete"
+    label: "Parade Ready",
+    description: "Miniature is painted to display quality",
+    color: "#ffd700",
+    textColor: "#000"
   }
 }; 

@@ -6,171 +6,293 @@ from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
 
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate
+from app.models import (
+    Miniature, MiniatureCreate, MiniatureUpdate, 
+    StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
+    PasswordResetToken
+)
 
 
 class MiniatureDB:
     """Simple JSON file-based database for miniatures."""
     
-    def __init__(self, db_file: str = "data/miniatures.json") -> None:
-        """Initialize the database with a JSON file path."""
+    def __init__(self, db_file: str = "data/miniatures.json", reset_tokens_file: str = "data/reset_tokens.json") -> None:
+        """Initialize the database with JSON file paths."""
         self.db_file = Path(db_file)
+        self.reset_tokens_file = Path(reset_tokens_file)
         self.db_file.parent.mkdir(parents=True, exist_ok=True)
+        self.reset_tokens_file.parent.mkdir(parents=True, exist_ok=True)
         
-        # Initialize file if it doesn't exist
+        # Initialize files if they don't exist
         if not self.db_file.exists():
             self._save_data([])
+        if not self.reset_tokens_file.exists():
+            self._save_reset_tokens([])
     
     def _load_data(self) -> List[dict]:
-        """Load data from JSON file."""
+        """Load miniatures data from JSON file."""
         try:
-            with open(self.db_file, 'r', encoding='utf-8') as f:
+            with open(self.db_file, 'r') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
     
     def _save_data(self, data: List[dict]) -> None:
-        """Save data to JSON file."""
-        with open(self.db_file, 'w', encoding='utf-8') as f:
+        """Save miniatures data to JSON file."""
+        with open(self.db_file, 'w') as f:
             json.dump(data, f, indent=2, default=str)
     
-    def _data_to_miniature(self, data: dict) -> Miniature:
-        """Convert raw dict data to Miniature model."""
-        # Convert string IDs back to UUID objects
-        data['id'] = UUID(data['id'])
-        
-        # Handle missing user_id field for backward compatibility
-        if 'user_id' not in data:
-            # For old data without user_id, we'll need to skip it or assign a default
-            # For now, we'll skip these records during user-filtered queries
-            # You could also assign a default user_id here if needed
-            return None
-        
-        data['user_id'] = UUID(data['user_id'])
-        
-        # Convert ISO string dates back to datetime objects
-        data['created_at'] = datetime.fromisoformat(data['created_at'])
-        data['updated_at'] = datetime.fromisoformat(data['updated_at'])
-        
-        return Miniature(**data)
+    def _load_reset_tokens(self) -> List[dict]:
+        """Load password reset tokens from JSON file."""
+        try:
+            with open(self.reset_tokens_file, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
     
-    def _miniature_to_data(self, miniature: Miniature) -> dict:
-        """Convert Miniature model to dict for JSON storage."""
-        data = miniature.model_dump()
-        
-        # Convert UUID and datetime to strings for JSON serialization
-        data['id'] = str(data['id'])
-        data['user_id'] = str(data['user_id'])
-        data['created_at'] = data['created_at'].isoformat()
-        data['updated_at'] = data['updated_at'].isoformat()
-        
-        return data
+    def _save_reset_tokens(self, tokens: List[dict]) -> None:
+        """Save password reset tokens to JSON file."""
+        with open(self.reset_tokens_file, 'w') as f:
+            json.dump(tokens, f, indent=2, default=str)
     
-    def create(self, miniature_data: MiniatureCreate, user_id: UUID) -> Miniature:
-        """Create a new miniature for a specific user."""
-        # Create new miniature with generated metadata and user_id
-        miniature_dict = miniature_data.model_dump()
-        miniature_dict['user_id'] = user_id
-        new_miniature = Miniature(**miniature_dict)
+    def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
+        """Get all miniatures for a user."""
+        data = self._load_data()
+        user_miniatures = [
+            item for item in data 
+            if item.get('user_id') == str(user_id)
+        ]
+        return [Miniature.model_validate(item) for item in user_miniatures]
+    
+    def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Get a specific miniature by ID for a user."""
+        data = self._load_data()
+        for item in data:
+            if (item.get('id') == str(miniature_id) and 
+                item.get('user_id') == str(user_id)):
+                return Miniature.model_validate(item)
+        return None
+    
+    def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
+        """Create a new miniature."""
+        data = self._load_data()
         
-        # Load existing data
-        data: List[dict] = self._load_data()
+        # Create new miniature with initial status log entry
+        new_miniature = Miniature(
+            **miniature.model_dump(),
+            user_id=user_id,
+            status_history=[
+                StatusLogEntry(
+                    to_status=miniature.status,
+                    is_manual=False
+                )
+            ]
+        )
         
-        # Add new miniature
-        data.append(self._miniature_to_data(new_miniature))
-        
-        # Save and return
+        data.append(new_miniature.model_dump())
         self._save_data(data)
         return new_miniature
     
-    def get_all(self, user_id: Optional[UUID] = None) -> List[Miniature]:
-        """Get all miniatures, optionally filtered by user."""
-        data = self._load_data()
-        miniatures = []
-        
-        for item in data:
-            miniature = self._data_to_miniature(item)
-            if miniature is not None:  # Skip old data without user_id
-                miniatures.append(miniature)
-        
-        if user_id:
-            miniatures = [m for m in miniatures if str(m.user_id) == str(user_id)]
-        
-        return miniatures
-    
-    def get_by_id(self, miniature_id: UUID, user_id: Optional[UUID] = None) -> Optional[Miniature]:
-        """Get a miniature by ID, optionally checking user ownership."""
-        data = self._load_data()
-        
-        for item in data:
-            if item['id'] == str(miniature_id):
-                miniature = self._data_to_miniature(item)
-                
-                # Skip if old data without user_id
-                if miniature is None:
-                    continue
-                
-                # Check user ownership if user_id provided
-                if user_id and str(miniature.user_id) != str(user_id):
-                    return None
-                
-                return miniature
-        
-        return None
-    
-    def update(self, miniature_id: UUID, update_data: MiniatureUpdate, user_id: Optional[UUID] = None) -> Optional[Miniature]:
-        """Update an existing miniature, checking user ownership."""
+    def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update an existing miniature."""
         data = self._load_data()
         
         for i, item in enumerate(data):
-            if item['id'] == str(miniature_id):
-                # Convert to miniature object
-                current = self._data_to_miniature(item)
+            if (item.get('id') == str(miniature_id) and 
+                item.get('user_id') == str(user_id)):
                 
-                # Skip if old data without user_id
-                if current is None:
-                    continue
+                # Load current miniature
+                current = Miniature.model_validate(item)
                 
-                # Check user ownership if user_id provided
-                if user_id and str(current.user_id) != str(user_id):
-                    return None
+                # Prepare update data
+                update_data = updates.model_dump(exclude_unset=True)
+                if not update_data:
+                    return current
                 
-                # Apply updates (only non-None values)
-                update_dict = update_data.model_dump(exclude_unset=True)
-                for field, value in update_dict.items():
-                    setattr(current, field, value)
+                # Check if status is changing
+                old_status = current.status
+                new_status = update_data.get('status', old_status)
                 
-                # Update timestamp
-                current.updated_at = datetime.now()
+                # Update the miniature
+                updated_data = current.model_dump()
+                updated_data.update(update_data)
+                updated_data['updated_at'] = datetime.now().isoformat()
                 
-                # Save back to data
-                data[i] = self._miniature_to_data(current)
+                # Add status log entry if status changed
+                if old_status != new_status:
+                    status_history = updated_data.get('status_history', [])
+                    status_history.append(
+                        StatusLogEntry(
+                            from_status=old_status,
+                            to_status=new_status,
+                            is_manual=False
+                        ).model_dump()
+                    )
+                    updated_data['status_history'] = status_history
+                
+                data[i] = updated_data
                 self._save_data(data)
-                
-                return current
+                return Miniature.model_validate(updated_data)
         
         return None
     
-    def delete(self, miniature_id: UUID, user_id: Optional[UUID] = None) -> bool:
-        """Delete a miniature by ID, checking user ownership."""
+    def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
+        """Delete a miniature."""
+        data = self._load_data()
+        original_length = len(data)
+        
+        data = [
+            item for item in data 
+            if not (item.get('id') == str(miniature_id) and 
+                   item.get('user_id') == str(user_id))
+        ]
+        
+        if len(data) < original_length:
+            self._save_data(data)
+            return True
+        return False
+    
+    def add_status_log_entry(self, miniature_id: UUID, log_entry: StatusLogEntryCreate, user_id: UUID) -> Optional[Miniature]:
+        """Add a manual status log entry to a miniature."""
         data = self._load_data()
         
         for i, item in enumerate(data):
-            if item['id'] == str(miniature_id):
-                # Check user ownership if user_id provided
-                if user_id:
-                    # Convert to miniature to check user_id
-                    miniature = self._data_to_miniature(item)
+            if (item.get('id') == str(miniature_id) and 
+                item.get('user_id') == str(user_id)):
+                
+                current = Miniature.model_validate(item)
+                
+                # Create new log entry
+                new_entry = StatusLogEntry(**log_entry.model_dump())
+                
+                # Add to status history
+                updated_data = current.model_dump()
+                status_history = updated_data.get('status_history', [])
+                status_history.append(new_entry.model_dump())
+                updated_data['status_history'] = status_history
+                updated_data['updated_at'] = datetime.now().isoformat()
+                
+                # Update current status if this is the latest entry
+                updated_data['status'] = log_entry.to_status
+                
+                data[i] = updated_data
+                self._save_data(data)
+                return Miniature.model_validate(updated_data)
+        
+        return None
+    
+    def update_status_log_entry(self, miniature_id: UUID, log_entry_id: UUID, updates: StatusLogEntryUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update a status log entry."""
+        data = self._load_data()
+        
+        for i, item in enumerate(data):
+            if (item.get('id') == str(miniature_id) and 
+                item.get('user_id') == str(user_id)):
+                
+                current = Miniature.model_validate(item)
+                updated_data = current.model_dump()
+                status_history = updated_data.get('status_history', [])
+                
+                # Find and update the log entry
+                for j, log_entry in enumerate(status_history):
+                    if log_entry.get('id') == str(log_entry_id):
+                        update_data = updates.model_dump(exclude_unset=True)
+                        if update_data:
+                            status_history[j].update(update_data)
+                            updated_data['status_history'] = status_history
+                            updated_data['updated_at'] = datetime.now().isoformat()
+                            
+                            data[i] = updated_data
+                            self._save_data(data)
+                            return Miniature.model_validate(updated_data)
+                break
+        
+        return None
+    
+    def delete_status_log_entry(self, miniature_id: UUID, log_entry_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Delete a status log entry."""
+        data = self._load_data()
+        
+        for i, item in enumerate(data):
+            if (item.get('id') == str(miniature_id) and 
+                item.get('user_id') == str(user_id)):
+                
+                current = Miniature.model_validate(item)
+                updated_data = current.model_dump()
+                status_history = updated_data.get('status_history', [])
+                
+                # Remove the log entry
+                original_length = len(status_history)
+                status_history = [
+                    entry for entry in status_history 
+                    if entry.get('id') != str(log_entry_id)
+                ]
+                
+                if len(status_history) < original_length:
+                    updated_data['status_history'] = status_history
+                    updated_data['updated_at'] = datetime.now().isoformat()
                     
-                    # Skip if old data without user_id
-                    if miniature is None:
-                        continue
-                        
-                    if str(miniature.user_id) != str(user_id):
-                        return False
+                    data[i] = updated_data
+                    self._save_data(data)
+                    return Miniature.model_validate(updated_data)
+                break
+        
+        return None
+    
+    # Password Reset Token Methods
+    
+    def create_password_reset_token(self, user_id: UUID) -> PasswordResetToken:
+        """Create a new password reset token."""
+        tokens = self._load_reset_tokens()
+        
+        # Invalidate any existing tokens for this user
+        for token_data in tokens:
+            if token_data.get('user_id') == str(user_id):
+                token_data['used'] = True
+        
+        # Create new token
+        new_token = PasswordResetToken(user_id=user_id)
+        tokens.append(new_token.model_dump())
+        self._save_reset_tokens(tokens)
+        
+        return new_token
+    
+    def get_password_reset_token(self, token: str) -> Optional[PasswordResetToken]:
+        """Get a password reset token by token string."""
+        tokens = self._load_reset_tokens()
+        
+        for token_data in tokens:
+            if token_data.get('token') == token:
+                reset_token = PasswordResetToken.model_validate(token_data)
                 
-                data.pop(i)
-                self._save_data(data)
+                # Check if token is valid (not used and not expired)
+                if not reset_token.used and reset_token.expires_at > datetime.now():
+                    return reset_token
+                break
+        
+        return None
+    
+    def use_password_reset_token(self, token: str) -> bool:
+        """Mark a password reset token as used."""
+        tokens = self._load_reset_tokens()
+        
+        for token_data in tokens:
+            if token_data.get('token') == token:
+                token_data['used'] = True
+                self._save_reset_tokens(tokens)
                 return True
         
-        return False 
+        return False
+    
+    def cleanup_expired_tokens(self) -> None:
+        """Remove expired password reset tokens."""
+        tokens = self._load_reset_tokens()
+        current_time = datetime.now()
+        
+        active_tokens = [
+            token for token in tokens
+            if datetime.fromisoformat(token.get('expires_at', '')) > current_time
+        ]
+        
+        if len(active_tokens) < len(tokens):
+            self._save_reset_tokens(active_tokens) 

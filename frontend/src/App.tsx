@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Miniature, MiniatureCreate, UserCreate, LoginRequest, AuthState } from './types';
+import { Miniature, MiniatureCreate, UserCreate, LoginRequest } from './types';
 import { miniatureApi, authApi, tokenManager } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import MiniatureForm from './components/MiniatureForm';
 import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
+import ForgotPasswordForm from './components/ForgotPasswordForm';
+import ResetPasswordForm from './components/ResetPasswordForm';
 import { UserHeader } from './components/UserHeader';
+
+type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
+
+interface AuthState {
+  user: any | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
 
 function App() {
   // Authentication state
@@ -18,14 +29,29 @@ function App() {
   });
 
   // UI state
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   // Miniature state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
   const [miniaturesLoading, setMiniaturesLoading] = useState(false);
   const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Check for password reset token in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      setResetToken(token);
+      setAuthMode('reset-password');
+      // Clear the URL parameter for security
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Check for existing token on mount
   useEffect(() => {
@@ -119,6 +145,23 @@ function App() {
     setMiniaturesError(null);
   };
 
+  const handlePasswordResetSuccess = () => {
+    setAuthSuccess('Password has been reset successfully! You can now log in with your new password.');
+    setAuthMode('login');
+    setResetToken(null);
+  };
+
+  const handlePasswordResetError = (error: string) => {
+    setAuthError(error);
+    setAuthMode('login');
+    setResetToken(null);
+  };
+
+  const clearMessages = () => {
+    setAuthError(null);
+    setAuthSuccess(null);
+  };
+
   const loadMiniatures = async () => {
     try {
       setMiniaturesLoading(true);
@@ -158,6 +201,12 @@ function App() {
     }
   };
 
+  const handleMiniatureUpdate = (updatedMiniature: Miniature) => {
+    setMiniatures(prev => 
+      prev.map(m => m.id === updatedMiniature.id ? updatedMiniature : m)
+    );
+  };
+
   const handleDeleteMiniature = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this miniature?')) {
       return;
@@ -187,25 +236,60 @@ function App() {
     return (
       <div className="App">
         <div className="auth-container">
-          {authMode === 'login' ? (
+          {authSuccess && (
+            <div className="success-message">
+              {authSuccess}
+            </div>
+          )}
+          
+          {authError && (
+            <div className="error-message">
+              {authError}
+            </div>
+          )}
+
+          {authMode === 'login' && (
             <LoginForm
               onLogin={handleLogin}
               onSwitchToRegister={() => {
                 setAuthMode('register');
-                setAuthError(null);
+                clearMessages();
+              }}
+              onForgotPassword={() => {
+                setAuthMode('forgot-password');
+                clearMessages();
               }}
               isLoading={authState.isLoading}
               error={authError}
             />
-          ) : (
+          )}
+
+          {authMode === 'register' && (
             <RegisterForm
               onRegister={handleRegister}
               onSwitchToLogin={() => {
                 setAuthMode('login');
-                setAuthError(null);
+                clearMessages();
               }}
               isLoading={authState.isLoading}
               error={authError}
+            />
+          )}
+
+          {authMode === 'forgot-password' && (
+            <ForgotPasswordForm
+              onBack={() => {
+                setAuthMode('login');
+                clearMessages();
+              }}
+            />
+          )}
+
+          {authMode === 'reset-password' && resetToken && (
+            <ResetPasswordForm
+              token={resetToken}
+              onSuccess={handlePasswordResetSuccess}
+              onError={handlePasswordResetError}
             />
           )}
         </div>
@@ -261,6 +345,7 @@ function App() {
             miniatures={miniatures}
             onUpdate={handleUpdateMiniature}
             onDelete={handleDeleteMiniature}
+            onMiniatureUpdate={handleMiniatureUpdate}
           />
         )}
       </main>

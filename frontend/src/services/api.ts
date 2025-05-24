@@ -2,7 +2,12 @@
  * API service for communicating with the miniature tracker backend
  */
 
-import { Miniature, MiniatureCreate, MiniatureUpdate, User, UserCreate, LoginRequest, Token } from '../types';
+import { 
+  Miniature, MiniatureCreate, MiniatureUpdate, 
+  User, UserCreate, LoginRequest, Token, 
+  StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
+  PasswordResetRequest, PasswordReset
+} from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '' // Will use same domain in production
@@ -29,8 +34,9 @@ export const tokenManager = {
   },
 
   getToken(): string | null {
-    if (authToken) return authToken;
-    authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      authToken = localStorage.getItem('authToken');
+    }
     return authToken;
   },
 
@@ -40,47 +46,65 @@ export const tokenManager = {
   }
 };
 
+// Initialize token from localStorage
+tokenManager.getToken();
+
 async function apiRequest<T>(
-  endpoint: string, 
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = tokenManager.getToken();
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers as Record<string, string>,
+    ...(options.headers as Record<string, string>),
   };
 
-  // Add authorization header if token exists
+  // Add auth token if available
+  const token = tokenManager.getToken();
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
-  
-  const response = await fetch(url, {
-    headers,
-    ...options,
-  });
 
-  if (!response.ok) {
-    const errorText = await response.text();
+  const config: RequestInit = {
+    ...options,
+    headers,
+  };
+
+  try {
+    const response = await fetch(url, config);
     
-    // If unauthorized, clear token
-    if (response.status === 401) {
-      tokenManager.clearToken();
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorData.message || errorMessage;
+      } catch {
+        // If error response isn't JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      
+      throw new ApiError(response.status, errorMessage);
+    }
+
+    // Handle empty responses (like 204 No Content)
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return {} as T;
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
     }
     
-    throw new ApiError(response.status, errorText);
+    // Network or other errors
+    throw new ApiError(0, `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  // Handle 204 No Content responses
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
 }
 
+// Authentication API
 export const authApi = {
   /**
    * Register a new user
@@ -114,6 +138,20 @@ export const authApi = {
    */
   logout() {
     tokenManager.clearToken();
+  },
+
+  async forgotPassword(request: PasswordResetRequest): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  async resetPassword(request: PasswordReset): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   }
 };
 
@@ -157,6 +195,35 @@ export const miniatureApi = {
    */
   async delete(id: string): Promise<void> {
     return apiRequest<void>(`/miniatures/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Add a manual status log entry
+   */
+  async addStatusLog(id: string, logEntry: StatusLogEntryCreate): Promise<Miniature> {
+    return apiRequest<Miniature>(`/miniatures/${id}/status-logs`, {
+      method: 'POST',
+      body: JSON.stringify(logEntry),
+    });
+  },
+
+  /**
+   * Update a status log entry
+   */
+  async updateStatusLog(id: string, logId: string, updates: StatusLogEntryUpdate): Promise<Miniature> {
+    return apiRequest<Miniature>(`/miniatures/${id}/status-logs/${logId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a status log entry
+   */
+  async deleteStatusLog(id: string, logId: string): Promise<Miniature> {
+    return apiRequest<Miniature>(`/miniatures/${id}/status-logs/${logId}`, {
       method: 'DELETE',
     });
   }
