@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Miniature, MiniatureCreate, UserCreate, LoginRequest } from './types';
-import { miniatureApi, authApi, tokenManager } from './services/api';
+import { Miniature, MiniatureCreate, UserCreate, LoginRequest, UserPreferences } from './types';
+import { miniatureApi, authApi, tokenManager, playerApi } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import MiniatureForm from './components/MiniatureForm';
 import { LoginForm } from './components/LoginForm';
@@ -10,6 +10,8 @@ import ForgotPasswordForm from './components/ForgotPasswordForm';
 import ResetPasswordForm from './components/ResetPasswordForm';
 import { UserHeader } from './components/UserHeader';
 import Changelog from './components/Changelog';
+import UserPreferencesForm from './components/UserPreferencesForm';
+import PlayerSearch from './components/PlayerSearch';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
@@ -36,13 +38,17 @@ function App() {
   const [resetToken, setResetToken] = useState<string | null>(null);
   
   // Tab state
-  const [currentTab, setCurrentTab] = useState<'miniatures' | 'changelog'>('miniatures');
+  const [currentTab, setCurrentTab] = useState<'miniatures' | 'changelog' | 'preferences' | 'player-search'>('miniatures');
 
   // Miniature state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
   const [miniaturesLoading, setMiniaturesLoading] = useState(false);
   const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Player preferences state
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [preferencesLoading, setPreferencesLoading] = useState(false);
 
   // Check for password reset token in URL
   useEffect(() => {
@@ -97,8 +103,33 @@ function App() {
   useEffect(() => {
     if (authState.isAuthenticated) {
       loadMiniatures();
+      loadUserPreferences();
     }
   }, [authState.isAuthenticated]);
+
+  const loadUserPreferences = async () => {
+    try {
+      setPreferencesLoading(true);
+      const preferences = await playerApi.getPreferences();
+      setUserPreferences(preferences);
+    } catch (err: any) {
+      // User might not have preferences yet, which is fine
+      if (!err.message?.includes('404')) {
+        console.error('Error loading preferences:', err);
+      }
+      setUserPreferences(null);
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  const handlePreferencesSave = (preferences: UserPreferences) => {
+    setUserPreferences(preferences);
+    // Optionally switch to player search tab after saving preferences
+    if (currentTab === 'preferences') {
+      setCurrentTab('player-search');
+    }
+  };
 
   const handleLogin = async (credentials: LoginRequest) => {
     try {
@@ -326,6 +357,18 @@ function App() {
           >
             📋 Changelog
           </button>
+          <button 
+            className={`tab-button ${currentTab === 'preferences' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('preferences')}
+          >
+            🔧 Preferences
+          </button>
+          <button 
+            className={`tab-button ${currentTab === 'player-search' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('player-search')}
+          >
+            🔍 Player Search
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -375,6 +418,19 @@ function App() {
         )}
 
         {currentTab === 'changelog' && <Changelog />}
+
+        {currentTab === 'preferences' && (
+          <UserPreferencesForm 
+            existingPreferences={userPreferences}
+            onSave={handlePreferencesSave}
+          />
+        )}
+
+        {currentTab === 'player-search' && (
+          <PlayerSearch 
+            userHasPreferences={userPreferences !== null}
+          />
+        )}
       </main>
 
       <footer className="App-footer">
