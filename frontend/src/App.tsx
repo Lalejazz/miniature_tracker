@@ -9,6 +9,7 @@ import { RegisterForm } from './components/RegisterForm';
 import ForgotPasswordForm from './components/ForgotPasswordForm';
 import ResetPasswordForm from './components/ResetPasswordForm';
 import { UserHeader } from './components/UserHeader';
+import Changelog from './components/Changelog';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
@@ -33,6 +34,9 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
+  
+  // Tab state
+  const [currentTab, setCurrentTab] = useState<'miniatures' | 'changelog'>('miniatures');
 
   // Miniature state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
@@ -308,46 +312,69 @@ function App() {
       <main className="App-main">
         <UserHeader user={authState.user!} onLogout={handleLogout} />
 
-        {miniaturesError && (
-          <div className="error-banner">
-            <span>⚠️ {miniaturesError}</span>
-            <button onClick={() => setMiniaturesError(null)}>✕</button>
-          </div>
-        )}
-
-        <div className="controls">
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
           <button 
-            className="add-button"
-            onClick={() => setShowForm(!showForm)}
+            className={`tab-button ${currentTab === 'miniatures' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('miniatures')}
           >
-            {showForm ? '✕ Cancel' : '+ Add Miniature'}
+            🎨 My Miniatures
           </button>
           <button 
-            className="refresh-button"
-            onClick={loadMiniatures}
-            disabled={miniaturesLoading}
+            className={`tab-button ${currentTab === 'changelog' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('changelog')}
           >
-            🔄 Refresh
+            📋 Changelog
           </button>
         </div>
 
-        {showForm && (
-          <MiniatureForm
-            onSubmit={handleCreateMiniature}
-            onCancel={() => setShowForm(false)}
-          />
+        {/* Tab Content */}
+        {currentTab === 'miniatures' && (
+          <>
+            {miniaturesError && (
+              <div className="error-banner">
+                <span>⚠️ {miniaturesError}</span>
+                <button onClick={() => setMiniaturesError(null)}>✕</button>
+              </div>
+            )}
+
+            <div className="controls">
+              <button 
+                className="add-button"
+                onClick={() => setShowForm(!showForm)}
+              >
+                {showForm ? '✕ Cancel' : '+ Add Miniature'}
+              </button>
+              <button 
+                className="refresh-button"
+                onClick={loadMiniatures}
+                disabled={miniaturesLoading}
+              >
+                🔄 Refresh
+              </button>
+            </div>
+
+            {showForm && (
+              <MiniatureForm
+                onSubmit={handleCreateMiniature}
+                onCancel={() => setShowForm(false)}
+              />
+            )}
+
+            {miniaturesLoading ? (
+              <div className="loading">Loading miniatures...</div>
+            ) : (
+              <MiniatureList
+                miniatures={miniatures}
+                onUpdate={handleUpdateMiniature}
+                onDelete={handleDeleteMiniature}
+                onMiniatureUpdate={handleMiniatureUpdate}
+              />
+            )}
+          </>
         )}
 
-        {miniaturesLoading ? (
-          <div className="loading">Loading miniatures...</div>
-        ) : (
-          <MiniatureList
-            miniatures={miniatures}
-            onUpdate={handleUpdateMiniature}
-            onDelete={handleDeleteMiniature}
-            onMiniatureUpdate={handleMiniatureUpdate}
-          />
-        )}
+        {currentTab === 'changelog' && <Changelog />}
       </main>
 
       <footer className="App-footer">

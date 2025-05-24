@@ -1879,4 +1879,241 @@ body {
   }
 }
 
-/* ... existing styles continue ... */ 
+/* ... existing styles continue ... */
+
+/* Changelog Styles */
+.changelog-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.changelog-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.changelog-header h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 2.5rem;
+}
+
+.changelog-subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.changelog-entry {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #4CAF50;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.changelog-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.changelog-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.changelog-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.changelog-type-icon {
+  font-size: 1.5rem;
+}
+
+.changelog-entry-title h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.changelog-type-badge {
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.changelog-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.changelog-version {
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.changelog-date {
+  font-style: italic;
+}
+
+.changelog-description {
+  color: #555;
+  font-size: 1.1rem;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.changelog-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.changelog-item {
+  background: #f8f9fa;
+  padding: 10px 16px;
+  margin: 6px 0;
+  border-radius: 6px;
+  border-left: 3px solid #e9ecef;
+  position: relative;
+  padding-left: 40px;
+}
+
+.changelog-item::before {
+  content: '✓';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.changelog-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.changelog-footer p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Responsive design for changelog */
+@media (max-width: 768px) {
+  .changelog-container {
+    padding: 15px;
+  }
+  
+  .changelog-header h2 {
+    font-size: 2rem;
+  }
+  
+  .changelog-entry {
+    padding: 16px;
+  }
+  
+  .changelog-entry-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .changelog-entry-title {
+    margin-bottom: 8px;
+  }
+  
+  .changelog-entry-title h3 {
+    font-size: 1.2rem;
+  }
+  
+  .changelog-entry-meta {
+    align-self: stretch;
+  }
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: 0;
+  margin: 20px 0;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #666;
+  position: relative;
+  flex: 1;
+}
+
+.tab-button:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Responsive tab navigation */
+@media (max-width: 768px) {
+  .tab-navigation {
+    margin: 15px 0;
+  }
+  
+  .tab-button {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+} 

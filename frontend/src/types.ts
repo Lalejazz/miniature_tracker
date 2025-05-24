@@ -135,4 +135,15 @@ export const STATUS_INFO = {
     color: "#ffd700",
     textColor: "#000"
   }
-}; 
+};
+
+// Changelog types
+export interface ChangelogEntry {
+  id: string;
+  date: string;
+  version: string;
+  title: string;
+  description: string;
+  type: 'feature' | 'improvement' | 'bugfix' | 'security';
+  items: string[];
+} 

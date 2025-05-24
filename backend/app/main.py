@@ -32,32 +32,32 @@ def get_db() -> MiniatureDB:
 
 
 @app.post("/miniatures", response_model=Miniature, status_code=status.HTTP_201_CREATED)
-def create_miniature(
+async def create_miniature(
     miniature: MiniatureCreate,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
     """Create a new miniature for the authenticated user."""
-    return db.create_miniature(miniature, current_user_id)
+    return await db.create_miniature(miniature, current_user_id)
 
 
 @app.get("/miniatures", response_model=List[Miniature])
-def get_all_miniatures(
+async def get_all_miniatures(
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> List[Miniature]:
     """Get all miniatures for the authenticated user."""
-    return db.get_all_miniatures(current_user_id)
+    return await db.get_all_miniatures(current_user_id)
 
 
 @app.get("/miniatures/{miniature_id}", response_model=Miniature)
-def get_miniature(
+async def get_miniature(
     miniature_id: UUID,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
     """Get a specific miniature by ID for the authenticated user."""
-    miniature = db.get_miniature(miniature_id, current_user_id)
+    miniature = await db.get_miniature(miniature_id, current_user_id)
     if miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -67,14 +67,14 @@ def get_miniature(
 
 
 @app.put("/miniatures/{miniature_id}", response_model=Miniature)
-def update_miniature(
+async def update_miniature(
     miniature_id: UUID,
     miniature_update: MiniatureUpdate,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
     """Update an existing miniature for the authenticated user."""
-    updated_miniature = db.update_miniature(miniature_id, miniature_update, current_user_id)
+    updated_miniature = await db.update_miniature(miniature_id, miniature_update, current_user_id)
     if updated_miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -84,13 +84,13 @@ def update_miniature(
 
 
 @app.delete("/miniatures/{miniature_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_miniature(
+async def delete_miniature(
     miniature_id: UUID,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> None:
     """Delete a miniature for the authenticated user."""
-    success = db.delete_miniature(miniature_id, current_user_id)
+    success = await db.delete_miniature(miniature_id, current_user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -100,14 +100,14 @@ def delete_miniature(
 
 # Status log endpoints
 @app.post("/miniatures/{miniature_id}/status-logs", response_model=StatusLogEntry, status_code=status.HTTP_201_CREATED)
-def add_status_log(
+async def add_status_log(
     miniature_id: UUID,
     log_data: StatusLogEntryCreate,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> StatusLogEntry:
     """Add a manual status log entry to a miniature."""
-    miniature = db.add_status_log_entry(miniature_id, log_data, current_user_id)
+    miniature = await db.add_status_log_entry(miniature_id, log_data, current_user_id)
     if miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -118,7 +118,7 @@ def add_status_log(
 
 
 @app.put("/miniatures/{miniature_id}/status-logs/{log_id}", response_model=StatusLogEntry)
-def update_status_log(
+async def update_status_log(
     miniature_id: UUID,
     log_id: UUID,
     log_update: StatusLogEntryUpdate,
@@ -126,7 +126,7 @@ def update_status_log(
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> StatusLogEntry:
     """Update a status log entry."""
-    updated_miniature = db.update_status_log_entry(miniature_id, log_id, log_update, current_user_id)
+    updated_miniature = await db.update_status_log_entry(miniature_id, log_id, log_update, current_user_id)
     if updated_miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -143,14 +143,14 @@ def update_status_log(
 
 
 @app.delete("/miniatures/{miniature_id}/status-logs/{log_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_status_log(
+async def delete_status_log(
     miniature_id: UUID,
     log_id: UUID,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
 ) -> None:
     """Delete a manual status log entry."""
-    updated_miniature = db.delete_status_log_entry(miniature_id, log_id, current_user_id)
+    updated_miniature = await db.delete_status_log_entry(miniature_id, log_id, current_user_id)
     if updated_miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

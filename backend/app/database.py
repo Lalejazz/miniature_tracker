@@ -129,6 +129,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                 id UUID PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
+                status VARCHAR(100) NOT NULL DEFAULT 'unpainted',
+                user_id UUID NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
@@ -139,9 +141,11 @@ class PostgreSQLDatabase(DatabaseInterface):
             CREATE TABLE IF NOT EXISTS status_log_entries (
                 id UUID PRIMARY KEY,
                 miniature_id UUID REFERENCES miniatures(id) ON DELETE CASCADE,
+                user_id UUID NOT NULL,
                 from_status VARCHAR(255),
                 to_status VARCHAR(255) NOT NULL,
                 notes TEXT,
+                is_manual BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
@@ -260,11 +264,44 @@ class PostgreSQLDatabase(DatabaseInterface):
             raise RuntimeError("Database not initialized")
             
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT id, name, description, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
+            # Get miniatures
+            miniature_rows = await conn.fetch(
+                "SELECT id, name, description, status, user_id, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
                 user_id
             )
-            return [Miniature(**dict(row)) for row in rows]
+            
+            miniatures = []
+            for row in miniature_rows:
+                # Get status history for this miniature
+                status_rows = await conn.fetch(
+                    "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                    row['id']
+                )
+                
+                status_history = [
+                    StatusLogEntry(
+                        id=status_row['id'],
+                        from_status=status_row['from_status'],
+                        to_status=status_row['to_status'],
+                        notes=status_row['notes'],
+                        is_manual=status_row['is_manual'],
+                        created_at=status_row['created_at']
+                    ) for status_row in status_rows
+                ]
+                
+                miniature = Miniature(
+                    id=row['id'],
+                    name=row['name'],
+                    description=row['description'],
+                    status=row['status'],
+                    user_id=row['user_id'],
+                    status_history=status_history,
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at']
+                )
+                miniatures.append(miniature)
+            
+            return miniatures
     
     async def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
         """Get a specific miniature by ID for a user."""
@@ -272,13 +309,41 @@ class PostgreSQLDatabase(DatabaseInterface):
             raise RuntimeError("Database not initialized")
             
         async with self._pool.acquire() as conn:
+            # Get miniature
             row = await conn.fetchrow(
-                "SELECT id, name, description, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
+                "SELECT id, name, description, status, user_id, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
                 miniature_id, user_id
             )
-            if row:
-                return Miniature(**dict(row))
-        return None
+            if not row:
+                return None
+            
+            # Get status history
+            status_rows = await conn.fetch(
+                "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                miniature_id
+            )
+            
+            status_history = [
+                StatusLogEntry(
+                    id=status_row['id'],
+                    from_status=status_row['from_status'],
+                    to_status=status_row['to_status'],
+                    notes=status_row['notes'],
+                    is_manual=status_row['is_manual'],
+                    created_at=status_row['created_at']
+                ) for status_row in status_rows
+            ]
+            
+            return Miniature(
+                id=row['id'],
+                name=row['name'],
+                description=row['description'],
+                status=row['status'],
+                user_id=row['user_id'],
+                status_history=status_history,
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
     
     async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
         """Create a new miniature."""
@@ -286,13 +351,38 @@ class PostgreSQLDatabase(DatabaseInterface):
             raise RuntimeError("Database not initialized")
         
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "INSERT INTO miniatures (name, description, user_id) VALUES ($1, $2, $3) RETURNING id, name, description, created_at, updated_at",
-                miniature.name, miniature.description, user_id
-            )
-            if row:
-                return Miniature(**dict(row))
-        return None
+            async with conn.transaction():
+                # Insert miniature
+                miniature_row = await conn.fetchrow(
+                    "INSERT INTO miniatures (id, name, description, status, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, status, user_id, created_at, updated_at",
+                    miniature.id, miniature.name, miniature.description, miniature.status, user_id
+                )
+                
+                # Add initial status log entry
+                status_entry = await conn.fetchrow(
+                    "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, from_status, to_status, notes, is_manual, created_at",
+                    uuid4(), miniature.id, user_id, None, miniature.status, None, False
+                )
+                
+                status_history = [StatusLogEntry(
+                    id=status_entry['id'],
+                    from_status=status_entry['from_status'],
+                    to_status=status_entry['to_status'],
+                    notes=status_entry['notes'],
+                    is_manual=status_entry['is_manual'],
+                    created_at=status_entry['created_at']
+                )]
+                
+                return Miniature(
+                    id=miniature_row['id'],
+                    name=miniature_row['name'],
+                    description=miniature_row['description'],
+                    status=miniature_row['status'],
+                    user_id=miniature_row['user_id'],
+                    status_history=status_history,
+                    created_at=miniature_row['created_at'],
+                    updated_at=miniature_row['updated_at']
+                )
     
     async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
         """Update an existing miniature."""
@@ -303,29 +393,50 @@ class PostgreSQLDatabase(DatabaseInterface):
         if not update_data:
             return await self.get_miniature(miniature_id, user_id)
         
-        # Build dynamic query
-        set_clauses = []
-        values = []
-        for i, (key, value) in enumerate(update_data.items(), 1):
-            set_clauses.append(f"{key} = ${i}")
-            values.append(value)
-        
-        values.append(datetime.utcnow())  # updated_at
-        values.append(miniature_id)  # WHERE condition
-        values.append(user_id)  # WHERE condition
-        
-        query = f"""
-            UPDATE miniatures 
-            SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
-            WHERE id = ${len(values)} AND user_id = ${len(values)-1}
-            RETURNING id, name, description, created_at, updated_at
-        """
-        
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(query, *values)
-            if row:
-                return Miniature(**dict(row))
-        return None
+            async with conn.transaction():
+                # Get current miniature to check for status changes
+                current_row = await conn.fetchrow(
+                    "SELECT status FROM miniatures WHERE id = $1 AND user_id = $2",
+                    miniature_id, user_id
+                )
+                if not current_row:
+                    return None
+                
+                old_status = current_row['status']
+                new_status = update_data.get('status', old_status)
+                
+                # Build dynamic query for miniature update
+                set_clauses = []
+                values = []
+                for i, (key, value) in enumerate(update_data.items(), 1):
+                    set_clauses.append(f"{key} = ${i}")
+                    values.append(value)
+                
+                values.append(datetime.utcnow())  # updated_at
+                values.append(miniature_id)  # WHERE condition
+                values.append(user_id)  # WHERE condition
+                
+                query = f"""
+                    UPDATE miniatures 
+                    SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
+                    WHERE id = ${len(values)} AND user_id = ${len(values)-1}
+                    RETURNING id, name, description, status, user_id, created_at, updated_at
+                """
+                
+                miniature_row = await conn.fetchrow(query, *values)
+                if not miniature_row:
+                    return None
+                
+                # Add status log entry if status changed
+                if old_status != new_status:
+                    await conn.execute(
+                        "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                        uuid4(), miniature_id, user_id, old_status, new_status, None, False
+                    )
+                
+                # Get updated miniature with status history
+                return await self.get_miniature(miniature_id, user_id)
     
     async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
         """Delete a miniature."""
@@ -337,7 +448,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 "DELETE FROM miniatures WHERE id = $1 AND user_id = $2",
                 miniature_id, user_id
             )
-            return result.rowcount > 0
+            return result.split()[-1] != '0'  # Check if any rows were affected
     
     async def add_status_log_entry(self, miniature_id: UUID, from_status: Optional[str], to_status: str, notes: Optional[str], user_id: UUID) -> Optional[Miniature]:
         """Add a status log entry to a miniature."""
@@ -345,13 +456,29 @@ class PostgreSQLDatabase(DatabaseInterface):
             raise RuntimeError("Database not initialized")
         
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "INSERT INTO status_log_entries (miniature_id, from_status, to_status, notes, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, miniature_id, from_status, to_status, notes, created_at",
-                miniature_id, from_status, to_status, notes, user_id
-            )
-            if row:
-                return Miniature(**dict(row))
-        return None
+            async with conn.transaction():
+                # Verify miniature exists
+                exists = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM miniatures WHERE id = $1 AND user_id = $2)",
+                    miniature_id, user_id
+                )
+                if not exists:
+                    return None
+                
+                # Add status log entry
+                await conn.execute(
+                    "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                    uuid4(), miniature_id, user_id, from_status, to_status, notes, True
+                )
+                
+                # Update miniature status
+                await conn.execute(
+                    "UPDATE miniatures SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+                    to_status, miniature_id, user_id
+                )
+                
+                # Return updated miniature
+                return await self.get_miniature(miniature_id, user_id)
 
 
 class FileDatabase(DatabaseInterface):
