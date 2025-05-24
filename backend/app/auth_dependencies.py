@@ -35,8 +35,8 @@ async def get_current_user(
     if token_data is None or token_data.user_id is None:
         raise credentials_exception
     
-    # Get user from database - use async method directly
-    user = await user_db._get_user_by_id_async(token_data.user_id)
+    # Get user from database
+    user = await user_db.get_user_by_id(token_data.user_id)
     if user is None:
         raise credentials_exception
     

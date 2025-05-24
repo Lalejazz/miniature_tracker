@@ -2,7 +2,6 @@
 
 import json
 import os
-import asyncio
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -46,30 +45,18 @@ class UserDB:
         with open(self.reset_tokens_file, 'w') as f:
             json.dump(tokens, f, indent=2, default=str)
     
-    def get_user_by_email(self, email: str) -> Optional[UserInDB]:
+    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
         """Get user by email."""
-        return asyncio.run(self._get_user_by_email_async(email))
-    
-    async def _get_user_by_email_async(self, email: str) -> Optional[UserInDB]:
-        """Get user by email (async version)."""
         await self._ensure_db_initialized()
         return await self.db.get_user_by_email(email)
     
-    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    async def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Get user by ID."""
-        return asyncio.run(self._get_user_by_id_async(user_id))
-    
-    async def _get_user_by_id_async(self, user_id: UUID) -> Optional[User]:
-        """Get user by ID (async version)."""
         await self._ensure_db_initialized()
         return await self.db.get_user_by_id(user_id)
     
-    def get_user_by_username(self, username: str) -> Optional[UserInDB]:
+    async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
         """Get user by username."""
-        return asyncio.run(self._get_user_by_username_async(username))
-    
-    async def _get_user_by_username_async(self, username: str) -> Optional[UserInDB]:
-        """Get user by username (async version)."""
         await self._ensure_db_initialized()
         users = await self.db.get_all_users()
         for user in users:
@@ -78,18 +65,14 @@ class UserDB:
                 return user_in_db
         return None
     
-    def create_user(self, user_create: UserCreate) -> User:
+    async def create_user(self, user_create: UserCreate) -> User:
         """Create a new user."""
-        return asyncio.run(self._create_user_async(user_create))
-    
-    async def _create_user_async(self, user_create: UserCreate) -> User:
-        """Create a new user (async version)."""
         await self._ensure_db_initialized()
         return await self.db.create_user(user_create)
     
-    def authenticate_user(self, email: str, password: str) -> Optional[UserInDB]:
+    async def authenticate_user(self, email: str, password: str) -> Optional[UserInDB]:
         """Authenticate user with email and password."""
-        user = self.get_user_by_email(email)
+        user = await self.get_user_by_email(email)
         if not user:
             return None
         
@@ -98,30 +81,22 @@ class UserDB:
         
         return user
     
-    def update_user(self, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
+    async def update_user(self, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
         """Update an existing user."""
-        return asyncio.run(self._update_user_async(user_id, user_update))
-    
-    async def _update_user_async(self, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
-        """Update an existing user (async version)."""
         await self._ensure_db_initialized()
         return await self.db.update_user(user_id, user_update)
     
-    def update_user_password(self, user_id: UUID, new_password: str) -> bool:
+    async def update_user_password(self, user_id: UUID, new_password: str) -> bool:
         """Update user's password."""
         user_update = UserUpdate(hashed_password=get_password_hash(new_password))
-        result = self.update_user(user_id, user_update)
+        result = await self.update_user(user_id, user_update)
         return result is not None
     
-    def get_all_users(self) -> List[User]:
+    async def get_all_users(self) -> List[User]:
         """Get all users (admin function)."""
-        return asyncio.run(self._get_all_users_async())
-    
-    async def _get_all_users_async(self) -> List[User]:
-        """Get all users (async version)."""
         await self._ensure_db_initialized()
         return await self.db.get_all_users()
-    
+
     # Password Reset Token Methods
     
     def create_password_reset_token(self, user_id: UUID) -> PasswordResetToken:

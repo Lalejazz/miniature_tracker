@@ -17,13 +17,13 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
-def register_user(
+async def register_user(
     user_create: UserCreate,
     user_db: UserDB = Depends(get_user_db)
 ) -> User:
     """Register a new user."""
     try:
-        user = user_db.create_user(user_create)
+        user = await user_db.create_user(user_create)
         return user
     except ValueError as e:
         raise HTTPException(
@@ -33,12 +33,12 @@ def register_user(
 
 
 @router.post("/login", response_model=Token)
-def login_user(
+async def login_user(
     login_request: LoginRequest,
     user_db: UserDB = Depends(get_user_db)
 ) -> Token:
     """Login user and return access token."""
-    user = user_db.authenticate_user(login_request.email, login_request.password)
+    user = await user_db.authenticate_user(login_request.email, login_request.password)
     
     if not user:
         raise HTTPException(
@@ -64,12 +64,12 @@ def login_user(
 
 
 @router.post("/token", response_model=Token)
-def login_for_access_token(
+async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_db: UserDB = Depends(get_user_db)
 ) -> Token:
     """OAuth2 compatible login endpoint (using username as email)."""
-    user = user_db.authenticate_user(form_data.username, form_data.password)
+    user = await user_db.authenticate_user(form_data.username, form_data.password)
     
     if not user:
         raise HTTPException(
@@ -102,7 +102,7 @@ async def forgot_password(
     """Request a password reset email."""
     # Always return success to prevent email enumeration
     # but only send email if user exists
-    user = user_db.get_user_by_email(request.email)
+    user = await user_db.get_user_by_email(request.email)
     
     if user:
         # Create password reset token
@@ -122,7 +122,7 @@ async def forgot_password(
 
 
 @router.post("/reset-password")
-def reset_password(
+async def reset_password(
     request: PasswordReset,
     user_db: UserDB = Depends(get_user_db)
 ) -> dict:
@@ -137,7 +137,7 @@ def reset_password(
         )
     
     # Get the user
-    user = user_db.get_user_by_id(reset_token.user_id)
+    user = await user_db.get_user_by_id(reset_token.user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -145,7 +145,7 @@ def reset_password(
         )
     
     # Update the user's password
-    success = user_db.update_user_password(user.id, request.new_password)
+    success = await user_db.update_user_password(user.id, request.new_password)
     
     if not success:
         raise HTTPException(
@@ -168,9 +168,9 @@ def get_current_user_info(
 
 
 @router.get("/users", response_model=List[User])
-def get_all_users(
+async def get_all_users(
     current_user: User = Depends(get_current_active_user),
     user_db: UserDB = Depends(get_user_db)
 ) -> List[User]:
     """Get all users (for admin/testing purposes)."""
-    return user_db.get_all_users() 
+    return await user_db.get_all_users() 
