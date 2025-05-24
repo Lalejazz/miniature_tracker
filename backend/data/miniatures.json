@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Ultramarine Space Captain",
+    "faction": "Ultramarines",
+    "model_type": "HQ",
+    "status": "parade_ready",
+    "notes": "",
+    "id": "91dfe6ea-b8bd-4f98-9a67-25ffc1e6afcf",
+    "created_at": "2025-05-24T09:37:04.729248",
+    "updated_at": "2025-05-24T09:37:04.729259"
+  },
+  {
+    "name": "Goblin Shaman",
+    "faction": "Gloomspite Gitz",
+    "model_type": "Hero",
+    "status": "game_ready",
+    "notes": "",
+    "id": "78030491-0a8d-47b4-9711-9ddb779c9451",
+    "created_at": "2025-05-24T09:37:31.980429",
+    "updated_at": "2025-05-24T09:37:31.980454"
+  }
+]
