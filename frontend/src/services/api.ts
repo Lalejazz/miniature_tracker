@@ -5,7 +5,7 @@
 import { 
   Miniature, MiniatureCreate, MiniatureUpdate, 
   User, UserCreate, LoginRequest, Token, 
-  StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
+  StatusLogEntryCreate, StatusLogEntryUpdate,
   PasswordResetRequest, PasswordReset
 } from '../types';
 
