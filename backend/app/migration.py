@@ -48,21 +48,13 @@ async def migrate_users_to_database() -> bool:
             # Convert to UserInDB model
             user_in_db = UserInDB(**user_data)
             
-            # Create UserCreate object (without password since we have hashed_password)
-            user_create = UserCreate(
-                email=user_in_db.email,
-                username=user_in_db.username,
-                password="dummy"  # Will be replaced with hashed_password
-            )
-            
             # Check if user already exists in database
             existing_user = await pg_db.get_user_by_email(user_in_db.email)
             if existing_user:
                 print(f"⚠️  User {user_in_db.email} already exists in database, skipping")
                 continue
             
-            # Create user in PostgreSQL (we'll need to handle the hashed password separately)
-            # For now, we'll use the file database approach but with PostgreSQL
+            # Insert user directly into PostgreSQL with existing hashed password
             async with pg_db._pool.acquire() as conn:
                 await conn.execute("""
                     INSERT INTO users (id, email, username, hashed_password, is_active, created_at, updated_at)

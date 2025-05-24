@@ -1,10 +1,10 @@
-"""Database abstraction layer for persistent storage."""
+"""Database abstraction layer for miniature tracker."""
 
 import json
 import os
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 
 try:
@@ -13,7 +13,7 @@ except ImportError:
     asyncpg = None
 
 from app.auth_models import User, UserCreate, UserInDB, UserUpdate
-from app.models import PasswordResetToken
+from app.models import PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry
 
 
 class DatabaseInterface(ABC):
@@ -47,6 +47,36 @@ class DatabaseInterface(ABC):
     @abstractmethod
     async def get_all_users(self) -> List[User]:
         """Get all users."""
+        pass
+    
+    @abstractmethod
+    async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
+        """Get all miniatures for a user."""
+        pass
+    
+    @abstractmethod
+    async def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Get a specific miniature by ID for a user."""
+        pass
+    
+    @abstractmethod
+    async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
+        """Create a new miniature."""
+        pass
+    
+    @abstractmethod
+    async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update an existing miniature."""
+        pass
+    
+    @abstractmethod
+    async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
+        """Delete a miniature."""
+        pass
+    
+    @abstractmethod
+    async def add_status_log_entry(self, miniature_id: UUID, from_status: Optional[str], to_status: str, notes: Optional[str], user_id: UUID) -> Optional[Miniature]:
+        """Add a status log entry to a miniature."""
         pass
 
 
@@ -93,10 +123,34 @@ class PostgreSQLDatabase(DatabaseInterface):
             )
         """)
         
+        # Create miniatures table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS miniatures (
+                id UUID PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
+        # Create status log entries table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS status_log_entries (
+                id UUID PRIMARY KEY,
+                miniature_id UUID REFERENCES miniatures(id) ON DELETE CASCADE,
+                from_status VARCHAR(255),
+                to_status VARCHAR(255) NOT NULL,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
         # Create indexes
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_miniatures_name ON miniatures(name)")
     
     async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
         """Get user by email."""
@@ -199,6 +253,105 @@ class PostgreSQLDatabase(DatabaseInterface):
                 "SELECT id, email, username, is_active, created_at, updated_at FROM users ORDER BY created_at"
             )
             return [User(**dict(row)) for row in rows]
+    
+    async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
+        """Get all miniatures for a user."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, name, description, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
+                user_id
+            )
+            return [Miniature(**dict(row)) for row in rows]
+    
+    async def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Get a specific miniature by ID for a user."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, name, description, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
+                miniature_id, user_id
+            )
+            if row:
+                return Miniature(**dict(row))
+        return None
+    
+    async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
+        """Create a new miniature."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "INSERT INTO miniatures (name, description, user_id) VALUES ($1, $2, $3) RETURNING id, name, description, created_at, updated_at",
+                miniature.name, miniature.description, user_id
+            )
+            if row:
+                return Miniature(**dict(row))
+        return None
+    
+    async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update an existing miniature."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        update_data = updates.model_dump(exclude_unset=True)
+        if not update_data:
+            return await self.get_miniature(miniature_id, user_id)
+        
+        # Build dynamic query
+        set_clauses = []
+        values = []
+        for i, (key, value) in enumerate(update_data.items(), 1):
+            set_clauses.append(f"{key} = ${i}")
+            values.append(value)
+        
+        values.append(datetime.utcnow())  # updated_at
+        values.append(miniature_id)  # WHERE condition
+        values.append(user_id)  # WHERE condition
+        
+        query = f"""
+            UPDATE miniatures 
+            SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
+            WHERE id = ${len(values)} AND user_id = ${len(values)-1}
+            RETURNING id, name, description, created_at, updated_at
+        """
+        
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(query, *values)
+            if row:
+                return Miniature(**dict(row))
+        return None
+    
+    async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
+        """Delete a miniature."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM miniatures WHERE id = $1 AND user_id = $2",
+                miniature_id, user_id
+            )
+            return result.rowcount > 0
+    
+    async def add_status_log_entry(self, miniature_id: UUID, from_status: Optional[str], to_status: str, notes: Optional[str], user_id: UUID) -> Optional[Miniature]:
+        """Add a status log entry to a miniature."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "INSERT INTO status_log_entries (miniature_id, from_status, to_status, notes, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, miniature_id, from_status, to_status, notes, created_at",
+                miniature_id, from_status, to_status, notes, user_id
+            )
+            if row:
+                return Miniature(**dict(row))
+        return None
 
 
 class FileDatabase(DatabaseInterface):
@@ -297,6 +450,108 @@ class FileDatabase(DatabaseInterface):
             user_dict.pop("hashed_password", None)
             user_list.append(User(**user_dict))
         return user_list
+    
+    async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
+        """Get all miniatures for a user."""
+        users = self._load_users()
+        miniature_list = []
+        for user_data in users:
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                miniature_list.extend(miniature_data)
+        return [Miniature(**data) for data in miniature_list]
+    
+    async def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Get a specific miniature by ID for a user."""
+        users = self._load_users()
+        for user_data in users:
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                for data in miniature_data:
+                    if data.get("id") == str(miniature_id):
+                        return Miniature(**data)
+        return None
+    
+    async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
+        """Create a new miniature."""
+        users = self._load_users()
+        
+        # Check if user exists
+        if any(u.get("id") == str(user_id) for u in users):
+            miniature_data = {
+                "id": str(miniature.id),
+                "name": miniature.name,
+                "description": miniature.description,
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            user_data = next(u for u in users if u.get("id") == str(user_id))
+            if user_data.get("miniatures"):
+                user_data["miniatures"].append(miniature_data)
+            else:
+                user_data["miniatures"] = [miniature_data]
+            self._save_users(users)
+            return Miniature(**miniature_data)
+        raise ValueError("User not found")
+    
+    async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update an existing miniature."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                for j, data in enumerate(miniature_data):
+                    if data.get("id") == str(miniature_id):
+                        update_data = updates.model_dump(exclude_unset=True)
+                        if update_data:
+                            data.update(update_data)
+                            data["updated_at"] = datetime.utcnow().isoformat()
+                            miniature_data[j] = data
+                            user_data["updated_at"] = datetime.utcnow().isoformat()
+                            users[i] = user_data
+                            self._save_users(users)
+                        
+                        return Miniature(**data)
+        return None
+    
+    async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
+        """Delete a miniature."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                for j, data in enumerate(miniature_data):
+                    if data.get("id") == str(miniature_id):
+                        del miniature_data[j]
+                        user_data["updated_at"] = datetime.utcnow().isoformat()
+                        users[i] = user_data
+                        self._save_users(users)
+                        return True
+        return False
+    
+    async def add_status_log_entry(self, miniature_id: UUID, from_status: Optional[str], to_status: str, notes: Optional[str], user_id: UUID) -> Optional[Miniature]:
+        """Add a status log entry to a miniature."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                status_log_entries = user_data.get("status_log_entries", [])
+                status_log_entry = {
+                    "id": str(uuid4()),
+                    "from_status": from_status,
+                    "to_status": to_status,
+                    "notes": notes,
+                    "created_at": datetime.utcnow().isoformat()
+                }
+                status_log_entries.append(status_log_entry)
+                user_data["status_log_entries"] = status_log_entries
+                user_data["updated_at"] = datetime.utcnow().isoformat()
+                users[i] = user_data
+                self._save_users(users)
+                return Miniature(**status_log_entry)
+        return None
 
 
 def get_database() -> DatabaseInterface:

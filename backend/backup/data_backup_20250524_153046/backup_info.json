@@ -1,0 +1,10 @@
+{
+  "timestamp": "20250524_153046",
+  "created_at": "2025-05-24T15:30:46.403090",
+  "files": [
+    "data/users.json",
+    "data/miniatures.json",
+    "data/reset_tokens.json"
+  ],
+  "backup_name": "data_backup_20250524_153046"
+}

@@ -1,6 +1,7 @@
 """CRUD operations for miniature data."""
 
 import json
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -11,13 +12,15 @@ from app.models import (
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
     PasswordResetToken
 )
+from app.database import get_database
 
 
 class MiniatureDB:
-    """Simple JSON file-based database for miniatures."""
+    """Miniature database operations using database abstraction layer for users + file storage for miniatures."""
     
     def __init__(self, db_file: str = "data/miniatures.json", reset_tokens_file: str = "data/reset_tokens.json") -> None:
         """Initialize the database with JSON file paths."""
+        self.db = get_database()
         self.db_file = Path(db_file)
         self.reset_tokens_file = Path(reset_tokens_file)
         self.db_file.parent.mkdir(parents=True, exist_ok=True)
@@ -28,6 +31,10 @@ class MiniatureDB:
             self._save_data([])
         if not self.reset_tokens_file.exists():
             self._save_reset_tokens([])
+    
+    async def _ensure_db_initialized(self):
+        """Ensure database is initialized."""
+        await self.db.initialize()
     
     def _load_data(self) -> List[dict]:
         """Load miniatures data from JSON file."""
@@ -55,8 +62,18 @@ class MiniatureDB:
         with open(self.reset_tokens_file, 'w') as f:
             json.dump(tokens, f, indent=2, default=str)
     
+    async def _verify_user_exists(self, user_id: UUID) -> bool:
+        """Verify that the user exists in the database."""
+        await self._ensure_db_initialized()
+        user = await self.db.get_user_by_id(user_id)
+        return user is not None
+    
     def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
         """Get all miniatures for a user."""
+        # Verify user exists
+        if not asyncio.run(self._verify_user_exists(user_id)):
+            return []
+            
         data = self._load_data()
         user_miniatures = [
             item for item in data 
@@ -66,6 +83,10 @@ class MiniatureDB:
     
     def get_miniature(self, miniature_id: UUID, user_id: UUID) -> Optional[Miniature]:
         """Get a specific miniature by ID for a user."""
+        # Verify user exists
+        if not asyncio.run(self._verify_user_exists(user_id)):
+            return None
+            
         data = self._load_data()
         for item in data:
             if (item.get('id') == str(miniature_id) and 
@@ -75,6 +96,10 @@ class MiniatureDB:
     
     def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
         """Create a new miniature."""
+        # Verify user exists
+        if not asyncio.run(self._verify_user_exists(user_id)):
+            raise ValueError("User not found")
+            
         data = self._load_data()
         
         # Create new miniature with initial status log entry
