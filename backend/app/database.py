@@ -464,14 +464,19 @@ class PostgreSQLDatabase(DatabaseInterface):
                     set_clauses.append(f"{key} = ${i}")
                     values.append(value)
                 
+                # Add updated_at, miniature_id, and user_id to values
+                updated_at_index = len(values) + 1
+                miniature_id_index = len(values) + 2
+                user_id_index = len(values) + 3
+                
                 values.append(datetime.utcnow())  # updated_at
-                values.append(miniature_id)  # WHERE condition
-                values.append(user_id)  # WHERE condition
+                values.append(miniature_id)      # WHERE condition
+                values.append(user_id)           # WHERE condition
                 
                 query = f"""
                     UPDATE miniatures 
-                    SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
-                    WHERE id = ${len(values)} AND user_id = ${len(values)-1}
+                    SET {', '.join(set_clauses)}, updated_at = ${updated_at_index}
+                    WHERE id = ${miniature_id_index} AND user_id = ${user_id_index}
                     RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at
                 """
                 
