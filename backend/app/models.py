@@ -125,4 +125,95 @@ class Miniature(MiniatureBase):
     user_id: UUID  # Owner of this miniature
     status_history: List[StatusLogEntry] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now) 
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+# Player Discovery Models
+
+class GameType(str, Enum):
+    """Types of games players are interested in."""
+    COMPETITIVE = "competitive"
+    NARRATIVE = "narrative"
+    BOTH = "both"
+
+
+class Game(BaseModel):
+    """Model for a wargame/tabletop game."""
+    
+    model_config = ConfigDict(
+        json_encoders={
+            UUID: lambda v: str(v),
+        }
+    )
+    
+    id: UUID = Field(default_factory=uuid4)
+    name: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    is_active: bool = True
+
+
+class UserPreferencesCreate(BaseModel):
+    """Model for creating user preferences."""
+    
+    games: List[UUID] = Field(description="List of game IDs the user plays")
+    postcode: str = Field(min_length=3, max_length=20, description="User's postcode")
+    game_types: List[GameType] = Field(description="Types of games user is interested in")
+    bio: str = Field(max_length=160, description="Short bio about the user")
+
+
+class UserPreferencesUpdate(BaseModel):
+    """Model for updating user preferences."""
+    
+    games: Optional[List[UUID]] = None
+    postcode: Optional[str] = Field(None, min_length=3, max_length=20)
+    game_types: Optional[List[GameType]] = None
+    bio: Optional[str] = Field(None, max_length=160)
+
+
+class UserPreferences(BaseModel):
+    """Model for user preferences."""
+    
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            UUID: lambda v: str(v),
+        }
+    )
+    
+    id: UUID = Field(default_factory=uuid4)
+    user_id: UUID
+    games: List[UUID] = Field(description="List of game IDs the user plays")
+    postcode: str = Field(description="User's postcode")
+    game_types: List[GameType] = Field(description="Types of games user is interested in")
+    bio: str = Field(description="Short bio about the user")
+    latitude: Optional[float] = Field(None, description="Calculated latitude from postcode")
+    longitude: Optional[float] = Field(None, description="Calculated longitude from postcode")
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class PlayerSearchRequest(BaseModel):
+    """Model for player search request."""
+    
+    games: Optional[List[UUID]] = Field(None, description="Filter by specific games")
+    game_types: Optional[List[GameType]] = Field(None, description="Filter by game types")
+    max_distance_km: int = Field(default=50, ge=1, le=500, description="Maximum distance in kilometers")
+
+
+class PlayerSearchResult(BaseModel):
+    """Model for player search result."""
+    
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            UUID: lambda v: str(v),
+        }
+    )
+    
+    user_id: UUID
+    username: str
+    games: List[Game] = Field(description="Games the player plays")
+    game_types: List[GameType] = Field(description="Types of games player is interested in")
+    bio: str
+    distance_km: float = Field(description="Distance from searcher in kilometers")
+    postcode: str = Field(description="Player's postcode (for privacy, might be partial)") 

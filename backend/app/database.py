@@ -13,7 +13,11 @@ except ImportError:
     asyncpg = None
 
 from app.auth_models import User, UserCreate, UserInDB, UserUpdate
-from app.models import PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry
+from app.models import (
+    PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry,
+    Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
+    PlayerSearchRequest, PlayerSearchResult, GameType
+)
 
 
 class DatabaseInterface(ABC):
@@ -77,6 +81,38 @@ class DatabaseInterface(ABC):
     @abstractmethod
     async def add_status_log_entry(self, miniature_id: UUID, from_status: Optional[str], to_status: str, notes: Optional[str], user_id: UUID) -> Optional[Miniature]:
         """Add a status log entry to a miniature."""
+        pass
+
+    # Game management methods
+    @abstractmethod
+    async def get_all_games(self) -> List[Game]:
+        """Get all available games."""
+        pass
+
+    @abstractmethod
+    async def create_game(self, name: str, description: Optional[str] = None) -> Game:
+        """Create a new game."""
+        pass
+
+    # User preferences methods
+    @abstractmethod
+    async def get_user_preferences(self, user_id: UUID) -> Optional[UserPreferences]:
+        """Get user preferences by user ID."""
+        pass
+
+    @abstractmethod
+    async def create_user_preferences(self, user_id: UUID, preferences: UserPreferencesCreate) -> UserPreferences:
+        """Create user preferences."""
+        pass
+
+    @abstractmethod
+    async def update_user_preferences(self, user_id: UUID, updates: UserPreferencesUpdate) -> Optional[UserPreferences]:
+        """Update user preferences."""
+        pass
+
+    @abstractmethod
+    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
+        """Search for players based on criteria."""
         pass
 
 
@@ -186,11 +222,74 @@ class PostgreSQLDatabase(DatabaseInterface):
             )
         """)
         
+        # Create games table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS games (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(100) UNIQUE NOT NULL,
+                description TEXT,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
+        # Create user preferences table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+                games UUID[] DEFAULT '{}',
+                postcode VARCHAR(20) NOT NULL,
+                game_types TEXT[] DEFAULT '{}',
+                bio TEXT NOT NULL CHECK (length(bio) <= 160),
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
         # Create indexes
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_miniatures_name ON miniatures(name)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_postcode ON user_preferences(postcode)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_location ON user_preferences(latitude, longitude)")
+        
+        # Insert default games if none exist
+        game_count = await self._pool.fetchval("SELECT COUNT(*) FROM games")
+        if game_count == 0:
+            default_games = [
+                ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
+                ("Age of Sigmar", "Fantasy battles in the Mortal Realms"),
+                ("Kill Team", "Small-scale skirmish battles in the 40K universe"),
+                ("Warcry", "Fast-paced skirmish combat in Age of Sigmar"),
+                ("Bolt Action", "World War II historical wargaming"),
+                ("SAGA", "Dark Age skirmish gaming"),
+                ("Art de la Guerre", "Ancient and medieval warfare"),
+                ("Kings of War", "Mass fantasy battles"),
+                ("Flames of War", "World War II tank combat"),
+                ("X-Wing", "Star Wars space combat"),
+                ("Star Wars Legion", "Ground battles in the Star Wars universe"),
+                ("Infinity", "Sci-fi skirmish with anime aesthetics"),
+                ("Malifaux", "Gothic horror skirmish game"),
+                ("Guild Ball", "Fantasy sports meets skirmish gaming"),
+                ("Blood Bowl", "Fantasy football with violence"),
+                ("Necromunda", "Gang warfare in the underhive"),
+                ("Middle-earth Strategy Battle Game", "Battle in Tolkien's world"),
+                ("Battletech", "Giant robot combat"),
+                ("Dropzone Commander", "10mm sci-fi warfare"),
+                ("Warmachine/Hordes", "Steampunk fantasy battles")
+            ]
+            
+            for name, description in default_games:
+                await self._pool.execute(
+                    "INSERT INTO games (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
+                    name, description
+                )
         
         self._initialized = True
     
@@ -536,6 +635,188 @@ class PostgreSQLDatabase(DatabaseInterface):
                 # Return updated miniature
                 return await self.get_miniature(miniature_id, user_id)
 
+    # Game management methods
+    async def get_all_games(self) -> List[Game]:
+        """Get all available games."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, name, description, is_active, created_at, updated_at FROM games WHERE is_active = TRUE ORDER BY name"
+            )
+            return [Game(**dict(row)) for row in rows]
+    
+    async def create_game(self, name: str, description: Optional[str] = None) -> Game:
+        """Create a new game."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        game_id = uuid4()
+        async with self._pool.acquire() as conn:
+            try:
+                row = await conn.fetchrow(
+                    "INSERT INTO games (id, name, description) VALUES ($1, $2, $3) RETURNING id, name, description, is_active, created_at, updated_at",
+                    game_id, name, description
+                )
+                return Game(**dict(row))
+            except Exception as e:
+                if "unique" in str(e).lower():
+                    raise ValueError("Game with this name already exists")
+                raise
+
+    # User preferences methods
+    async def get_user_preferences(self, user_id: UUID) -> Optional[UserPreferences]:
+        """Get user preferences by user ID."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, user_id, games, postcode, game_types, bio, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
+                user_id
+            )
+            if row:
+                return UserPreferences(**dict(row))
+        return None
+    
+    async def create_user_preferences(self, user_id: UUID, preferences: UserPreferencesCreate) -> UserPreferences:
+        """Create user preferences."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        preferences_id = uuid4()
+        async with self._pool.acquire() as conn:
+            try:
+                row = await conn.fetchrow(
+                    """INSERT INTO user_preferences (id, user_id, games, postcode, game_types, bio) 
+                       VALUES ($1, $2, $3, $4, $5, $6) 
+                       RETURNING id, user_id, games, postcode, game_types, bio, latitude, longitude, created_at, updated_at""",
+                    preferences_id, user_id, [str(g) for g in preferences.games], preferences.postcode, 
+                    [gt.value for gt in preferences.game_types], preferences.bio
+                )
+                return UserPreferences(**dict(row))
+            except Exception as e:
+                if "unique" in str(e).lower():
+                    raise ValueError("User preferences already exist")
+                raise
+    
+    async def update_user_preferences(self, user_id: UUID, updates: UserPreferencesUpdate) -> Optional[UserPreferences]:
+        """Update user preferences."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+            
+        update_data = updates.model_dump(exclude_unset=True)
+        if not update_data:
+            return await self.get_user_preferences(user_id)
+        
+        # Convert data types for PostgreSQL
+        if 'games' in update_data and update_data['games'] is not None:
+            update_data['games'] = [str(g) for g in update_data['games']]
+        if 'game_types' in update_data and update_data['game_types'] is not None:
+            update_data['game_types'] = [gt.value for gt in update_data['game_types']]
+        
+        async with self._pool.acquire() as conn:
+            # Build dynamic query
+            set_clauses = []
+            values = []
+            for i, (key, value) in enumerate(update_data.items(), 1):
+                set_clauses.append(f"{key} = ${i}")
+                values.append(value)
+            
+            values.append(datetime.utcnow())  # updated_at
+            values.append(user_id)           # WHERE condition
+            
+            query = f"""
+                UPDATE user_preferences 
+                SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
+                WHERE user_id = ${len(values)}
+                RETURNING id, user_id, games, postcode, game_types, bio, latitude, longitude, created_at, updated_at
+            """
+            
+            row = await conn.fetchrow(query, *values)
+            if row:
+                return UserPreferences(**dict(row))
+        return None
+    
+    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
+        """Search for players based on criteria."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        # Get searcher's location for distance calculation
+        async with self._pool.acquire() as conn:
+            searcher_row = await conn.fetchrow(
+                "SELECT latitude, longitude FROM user_preferences WHERE user_id = $1",
+                searcher_user_id
+            )
+            if not searcher_row or not searcher_row['latitude'] or not searcher_row['longitude']:
+                return []  # Searcher has no location set
+            
+            searcher_lat = float(searcher_row['latitude'])
+            searcher_lon = float(searcher_row['longitude'])
+            
+            # Build search query with filters
+            where_clauses = ["up.user_id != $1", "up.latitude IS NOT NULL", "up.longitude IS NOT NULL"]
+            params = [searcher_user_id]
+            param_count = 1
+            
+            # Filter by games if specified
+            if search_request.games:
+                param_count += 1
+                where_clauses.append(f"up.games && ${param_count}")
+                params.append([str(g) for g in search_request.games])
+            
+            # Filter by game types if specified
+            if search_request.game_types:
+                param_count += 1
+                where_clauses.append(f"up.game_types && ${param_count}")
+                params.append([gt.value for gt in search_request.game_types])
+            
+            # Distance calculation using Haversine formula
+            distance_formula = f"""
+                (6371 * acos(
+                    cos(radians({searcher_lat})) * cos(radians(up.latitude)) *
+                    cos(radians(up.longitude) - radians({searcher_lon})) +
+                    sin(radians({searcher_lat})) * sin(radians(up.latitude))
+                ))
+            """
+            
+            query = f"""
+                SELECT u.id as user_id, u.username, up.games, up.game_types, up.bio, up.postcode,
+                       {distance_formula} as distance_km
+                FROM user_preferences up
+                JOIN users u ON up.user_id = u.id
+                WHERE {' AND '.join(where_clauses)}
+                  AND {distance_formula} <= {search_request.max_distance_km}
+                ORDER BY distance_km
+                LIMIT 50
+            """
+            
+            rows = await conn.fetch(query, *params)
+            
+            # Convert to results
+            results = []
+            for row in rows:
+                # Get game details
+                game_rows = await conn.fetch(
+                    "SELECT id, name, description, is_active FROM games WHERE id = ANY($1)",
+                    row['games'] if row['games'] else []
+                )
+                games = [Game(**dict(game_row)) for game_row in game_rows]
+                
+                results.append(PlayerSearchResult(
+                    user_id=row['user_id'],
+                    username=row['username'],
+                    games=games,
+                    game_types=[GameType(gt) for gt in row['game_types']] if row['game_types'] else [],
+                    bio=row['bio'],
+                    distance_km=round(float(row['distance_km']), 2),
+                    postcode=row['postcode'][:4] + "***"  # Partial postcode for privacy
+                ))
+            
+            return results
+
 
 class FileDatabase(DatabaseInterface):
     """File-based database implementation (for development)."""
@@ -735,6 +1016,51 @@ class FileDatabase(DatabaseInterface):
                 self._save_users(users)
                 return Miniature(**status_log_entry)
         return None
+
+    # Game management methods
+    async def get_all_games(self) -> List[Game]:
+        """Get all available games."""
+        # For file database, return empty list or hardcoded games
+        return []
+    
+    async def create_game(self, name: str, description: Optional[str] = None) -> Game:
+        """Create a new game."""
+        # For file database, create a simple game object
+        game = Game(
+            id=uuid4(),
+            name=name,
+            description=description,
+            is_active=True
+        )
+        return game
+
+    # User preferences methods
+    async def get_user_preferences(self, user_id: UUID) -> Optional[UserPreferences]:
+        """Get user preferences by user ID."""
+        # For file database, return None (not implemented)
+        return None
+    
+    async def create_user_preferences(self, user_id: UUID, preferences: UserPreferencesCreate) -> UserPreferences:
+        """Create user preferences."""
+        # For file database, return a simple UserPreferences object
+        return UserPreferences(
+            id=uuid4(),
+            user_id=user_id,
+            games=preferences.games,
+            postcode=preferences.postcode,
+            game_types=preferences.game_types,
+            bio=preferences.bio
+        )
+    
+    async def update_user_preferences(self, user_id: UUID, updates: UserPreferencesUpdate) -> Optional[UserPreferences]:
+        """Update user preferences."""
+        # For file database, return None (not implemented)
+        return None
+    
+    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
+        """Search for players based on criteria."""
+        # For file database, return empty list
+        return []
 
 
 # Global database instance to ensure singleton pattern
