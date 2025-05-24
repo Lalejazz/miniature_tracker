@@ -155,7 +155,7 @@ class UserPreferencesCreate(BaseModel):
     """Model for creating user preferences."""
     
     games: List[UUID] = Field(description="List of game IDs the user plays")
-    postcode: str = Field(min_length=3, max_length=20, description="User's postcode")
+    location: str = Field(min_length=3, max_length=100, description="User's location (address, postcode, city, etc.)")
     game_type: GameType = Field(description="Type of games user is interested in")
     bio: Optional[str] = Field(None, max_length=160, description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
@@ -165,7 +165,7 @@ class UserPreferencesUpdate(BaseModel):
     """Model for updating user preferences."""
     
     games: Optional[List[UUID]] = None
-    postcode: Optional[str] = Field(None, min_length=3, max_length=20)
+    location: Optional[str] = Field(None, min_length=3, max_length=100)
     game_type: Optional[GameType] = None
     bio: Optional[str] = Field(None, max_length=160)
     show_email: Optional[bool] = None
@@ -184,12 +184,12 @@ class UserPreferences(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     user_id: UUID
     games: List[UUID] = Field(description="List of game IDs the user plays")
-    postcode: str = Field(description="User's postcode")
+    location: str = Field(description="User's location")
     game_type: GameType = Field(description="Type of games user is interested in")
     bio: Optional[str] = Field(description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
-    latitude: Optional[float] = Field(None, description="Calculated latitude from postcode")
-    longitude: Optional[float] = Field(None, description="Calculated longitude from postcode")
+    latitude: Optional[float] = Field(None, description="Calculated latitude from location")
+    longitude: Optional[float] = Field(None, description="Calculated longitude from location")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -219,4 +219,4 @@ class PlayerSearchResult(BaseModel):
     game_type: GameType = Field(description="Type of games player is interested in")
     bio: Optional[str]
     distance_km: float = Field(description="Distance from searcher in kilometers")
-    postcode: str = Field(description="Player's postcode (for privacy, might be partial)") 
+    location: str = Field(description="Player's location (for privacy, might be partial)") 

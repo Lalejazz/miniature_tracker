@@ -21,7 +21,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
   const [games, setGames] = useState<Game[]>([]);
   const [formData, setFormData] = useState<UserPreferencesCreate>({
     games: existingPreferences?.games || [],
-    postcode: existingPreferences?.postcode || '',
+    location: existingPreferences?.location || '',
     game_type: existingPreferences?.game_type || 'competitive' as GameType,
     bio: existingPreferences?.bio || '',
     show_email: existingPreferences?.show_email || false
@@ -82,7 +82,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
     }));
   };
 
-  const isFormValid = formData.games.length > 0 && formData.postcode.trim().length > 0;
+  const isFormValid = formData.games.length > 0 && formData.location.trim().length > 0;
 
   if (loadingGames) {
     return <div className="loading">Loading games...</div>;
@@ -96,17 +96,17 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="postcode">Postcode *</label>
+          <label htmlFor="location">Location *</label>
           <input
             type="text"
-            id="postcode"
-            value={formData.postcode}
-            onChange={(e) => setFormData(prev => ({ ...prev, postcode: e.target.value }))}
-            placeholder="Enter your postcode"
+            id="location"
+            value={formData.location}
+            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+            placeholder="Enter your city, postcode, or address"
             required
-            maxLength={20}
+            maxLength={100}
           />
-          <small>This helps us find players near you</small>
+          <small>Enter your city, postcode, or address to help us find players near you</small>
         </div>
 
         <div className="form-group">

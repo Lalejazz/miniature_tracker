@@ -18,6 +18,7 @@ from app.models import (
     Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
     PlayerSearchRequest, PlayerSearchResult, GameType
 )
+from app.geocoding import GeocodingService
 
 
 class DatabaseInterface(ABC):
@@ -243,7 +244,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
                 games UUID[] DEFAULT '{}',
-                postcode VARCHAR(20) NOT NULL,
+                location VARCHAR(100),
                 game_type TEXT,
                 bio TEXT CHECK (length(bio) <= 160),
                 show_email BOOLEAN DEFAULT FALSE,
@@ -254,13 +255,33 @@ class PostgreSQLDatabase(DatabaseInterface):
             )
         """)
         
+        # Migrate from postcode to location field
+        try:
+            # Add location column if it doesn't exist
+            await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS location VARCHAR(100)")
+            
+            # Copy existing postcode data to location if location is null
+            await self._pool.execute("""
+                UPDATE user_preferences 
+                SET location = postcode 
+                WHERE location IS NULL AND postcode IS NOT NULL
+            """)
+            
+            # Make location NOT NULL once data is migrated
+            rows_with_null_location = await self._pool.fetchval(
+                "SELECT COUNT(*) FROM user_preferences WHERE location IS NULL"
+            )
+            if rows_with_null_location == 0:
+                await self._pool.execute("ALTER TABLE user_preferences ALTER COLUMN location SET NOT NULL")
+        except Exception as e:
+            print(f"Migration warning: {e}")  # Log but don't fail
+        
         # Create indexes
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_miniatures_name ON miniatures(name)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)")
-        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_postcode ON user_preferences(postcode)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_location ON user_preferences(latitude, longitude)")
         
         self._initialized = True
@@ -645,7 +666,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, user_id, games, postcode, game_type, bio, show_email, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
+                "SELECT id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
                 user_id
             )
             if row:
@@ -658,14 +679,21 @@ class PostgreSQLDatabase(DatabaseInterface):
             raise RuntimeError("Database not initialized")
         
         preferences_id = uuid4()
+        
+        # Geocode address to get coordinates
+        coordinates = await GeocodingService.get_coordinates_from_address(preferences_create.location)
+        latitude = coordinates[0] if coordinates else None
+        longitude = coordinates[1] if coordinates else None
+        
         async with self._pool.acquire() as conn:
             try:
                 row = await conn.fetchrow(
-                    """INSERT INTO user_preferences (id, user_id, games, postcode, game_type, bio, show_email) 
-                       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-                       RETURNING id, user_id, games, postcode, game_type, bio, show_email, latitude, longitude, created_at, updated_at""",
-                    preferences_id, user_id, [str(g) for g in preferences_create.games], preferences_create.postcode, 
-                    preferences_create.game_type, preferences_create.bio, preferences_create.show_email
+                    """INSERT INTO user_preferences (id, user_id, games, location, game_type, bio, show_email, latitude, longitude) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+                       RETURNING id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at""",
+                    preferences_id, user_id, [str(g) for g in preferences_create.games], preferences_create.location, 
+                    preferences_create.game_type, preferences_create.bio, preferences_create.show_email,
+                    latitude, longitude
                 )
                 return UserPreferences(**dict(row))
             except Exception as e:
@@ -688,6 +716,16 @@ class PostgreSQLDatabase(DatabaseInterface):
         if 'game_type' in update_data and update_data['game_type'] is not None:
             update_data['game_type'] = update_data['game_type']
         
+        # Geocode location if it changed
+        if 'location' in update_data and update_data['location'] is not None:
+            coordinates = await GeocodingService.get_coordinates_from_address(update_data['location'])
+            if coordinates:
+                update_data['latitude'] = coordinates[0]
+                update_data['longitude'] = coordinates[1]
+            else:
+                update_data['latitude'] = None
+                update_data['longitude'] = None
+        
         async with self._pool.acquire() as conn:
             # Build dynamic query
             set_clauses = []
@@ -703,7 +741,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 UPDATE user_preferences 
                 SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
                 WHERE user_id = ${len(values)}
-                RETURNING id, user_id, games, postcode, game_type, bio, show_email, latitude, longitude, created_at, updated_at
+                RETURNING id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at
             """
             
             row = await conn.fetchrow(query, *values)
@@ -755,7 +793,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             """
             
             query = f"""
-                SELECT u.id as user_id, u.username, u.email, up.games, up.game_type, up.bio, up.show_email, up.postcode,
+                SELECT u.id as user_id, u.username, u.email, up.games, up.game_type, up.bio, up.show_email, up.location,
                        {distance_formula} as distance_km
                 FROM user_preferences up
                 JOIN users u ON up.user_id = u.id
@@ -785,7 +823,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     game_type=GameType(row['game_type']) if row['game_type'] else GameType.COMPETITIVE,
                     bio=row['bio'],
                     distance_km=round(float(row['distance_km']), 2),
-                    postcode=row['postcode'][:4] + "***"  # Partial postcode for privacy
+                    location=row['location'][:10] + "***" if len(row['location']) > 10 else row['location']  # Partial location for privacy
                 ))
             
             return results
@@ -1130,7 +1168,7 @@ class FileDatabase(DatabaseInterface):
             id=preference_id,
             user_id=user_id,
             games=preferences_create.games,
-            postcode=preferences_create.postcode,
+            location=preferences_create.location,
             game_type=preferences_create.game_type,
             bio=preferences_create.bio,
             show_email=preferences_create.show_email

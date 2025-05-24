@@ -80,7 +80,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
       <div className="player-search no-preferences">
         <h2>Find Players Near You</h2>
         <p>You need to set up your gaming preferences first before you can search for other players.</p>
-        <p>Please go to your preferences and add your postcode, games you play, and other details.</p>
+        <p>Please go to your preferences and add your location, games you play, and other details.</p>
       </div>
     );
   }
@@ -212,7 +212,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                     </div>
                   )}
                   <div className="player-location">
-                    <strong>Area:</strong> {player.postcode}
+                    <strong>Area:</strong> {player.location}
                   </div>
                 </div>
               </div>

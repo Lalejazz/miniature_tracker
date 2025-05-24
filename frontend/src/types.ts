@@ -161,7 +161,7 @@ export interface Game {
 
 export interface UserPreferencesCreate {
   games: string[];
-  postcode: string;
+  location: string;
   game_type: GameType;
   bio?: string;
   show_email?: boolean;
@@ -169,7 +169,7 @@ export interface UserPreferencesCreate {
 
 export interface UserPreferencesUpdate {
   games?: string[];
-  postcode?: string;
+  location?: string;
   game_type?: GameType;
   bio?: string;
   show_email?: boolean;
@@ -179,7 +179,7 @@ export interface UserPreferences {
   id: string;
   user_id: string;
   games: string[];
-  postcode: string;
+  location: string;
   game_type: GameType;
   bio?: string;
   show_email: boolean;
@@ -203,7 +203,7 @@ export interface PlayerSearchResult {
   game_type: GameType;
   bio?: string;
   distance_km: number;
-  postcode: string;
+  location: string;
 }
 
 export const GAME_TYPE_LABELS = {

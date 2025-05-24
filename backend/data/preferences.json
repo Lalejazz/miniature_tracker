@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "id": "e425eaac-3e01-47fc-804b-f5ae9dd4d782",
+    "user_id": "9f11ac2e-7770-437a-a41f-dcf6e4526db0",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "731094be-292f-4086-9537-4c097c236c14"
+    ],
+    "location": "Berlin Kreuzberg, Germany",
+    "game_type": "competitive",
+    "bio": "Love tactical 40K games in Berlin!",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-24 21:49:07.723969",
+    "updated_at": "2025-05-24T20:52:23.090679"
+  },
+  {
+    "id": "3ce80671-541b-4a95-ab91-38738f2a747c",
+    "user_id": "9dd74358-a6ed-47c9-8fca-b2be4f13c446",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "e883ee04-2727-460f-9e84-0e50938a173b"
+    ],
+    "location": "Berlin Charlottenburg, Germany",
+    "game_type": "narrative",
+    "bio": "Enjoy narrative campaigns and 40K lore!",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-24 21:49:25.666001",
+    "updated_at": "2025-05-24 21:49:25.666004"
+  }
+]

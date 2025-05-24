@@ -25,5 +25,23 @@
     "created_at": "2025-05-24 09:49:16.152497",
     "updated_at": "2025-05-24 09:49:16.152501",
     "hashed_password": "$2b$12$3veYfWkJCmVNJ4yxH2pK1OBmFF72dRMtgUdTcK9A6ndMZF3pDYuZi"
+  },
+  {
+    "email": "berlin1@test.com",
+    "username": "berlinplayer1",
+    "is_active": true,
+    "id": "9f11ac2e-7770-437a-a41f-dcf6e4526db0",
+    "created_at": "2025-05-24 20:48:25.643854",
+    "updated_at": "2025-05-24 20:48:25.643857",
+    "hashed_password": "$2b$12$V5QA2FE8tTVnqOBOLkN1be/gWkK.v.Be1tljvNab9cJk67fw4vzUm"
+  },
+  {
+    "email": "berlin2@test.com",
+    "username": "berlinplayer2",
+    "is_active": true,
+    "id": "9dd74358-a6ed-47c9-8fca-b2be4f13c446",
+    "created_at": "2025-05-24 20:48:32.454036",
+    "updated_at": "2025-05-24 20:48:32.454038",
+    "hashed_password": "$2b$12$uniRrHxqx9HdHfEk5LmAR.hMor8GMC2YEwCsXVWafksNBUYIpN5we"
   }
 ]
