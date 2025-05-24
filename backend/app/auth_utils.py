@@ -11,9 +11,15 @@ from passlib.context import CryptContext
 from app.auth_models import TokenData
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", "dev-secret-change-in-production"))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Security check for production
+if SECRET_KEY == "dev-secret-change-in-production":
+    import warnings
+    warnings.warn("⚠️  Using default SECRET_KEY! Set JWT_SECRET_KEY environment variable in production!", 
+                  UserWarning, stacklevel=2)
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
