@@ -104,9 +104,12 @@ app.add_middleware(
 )
 
 # Serve static files (React build) in production
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static", "build")
 if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    # Mount React's static assets
+    react_static_dir = os.path.join(static_dir, "static")
+    if os.path.exists(react_static_dir):
+        app.mount("/static", StaticFiles(directory=react_static_dir), name="static")
     
     @app.get("/{full_path:path}")
     def serve_react_app(full_path: str):
