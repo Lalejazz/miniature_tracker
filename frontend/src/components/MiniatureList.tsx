@@ -7,6 +7,7 @@ interface MiniatureListProps {
   miniatures: Miniature[];
   onUpdate: (id: string, updates: Partial<Miniature>) => void;
   onDelete: (id: string) => void;
+  onMiniatureUpdate: (updatedMiniature: Miniature) => void;
 }
 
 type ViewMode = 'cards' | 'table';
@@ -22,7 +23,8 @@ interface FilterState {
 const MiniatureList: React.FC<MiniatureListProps> = ({
   miniatures,
   onUpdate,
-  onDelete
+  onDelete,
+  onMiniatureUpdate
 }) => {
   // View and interaction state
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
@@ -250,6 +252,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
               miniature={miniature}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              onMiniatureUpdate={onMiniatureUpdate}
             />
           ))}
         </div>
@@ -258,6 +261,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           miniatures={filteredAndSortedMiniatures}
           onUpdate={onUpdate}
           onDelete={onDelete}
+          onMiniatureUpdate={onMiniatureUpdate}
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSortChange}

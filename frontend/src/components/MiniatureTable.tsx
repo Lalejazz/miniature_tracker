@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Miniature, PaintingStatus, STATUS_INFO } from '../types';
+import StatusHistory from './StatusHistory';
 
 interface MiniatureTableProps {
   miniatures: Miniature[];
   onUpdate: (id: string, updates: Partial<Miniature>) => void;
   onDelete: (id: string) => void;
+  onMiniatureUpdate: (updatedMiniature: Miniature) => void;
   sortField: string;
   sortOrder: 'asc' | 'desc';
   onSort: (field: any) => void;
@@ -14,12 +16,14 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
   miniatures,
   onUpdate,
   onDelete,
+  onMiniatureUpdate,
   sortField,
   sortOrder,
   onSort
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editNotes, setEditNotes] = useState('');
+  const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -29,25 +33,64 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
     onUpdate(id, { status: newStatus });
   };
 
-  const startEditNotes = (miniature: Miniature) => {
-    setEditingId(miniature.id);
-    setEditNotes(miniature.notes || '');
+  const startEdit = (miniature: Miniature, field: string) => {
+    setEditingField({ id: miniature.id, field });
+    setEditValue(String(miniature[field as keyof Miniature] || ''));
   };
 
-  const saveNotes = (id: string) => {
-    onUpdate(id, { notes: editNotes });
-    setEditingId(null);
-    setEditNotes('');
+  const saveEdit = (id: string, field: string) => {
+    onUpdate(id, { [field]: editValue });
+    setEditingField(null);
+    setEditValue('');
   };
 
   const cancelEdit = () => {
-    setEditingId(null);
-    setEditNotes('');
+    setEditingField(null);
+    setEditValue('');
   };
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) return '↕️';
     return sortOrder === 'asc' ? '↑' : '↓';
+  };
+
+  const toggleHistoryExpansion = (id: string) => {
+    setExpandedHistoryId(expandedHistoryId === id ? null : id);
+  };
+
+  const renderEditableCell = (miniature: Miniature, field: string, maxLength?: number) => {
+    const isEditing = editingField?.id === miniature.id && editingField?.field === field;
+    const value = miniature[field as keyof Miniature] as string;
+
+    if (isEditing) {
+      return (
+        <div className="inline-edit">
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="inline-edit-input"
+            maxLength={maxLength}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                saveEdit(miniature.id, field);
+              } else if (e.key === 'Escape') {
+                cancelEdit();
+              }
+            }}
+            onBlur={() => saveEdit(miniature.id, field)}
+            autoFocus
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="editable-cell" onClick={() => startEdit(miniature, field)}>
+        <span className="cell-value">{value}</span>
+        <span className="edit-icon">✏️</span>
+      </div>
+    );
   };
 
   return (
@@ -98,99 +141,104 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
         <tbody>
           {miniatures.map(miniature => {
             const statusInfo = STATUS_INFO[miniature.status];
+            const isHistoryExpanded = expandedHistoryId === miniature.id;
             
             return (
-              <tr key={miniature.id}>
-                <td className="name-cell">
-                  <strong>{miniature.name}</strong>
-                </td>
-                <td>{miniature.faction}</td>
-                <td>{miniature.model_type}</td>
-                <td>
-                  <div className="status-cell">
-                    <select 
-                      value={miniature.status}
-                      onChange={(e) => handleStatusChange(miniature.id, e.target.value as PaintingStatus)}
-                      className="status-select-table"
-                      style={{ borderColor: statusInfo.color }}
-                    >
-                      {Object.entries(STATUS_INFO).map(([status, info]) => (
-                        <option key={status} value={status}>
-                          {info.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div 
-                      className="status-badge-small"
-                      style={{ backgroundColor: statusInfo.color }}
-                      title={statusInfo.description}
-                    />
-                  </div>
-                </td>
-                <td className="notes-cell">
-                  {editingId === miniature.id ? (
-                    <div className="notes-edit-table">
-                      <textarea
-                        value={editNotes}
-                        onChange={(e) => setEditNotes(e.target.value)}
-                        className="notes-textarea-table"
-                        rows={2}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.ctrlKey) {
-                            saveNotes(miniature.id);
-                          } else if (e.key === 'Escape') {
-                            cancelEdit();
-                          }
-                        }}
-                      />
-                      <div className="notes-buttons-table">
-                        <button 
-                          onClick={() => saveNotes(miniature.id)}
-                          className="save-button-small"
-                          title="Save (Ctrl+Enter)"
-                        >
-                          ✓
-                        </button>
-                        <button 
-                          onClick={cancelEdit}
-                          className="cancel-button-small"
-                          title="Cancel (Esc)"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="notes-display-table">
-                      <span className="notes-text">
-                        {miniature.notes || 'No notes'}
-                      </span>
-                      <button 
-                        onClick={() => startEditNotes(miniature)}
-                        className="edit-button-small"
-                        title="Edit notes"
+              <React.Fragment key={miniature.id}>
+                <tr>
+                  <td className="name-cell">
+                    {renderEditableCell(miniature, 'name', 200)}
+                  </td>
+                  <td>
+                    {renderEditableCell(miniature, 'faction', 100)}
+                  </td>
+                  <td>
+                    {renderEditableCell(miniature, 'model_type', 100)}
+                  </td>
+                  <td>
+                    <div className="status-cell">
+                      <select 
+                        value={miniature.status}
+                        onChange={(e) => handleStatusChange(miniature.id, e.target.value as PaintingStatus)}
+                        className="status-select-table"
+                        style={{ borderColor: statusInfo.color }}
                       >
-                        ✏️
-                      </button>
+                        {Object.entries(STATUS_INFO).map(([status, info]) => (
+                          <option key={status} value={status}>
+                            {info.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div 
+                        className="status-badge-small"
+                        style={{ backgroundColor: statusInfo.color }}
+                        title={statusInfo.description}
+                      />
                     </div>
-                  )}
-                </td>
-                <td className="date-cell">
-                  {formatDate(miniature.created_at)}
-                </td>
-                <td className="date-cell">
-                  {formatDate(miniature.updated_at)}
-                </td>
-                <td className="actions-cell">
-                  <button 
-                    onClick={() => onDelete(miniature.id)}
-                    className="delete-button-table"
-                    title="Delete miniature"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
+                  </td>
+                  <td className="notes-cell">
+                    {editingField?.id === miniature.id && editingField?.field === 'notes' ? (
+                      <div className="notes-edit-table">
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="notes-textarea-table"
+                          rows={2}
+                          maxLength={1000}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.ctrlKey) {
+                              saveEdit(miniature.id, 'notes');
+                            } else if (e.key === 'Escape') {
+                              cancelEdit();
+                            }
+                          }}
+                          onBlur={() => saveEdit(miniature.id, 'notes')}
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
+                      <div className="notes-display-table" onClick={() => startEdit(miniature, 'notes')}>
+                        <span className="notes-text">
+                          {miniature.notes || 'No notes'}
+                        </span>
+                        <span className="edit-icon">✏️</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="date-cell">
+                    {formatDate(miniature.created_at)}
+                  </td>
+                  <td className="date-cell">
+                    {formatDate(miniature.updated_at)}
+                  </td>
+                  <td className="actions-cell">
+                    <button 
+                      onClick={() => toggleHistoryExpansion(miniature.id)}
+                      className="history-button-table"
+                      title="View status history"
+                    >
+                      📋 ({miniature.status_history.length})
+                    </button>
+                    <button 
+                      onClick={() => onDelete(miniature.id)}
+                      className="delete-button-table"
+                      title="Delete miniature"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+                {isHistoryExpanded && (
+                  <tr className="history-row">
+                    <td colSpan={8} className="history-cell">
+                      <StatusHistory 
+                        miniature={miniature}
+                        onUpdate={onMiniatureUpdate}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             );
           })}
         </tbody>
