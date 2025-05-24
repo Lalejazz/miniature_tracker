@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
 import { Miniature, PaintingStatus, STATUS_INFO } from '../types';
+import EditMiniatureForm from './EditMiniatureForm';
+import StatusHistory from './StatusHistory';
 
 interface MiniatureCardProps {
   miniature: Miniature;
   onUpdate: (id: string, updates: Partial<Miniature>) => void;
   onDelete: (id: string) => void;
+  onMiniatureUpdate: (updatedMiniature: Miniature) => void;
 }
 
 const MiniatureCard: React.FC<MiniatureCardProps> = ({
   miniature,
   onUpdate,
-  onDelete
+  onDelete,
+  onMiniatureUpdate
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editNotes, setEditNotes] = useState(miniature.notes || '');
 
   const statusInfo = STATUS_INFO[miniature.status];
@@ -23,6 +28,11 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
 
   const handleNotesUpdate = () => {
     onUpdate(miniature.id, { notes: editNotes });
+    setIsEditingNotes(false);
+  };
+
+  const handleEditSave = (updatedMiniature: Miniature) => {
+    onMiniatureUpdate(updatedMiniature);
     setIsEditing(false);
   };
 
@@ -31,83 +41,107 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
   };
 
   return (
-    <div className="miniature-card">
-      <div className="card-header">
-        <h3>{miniature.name}</h3>
-        <button 
-          className="delete-button"
-          onClick={() => onDelete(miniature.id)}
-          title="Delete miniature"
-        >
-          🗑️
-        </button>
-      </div>
-
-      <div className="card-content">
-        <div className="info-row">
-          <span className="label">Faction:</span>
-          <span>{miniature.faction}</span>
-        </div>
-        
-        <div className="info-row">
-          <span className="label">Type:</span>
-          <span>{miniature.model_type}</span>
-        </div>
-
-        <div className="status-section">
-          <span className="label">Status:</span>
-          <select 
-            value={miniature.status}
-            onChange={(e) => handleStatusChange(e.target.value as PaintingStatus)}
-            className="status-select"
-            style={{ borderColor: statusInfo.color }}
-          >
-            {Object.entries(STATUS_INFO).map(([status, info]) => (
-              <option key={status} value={status}>
-                {info.label}
-              </option>
-            ))}
-          </select>
-          <div 
-            className="status-badge"
-            style={{ backgroundColor: statusInfo.color }}
-            title={statusInfo.description}
-          >
-            {statusInfo.label}
+    <>
+      <div className="miniature-card">
+        <div className="card-header">
+          <h3>{miniature.name}</h3>
+          <div className="card-actions">
+            <button 
+              className="edit-button"
+              onClick={() => setIsEditing(true)}
+              title="Edit miniature"
+            >
+              ✏️
+            </button>
+            <button 
+              className="delete-button"
+              onClick={() => onDelete(miniature.id)}
+              title="Delete miniature"
+            >
+              🗑️
+            </button>
           </div>
         </div>
 
-        <div className="notes-section">
-          <span className="label">Notes:</span>
-          {isEditing ? (
-            <div className="notes-edit">
-              <textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                placeholder="Add notes about this miniature..."
-                rows={3}
-              />
-              <div className="notes-buttons">
-                <button onClick={handleNotesUpdate}>Save</button>
-                <button onClick={() => setIsEditing(false)}>Cancel</button>
+        <div className="card-content">
+          <div className="info-row">
+            <span className="label">Faction:</span>
+            <span>{miniature.faction}</span>
+          </div>
+          
+          <div className="info-row">
+            <span className="label">Type:</span>
+            <span>{miniature.model_type}</span>
+          </div>
+
+          <div className="status-section">
+            <span className="label">Status:</span>
+            <select 
+              value={miniature.status}
+              onChange={(e) => handleStatusChange(e.target.value as PaintingStatus)}
+              className="status-select"
+              style={{ borderColor: statusInfo.color }}
+            >
+              {Object.entries(STATUS_INFO).map(([status, info]) => (
+                <option key={status} value={status}>
+                  {info.label}
+                </option>
+              ))}
+            </select>
+            <div 
+              className="status-badge"
+              style={{ backgroundColor: statusInfo.color }}
+              title={statusInfo.description}
+            >
+              {statusInfo.label}
+            </div>
+          </div>
+
+          <div className="notes-section">
+            <span className="label">Notes:</span>
+            {isEditingNotes ? (
+              <div className="notes-edit">
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Add notes about this miniature..."
+                  rows={3}
+                />
+                <div className="notes-buttons">
+                  <button onClick={handleNotesUpdate}>Save</button>
+                  <button onClick={() => setIsEditingNotes(false)}>Cancel</button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="notes-display">
-              <p>{miniature.notes || 'No notes yet'}</p>
-              <button onClick={() => setIsEditing(true)}>✏️ Edit</button>
-            </div>
-          )}
+            ) : (
+              <div className="notes-display">
+                <p>{miniature.notes || 'No notes yet'}</p>
+                <button onClick={() => setIsEditingNotes(true)}>✏️ Edit</button>
+              </div>
+            )}
+          </div>
+
+          <StatusHistory 
+            miniature={miniature}
+            onUpdate={onMiniatureUpdate}
+          />
+        </div>
+
+        <div className="card-footer">
+          <small>
+            Created: {formatDate(miniature.created_at)} | 
+            Updated: {formatDate(miniature.updated_at)}
+          </small>
         </div>
       </div>
 
-      <div className="card-footer">
-        <small>
-          Created: {formatDate(miniature.created_at)} | 
-          Updated: {formatDate(miniature.updated_at)}
-        </small>
-      </div>
-    </div>
+      {isEditing && (
+        <EditMiniatureForm
+          miniature={miniature}
+          onSave={handleEditSave}
+          onCancel={() => setIsEditing(false)}
+        />
+      )}
+    </>
   );
 };
 
