@@ -226,13 +226,16 @@ class PostgreSQLDatabase(DatabaseInterface):
         await self._pool.execute("""
             CREATE TABLE IF NOT EXISTS games (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                name VARCHAR(100) UNIQUE NOT NULL,
+                name VARCHAR(100) NOT NULL UNIQUE,
                 description TEXT,
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
+        # Populate default games if table is empty
+        await self._populate_default_games()
         
         # Create user preferences table
         await self._pool.execute("""
@@ -258,38 +261,6 @@ class PostgreSQLDatabase(DatabaseInterface):
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_postcode ON user_preferences(postcode)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_location ON user_preferences(latitude, longitude)")
-        
-        # Insert default games if none exist
-        game_count = await self._pool.fetchval("SELECT COUNT(*) FROM games")
-        if game_count == 0:
-            default_games = [
-                ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
-                ("Age of Sigmar", "Fantasy battles in the Mortal Realms"),
-                ("Kill Team", "Small-scale skirmish battles in the 40K universe"),
-                ("Warcry", "Fast-paced skirmish combat in Age of Sigmar"),
-                ("Bolt Action", "World War II historical wargaming"),
-                ("SAGA", "Dark Age skirmish gaming"),
-                ("Art de la Guerre", "Ancient and medieval warfare"),
-                ("Kings of War", "Mass fantasy battles"),
-                ("Flames of War", "World War II tank combat"),
-                ("X-Wing", "Star Wars space combat"),
-                ("Star Wars Legion", "Ground battles in the Star Wars universe"),
-                ("Infinity", "Sci-fi skirmish with anime aesthetics"),
-                ("Malifaux", "Gothic horror skirmish game"),
-                ("Guild Ball", "Fantasy sports meets skirmish gaming"),
-                ("Blood Bowl", "Fantasy football with violence"),
-                ("Necromunda", "Gang warfare in the underhive"),
-                ("Middle-earth Strategy Battle Game", "Battle in Tolkien's world"),
-                ("Battletech", "Giant robot combat"),
-                ("Dropzone Commander", "10mm sci-fi warfare"),
-                ("Warmachine/Hordes", "Steampunk fantasy battles")
-            ]
-            
-            for name, description in default_games:
-                await self._pool.execute(
-                    "INSERT INTO games (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
-                    name, description
-                )
         
         self._initialized = True
     
@@ -816,6 +787,47 @@ class PostgreSQLDatabase(DatabaseInterface):
                 ))
             
             return results
+
+    async def _populate_default_games(self) -> None:
+        """Populate the games table with default popular wargames."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Get game count
+            game_count = await conn.fetchval("SELECT COUNT(*) FROM games")
+            if game_count > 0:
+                return  # Table is not empty
+            
+            # Insert default games
+            default_games = [
+                ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
+                ("Age of Sigmar", "Fantasy battles in the Mortal Realms"),
+                ("Kill Team", "Small-scale skirmish battles in the 40K universe"),
+                ("Warcry", "Fast-paced skirmish combat in Age of Sigmar"),
+                ("Bolt Action", "World War II historical wargaming"),
+                ("SAGA", "Dark Age skirmish gaming"),
+                ("Art de la Guerre", "Ancient and medieval warfare"),
+                ("Kings of War", "Mass fantasy battles"),
+                ("Flames of War", "World War II tank combat"),
+                ("X-Wing", "Star Wars space combat"),
+                ("Star Wars Legion", "Ground battles in the Star Wars universe"),
+                ("Infinity", "Sci-fi skirmish with anime aesthetics"),
+                ("Malifaux", "Gothic horror skirmish game"),
+                ("Guild Ball", "Fantasy sports meets skirmish gaming"),
+                ("Blood Bowl", "Fantasy football with violence"),
+                ("Necromunda", "Gang warfare in the underhive"),
+                ("Middle-earth Strategy Battle Game", "Battle in Tolkien's world"),
+                ("Battletech", "Giant robot combat"),
+                ("Dropzone Commander", "10mm sci-fi warfare"),
+                ("Warmachine/Hordes", "Steampunk fantasy battles")
+            ]
+            
+            for name, description in default_games:
+                await conn.execute(
+                    "INSERT INTO games (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
+                    name, description
+                )
 
 
 class FileDatabase(DatabaseInterface):
