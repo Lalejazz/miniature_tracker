@@ -39,6 +39,15 @@ class MiniatureDB:
         # Convert string IDs back to UUID objects
         data['id'] = UUID(data['id'])
         
+        # Handle missing user_id field for backward compatibility
+        if 'user_id' not in data:
+            # For old data without user_id, we'll need to skip it or assign a default
+            # For now, we'll skip these records during user-filtered queries
+            # You could also assign a default user_id here if needed
+            return None
+        
+        data['user_id'] = UUID(data['user_id'])
+        
         # Convert ISO string dates back to datetime objects
         data['created_at'] = datetime.fromisoformat(data['created_at'])
         data['updated_at'] = datetime.fromisoformat(data['updated_at'])
@@ -51,15 +60,18 @@ class MiniatureDB:
         
         # Convert UUID and datetime to strings for JSON serialization
         data['id'] = str(data['id'])
+        data['user_id'] = str(data['user_id'])
         data['created_at'] = data['created_at'].isoformat()
         data['updated_at'] = data['updated_at'].isoformat()
         
         return data
     
-    def create(self, miniature_data: MiniatureCreate) -> Miniature:
-        """Create a new miniature."""
-        # Create new miniature with generated metadata
-        new_miniature = Miniature(**miniature_data.model_dump())
+    def create(self, miniature_data: MiniatureCreate, user_id: UUID) -> Miniature:
+        """Create a new miniature for a specific user."""
+        # Create new miniature with generated metadata and user_id
+        miniature_dict = miniature_data.model_dump()
+        miniature_dict['user_id'] = user_id
+        new_miniature = Miniature(**miniature_dict)
         
         # Load existing data
         data: List[dict] = self._load_data()
@@ -71,29 +83,57 @@ class MiniatureDB:
         self._save_data(data)
         return new_miniature
     
-    def get_all(self) -> List[Miniature]:
-        """Get all miniatures."""
+    def get_all(self, user_id: Optional[UUID] = None) -> List[Miniature]:
+        """Get all miniatures, optionally filtered by user."""
         data = self._load_data()
-        return [self._data_to_miniature(item) for item in data]
+        miniatures = []
+        
+        for item in data:
+            miniature = self._data_to_miniature(item)
+            if miniature is not None:  # Skip old data without user_id
+                miniatures.append(miniature)
+        
+        if user_id:
+            miniatures = [m for m in miniatures if str(m.user_id) == str(user_id)]
+        
+        return miniatures
     
-    def get_by_id(self, miniature_id: UUID) -> Optional[Miniature]:
-        """Get a miniature by ID."""
+    def get_by_id(self, miniature_id: UUID, user_id: Optional[UUID] = None) -> Optional[Miniature]:
+        """Get a miniature by ID, optionally checking user ownership."""
         data = self._load_data()
         
         for item in data:
             if item['id'] == str(miniature_id):
-                return self._data_to_miniature(item)
+                miniature = self._data_to_miniature(item)
+                
+                # Skip if old data without user_id
+                if miniature is None:
+                    continue
+                
+                # Check user ownership if user_id provided
+                if user_id and str(miniature.user_id) != str(user_id):
+                    return None
+                
+                return miniature
         
         return None
     
-    def update(self, miniature_id: UUID, update_data: MiniatureUpdate) -> Optional[Miniature]:
-        """Update an existing miniature."""
+    def update(self, miniature_id: UUID, update_data: MiniatureUpdate, user_id: Optional[UUID] = None) -> Optional[Miniature]:
+        """Update an existing miniature, checking user ownership."""
         data = self._load_data()
         
         for i, item in enumerate(data):
             if item['id'] == str(miniature_id):
                 # Convert to miniature object
                 current = self._data_to_miniature(item)
+                
+                # Skip if old data without user_id
+                if current is None:
+                    continue
+                
+                # Check user ownership if user_id provided
+                if user_id and str(current.user_id) != str(user_id):
+                    return None
                 
                 # Apply updates (only non-None values)
                 update_dict = update_data.model_dump(exclude_unset=True)
@@ -111,12 +151,24 @@ class MiniatureDB:
         
         return None
     
-    def delete(self, miniature_id: UUID) -> bool:
-        """Delete a miniature by ID."""
+    def delete(self, miniature_id: UUID, user_id: Optional[UUID] = None) -> bool:
+        """Delete a miniature by ID, checking user ownership."""
         data = self._load_data()
         
         for i, item in enumerate(data):
             if item['id'] == str(miniature_id):
+                # Check user ownership if user_id provided
+                if user_id:
+                    # Convert to miniature to check user_id
+                    miniature = self._data_to_miniature(item)
+                    
+                    # Skip if old data without user_id
+                    if miniature is None:
+                        continue
+                        
+                    if str(miniature.user_id) != str(user_id):
+                        return False
+                
                 data.pop(i)
                 self._save_data(data)
                 return True

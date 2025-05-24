@@ -2,7 +2,7 @@
  * API service for communicating with the miniature tracker backend
  */
 
-import { Miniature, MiniatureCreate, MiniatureUpdate } from '../types';
+import { Miniature, MiniatureCreate, MiniatureUpdate, User, UserCreate, LoginRequest, Token } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '' // Will use same domain in production
@@ -15,22 +15,61 @@ class ApiError extends Error {
   }
 }
 
+// Token management
+let authToken: string | null = null;
+
+export const tokenManager = {
+  setToken(token: string | null) {
+    authToken = token;
+    if (token) {
+      localStorage.setItem('authToken', token);
+    } else {
+      localStorage.removeItem('authToken');
+    }
+  },
+
+  getToken(): string | null {
+    if (authToken) return authToken;
+    authToken = localStorage.getItem('authToken');
+    return authToken;
+  },
+
+  clearToken() {
+    authToken = null;
+    localStorage.removeItem('authToken');
+  }
+};
+
 async function apiRequest<T>(
   endpoint: string, 
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = tokenManager.getToken();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...options.headers as Record<string, string>,
+  };
+
+  // Add authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     ...options,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
+    
+    // If unauthorized, clear token
+    if (response.status === 401) {
+      tokenManager.clearToken();
+    }
+    
     throw new ApiError(response.status, errorText);
   }
 
@@ -42,9 +81,45 @@ async function apiRequest<T>(
   return response.json();
 }
 
+export const authApi = {
+  /**
+   * Register a new user
+   */
+  async register(userData: UserCreate): Promise<User> {
+    return apiRequest<User>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  /**
+   * Login user and get token
+   */
+  async login(credentials: LoginRequest): Promise<Token> {
+    return apiRequest<Token>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  /**
+   * Get current user info
+   */
+  async getCurrentUser(): Promise<User> {
+    return apiRequest<User>('/auth/me');
+  },
+
+  /**
+   * Logout (client-side token removal)
+   */
+  logout() {
+    tokenManager.clearToken();
+  }
+};
+
 export const miniatureApi = {
   /**
-   * Get all miniatures
+   * Get all miniatures for current user
    */
   async getAll(): Promise<Miniature[]> {
     return apiRequest<Miniature[]>('/miniatures');

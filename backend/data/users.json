@@ -1,0 +1,29 @@
+[
+  {
+    "email": "test@example.com",
+    "username": "testuser",
+    "is_active": true,
+    "id": "ecd74ad9-38fb-4ffa-9c5b-eee5f5cf72ab",
+    "created_at": "2025-05-24 09:38:25.318018",
+    "updated_at": "2025-05-24 09:38:25.318024",
+    "hashed_password": "$2b$12$r4vTWfNSk3u3mzrPRqNIx.9nWnNTSXY6vB/JDp1mzBLVss9lzPyWC"
+  },
+  {
+    "email": "alexcargnel@gmail.com",
+    "username": "Lalejazz",
+    "is_active": true,
+    "id": "0f388b68-2616-47a6-8b93-12973ecdea1a",
+    "created_at": "2025-05-24 09:43:46.128659",
+    "updated_at": "2025-05-24 09:43:46.128663",
+    "hashed_password": "$2b$12$d1alzIWIy1TDe4.KHDNyoO6wRVfBArfGTcivlILCjXc1vdfGCIC2G"
+  },
+  {
+    "email": "a.b@c.com",
+    "username": "test123",
+    "is_active": true,
+    "id": "bf388d92-bd57-4f91-b425-0b4ca850d7f5",
+    "created_at": "2025-05-24 09:49:16.152497",
+    "updated_at": "2025-05-24 09:49:16.152501",
+    "hashed_password": "$2b$12$3veYfWkJCmVNJ4yxH2pK1OBmFF72dRMtgUdTcK9A6ndMZF3pDYuZi"
+  }
+]

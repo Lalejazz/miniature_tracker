@@ -1,56 +1,159 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Miniature, MiniatureCreate } from './types';
-import { miniatureApi } from './services/api';
+import { Miniature, MiniatureCreate, User, UserCreate, LoginRequest, AuthState } from './types';
+import { miniatureApi, authApi, tokenManager } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import MiniatureForm from './components/MiniatureForm';
+import { LoginForm } from './components/LoginForm';
+import { RegisterForm } from './components/RegisterForm';
+import { UserHeader } from './components/UserHeader';
 
 function App() {
+  // Authentication state
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    isLoading: true,
+  });
+
+  // UI state
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Miniature state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [miniaturesLoading, setMiniaturesLoading] = useState(false);
+  const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // Load miniatures on mount
+  // Check for existing token on mount
   useEffect(() => {
-    loadMiniatures();
+    const checkAuth = async () => {
+      const token = tokenManager.getToken();
+      if (token) {
+        try {
+          const user = await authApi.getCurrentUser();
+          setAuthState({
+            user,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (err) {
+          // Token is invalid, clear it
+          tokenManager.clearToken();
+          setAuthState({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        }
+      } else {
+        setAuthState({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    };
+
+    checkAuth();
   }, []);
+
+  // Load miniatures when authenticated
+  useEffect(() => {
+    if (authState.isAuthenticated) {
+      loadMiniatures();
+    }
+  }, [authState.isAuthenticated]);
+
+  const handleLogin = async (credentials: LoginRequest) => {
+    try {
+      setAuthError(null);
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+
+      const tokenResponse = await authApi.login(credentials);
+      tokenManager.setToken(tokenResponse.access_token);
+
+      const user = await authApi.getCurrentUser();
+      setAuthState({
+        user,
+        token: tokenResponse.access_token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      setAuthError(err.message || 'Login failed');
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleRegister = async (userData: UserCreate) => {
+    try {
+      setAuthError(null);
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+
+      await authApi.register(userData);
+      
+      // Auto-login after registration
+      await handleLogin({ email: userData.email, password: userData.password });
+    } catch (err: any) {
+      setAuthError(err.message || 'Registration failed');
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleLogout = () => {
+    authApi.logout();
+    setAuthState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+    setMiniatures([]);
+    setShowForm(false);
+    setMiniaturesError(null);
+  };
 
   const loadMiniatures = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setMiniaturesLoading(true);
+      setMiniaturesError(null);
       const data = await miniatureApi.getAll();
       setMiniatures(data);
-    } catch (err) {
-      setError('Failed to load miniatures. Make sure the backend is running.');
+    } catch (err: any) {
+      setMiniaturesError(err.message || 'Failed to load miniatures');
       console.error('Error loading miniatures:', err);
     } finally {
-      setLoading(false);
+      setMiniaturesLoading(false);
     }
   };
 
   const handleCreateMiniature = async (miniatureData: MiniatureCreate) => {
     try {
-      setError(null);
+      setMiniaturesError(null);
       const newMiniature = await miniatureApi.create(miniatureData);
       setMiniatures(prev => [...prev, newMiniature]);
       setShowForm(false);
-    } catch (err) {
-      setError('Failed to create miniature');
+    } catch (err: any) {
+      setMiniaturesError(err.message || 'Failed to create miniature');
       console.error('Error creating miniature:', err);
     }
   };
 
   const handleUpdateMiniature = async (id: string, updates: Partial<Miniature>) => {
     try {
-      setError(null);
+      setMiniaturesError(null);
       const updated = await miniatureApi.update(id, updates);
       setMiniatures(prev => 
         prev.map(m => m.id === id ? updated : m)
       );
-    } catch (err) {
-      setError('Failed to update miniature');
+    } catch (err: any) {
+      setMiniaturesError(err.message || 'Failed to update miniature');
       console.error('Error updating miniature:', err);
     }
   };
@@ -61,15 +164,56 @@ function App() {
     }
 
     try {
-      setError(null);
+      setMiniaturesError(null);
       await miniatureApi.delete(id);
       setMiniatures(prev => prev.filter(m => m.id !== id));
-    } catch (err) {
-      setError('Failed to delete miniature');
+    } catch (err: any) {
+      setMiniaturesError(err.message || 'Failed to delete miniature');
       console.error('Error deleting miniature:', err);
     }
   };
 
+  // Show loading spinner during initial auth check
+  if (authState.isLoading) {
+    return (
+      <div className="App">
+        <div className="loading">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show authentication forms if not logged in
+  if (!authState.isAuthenticated) {
+    return (
+      <div className="App">
+        <div className="auth-container">
+          {authMode === 'login' ? (
+            <LoginForm
+              onLogin={handleLogin}
+              onSwitchToRegister={() => {
+                setAuthMode('register');
+                setAuthError(null);
+              }}
+              isLoading={authState.isLoading}
+              error={authError}
+            />
+          ) : (
+            <RegisterForm
+              onRegister={handleRegister}
+              onSwitchToLogin={() => {
+                setAuthMode('login');
+                setAuthError(null);
+              }}
+              isLoading={authState.isLoading}
+              error={authError}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show main app for authenticated users
   return (
     <div className="App">
       <header className="App-header">
@@ -78,10 +222,12 @@ function App() {
       </header>
 
       <main className="App-main">
-        {error && (
+        <UserHeader user={authState.user!} onLogout={handleLogout} />
+
+        {miniaturesError && (
           <div className="error-banner">
-            <span>⚠️ {error}</span>
-            <button onClick={() => setError(null)}>✕</button>
+            <span>⚠️ {miniaturesError}</span>
+            <button onClick={() => setMiniaturesError(null)}>✕</button>
           </div>
         )}
 
@@ -95,7 +241,7 @@ function App() {
           <button 
             className="refresh-button"
             onClick={loadMiniatures}
-            disabled={loading}
+            disabled={miniaturesLoading}
           >
             🔄 Refresh
           </button>
@@ -108,7 +254,7 @@ function App() {
           />
         )}
 
-        {loading ? (
+        {miniaturesLoading ? (
           <div className="loading">Loading miniatures...</div>
         ) : (
           <MiniatureList

@@ -55,5 +55,6 @@ class Miniature(MiniatureBase):
     )
     
     id: UUID = Field(default_factory=uuid4)
+    user_id: UUID  # Owner of this miniature
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now) 

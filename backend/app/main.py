@@ -11,6 +11,8 @@ from fastapi.responses import FileResponse
 
 from app.crud import MiniatureDB
 from app.models import Miniature, MiniatureCreate, MiniatureUpdate
+from app.auth_routes import router as auth_router
+from app.auth_dependencies import get_current_user_id
 
 
 # Create FastAPI app
@@ -19,6 +21,9 @@ app = FastAPI(
     description="API for tracking Warhammer miniature collection and painting progress",
     version="0.1.0"
 )
+
+# Include authentication routes
+app.include_router(auth_router)
 
 
 def get_db() -> MiniatureDB:
@@ -29,25 +34,30 @@ def get_db() -> MiniatureDB:
 @app.post("/miniatures", response_model=Miniature, status_code=status.HTTP_201_CREATED)
 def create_miniature(
     miniature: MiniatureCreate,
-    db: MiniatureDB = Depends(get_db)
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
-    """Create a new miniature."""
-    return db.create(miniature)
+    """Create a new miniature for the authenticated user."""
+    return db.create(miniature, current_user_id)
 
 
 @app.get("/miniatures", response_model=List[Miniature])
-def get_all_miniatures(db: MiniatureDB = Depends(get_db)) -> List[Miniature]:
-    """Get all miniatures."""
-    return db.get_all()
+def get_all_miniatures(
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> List[Miniature]:
+    """Get all miniatures for the authenticated user."""
+    return db.get_all(current_user_id)
 
 
 @app.get("/miniatures/{miniature_id}", response_model=Miniature)
 def get_miniature(
     miniature_id: UUID,
-    db: MiniatureDB = Depends(get_db)
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
-    """Get a specific miniature by ID."""
-    miniature = db.get_by_id(miniature_id)
+    """Get a specific miniature by ID for the authenticated user."""
+    miniature = db.get_by_id(miniature_id, current_user_id)
     if miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -60,10 +70,11 @@ def get_miniature(
 def update_miniature(
     miniature_id: UUID,
     miniature_update: MiniatureUpdate,
-    db: MiniatureDB = Depends(get_db)
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
 ) -> Miniature:
-    """Update an existing miniature."""
-    updated_miniature = db.update(miniature_id, miniature_update)
+    """Update an existing miniature for the authenticated user."""
+    updated_miniature = db.update(miniature_id, miniature_update, current_user_id)
     if updated_miniature is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,10 +86,11 @@ def update_miniature(
 @app.delete("/miniatures/{miniature_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_miniature(
     miniature_id: UUID,
-    db: MiniatureDB = Depends(get_db)
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
 ) -> None:
-    """Delete a miniature."""
-    success = db.delete(miniature_id)
+    """Delete a miniature for the authenticated user."""
+    success = db.delete(miniature_id, current_user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -117,6 +129,7 @@ if os.path.exists(static_dir):
         # Don't serve React app for API routes
         if (full_path.startswith("api/") or 
             full_path.startswith("miniatures") or 
+            full_path.startswith("auth") or
             full_path.startswith("docs") or 
             full_path.startswith("openapi.json") or
             full_path.startswith("redoc")):
