@@ -103,8 +103,8 @@ class PostgreSQLDatabase(DatabaseInterface):
         # Create connection pool with limits to prevent exhaustion
         self._pool = await asyncpg.create_pool(
             self.database_url,
-            min_size=1,          # Minimum connections in pool
-            max_size=5,          # Maximum connections in pool - conservative for Render
+            min_size=2,          # Minimum connections in pool
+            max_size=20,         # Maximum connections in pool - allows more concurrent users
             max_queries=50000,   # Max queries per connection
             max_inactive_connection_lifetime=300.0,  # 5 minutes
         )
