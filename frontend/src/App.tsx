@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Miniature, MiniatureCreate, User, UserCreate, LoginRequest, AuthState } from './types';
+import { Miniature, MiniatureCreate, UserCreate, LoginRequest, AuthState } from './types';
 import { miniatureApi, authApi, tokenManager } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import MiniatureForm from './components/MiniatureForm';
