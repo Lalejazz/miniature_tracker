@@ -90,13 +90,24 @@ class PostgreSQLDatabase(DatabaseInterface):
         
         self.database_url = database_url
         self._pool: Optional['asyncpg.Pool'] = None
+        self._initialized = False
     
     async def initialize(self) -> None:
         """Initialize PostgreSQL connection and create tables."""
+        if self._initialized and self._pool:
+            return  # Already initialized
+            
         if asyncpg is None:
             raise ImportError("asyncpg is required for PostgreSQL support")
-            
-        self._pool = await asyncpg.create_pool(self.database_url)
+        
+        # Create connection pool with limits to prevent exhaustion
+        self._pool = await asyncpg.create_pool(
+            self.database_url,
+            min_size=1,          # Minimum connections in pool
+            max_size=5,          # Maximum connections in pool - conservative for Render
+            max_queries=50000,   # Max queries per connection
+            max_inactive_connection_lifetime=300.0,  # 5 minutes
+        )
         
         # Create users table
         await self._pool.execute("""
@@ -180,6 +191,8 @@ class PostgreSQLDatabase(DatabaseInterface):
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_miniatures_name ON miniatures(name)")
+        
+        self._initialized = True
     
     async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
         """Get user by email."""
@@ -719,11 +732,21 @@ class FileDatabase(DatabaseInterface):
         return None
 
 
+# Global database instance to ensure singleton pattern
+_database_instance: Optional[DatabaseInterface] = None
+
 def get_database() -> DatabaseInterface:
-    """Get database instance based on environment."""
+    """Get database instance based on environment (singleton pattern)."""
+    global _database_instance
+    
+    if _database_instance is not None:
+        return _database_instance
+    
     database_url = os.getenv("DATABASE_URL")
     
     if database_url and database_url.startswith("postgresql"):
-        return PostgreSQLDatabase(database_url)
+        _database_instance = PostgreSQLDatabase(database_url)
     else:
-        return FileDatabase() 
+        _database_instance = FileDatabase()
+    
+    return _database_instance 
