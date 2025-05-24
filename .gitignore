@@ -60,4 +60,4 @@ yarn-error.log*
 *.log
 
 # Database files (keep data persistent on Railway)
-# backend/data/ 
+# backend/data/ .venv/
