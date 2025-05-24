@@ -128,8 +128,10 @@ class PostgreSQLDatabase(DatabaseInterface):
             CREATE TABLE IF NOT EXISTS miniatures (
                 id UUID PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                description TEXT,
-                status VARCHAR(100) NOT NULL DEFAULT 'unpainted',
+                faction VARCHAR(100) NOT NULL,
+                model_type VARCHAR(100) NOT NULL,
+                status VARCHAR(100) NOT NULL DEFAULT 'want_to_buy',
+                notes TEXT,
                 user_id UUID NOT NULL,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
@@ -266,7 +268,7 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             # Get miniatures
             miniature_rows = await conn.fetch(
-                "SELECT id, name, description, status, user_id, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
+                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
                 user_id
             )
             
@@ -292,8 +294,10 @@ class PostgreSQLDatabase(DatabaseInterface):
                 miniature = Miniature(
                     id=row['id'],
                     name=row['name'],
-                    description=row['description'],
+                    faction=row['faction'],
+                    model_type=row['model_type'],
                     status=row['status'],
+                    notes=row['notes'],
                     user_id=row['user_id'],
                     status_history=status_history,
                     created_at=row['created_at'],
@@ -311,7 +315,7 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             # Get miniature
             row = await conn.fetchrow(
-                "SELECT id, name, description, status, user_id, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
+                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
                 miniature_id, user_id
             )
             if not row:
@@ -337,8 +341,10 @@ class PostgreSQLDatabase(DatabaseInterface):
             return Miniature(
                 id=row['id'],
                 name=row['name'],
-                description=row['description'],
+                faction=row['faction'],
+                model_type=row['model_type'],
                 status=row['status'],
+                notes=row['notes'],
                 user_id=row['user_id'],
                 status_history=status_history,
                 created_at=row['created_at'],
@@ -350,18 +356,21 @@ class PostgreSQLDatabase(DatabaseInterface):
         if self._pool is None:
             raise RuntimeError("Database not initialized")
         
+        # Generate ID for the miniature
+        miniature_id = uuid4()
+        
         async with self._pool.acquire() as conn:
             async with conn.transaction():
                 # Insert miniature
                 miniature_row = await conn.fetchrow(
-                    "INSERT INTO miniatures (id, name, description, status, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, status, user_id, created_at, updated_at",
-                    miniature.id, miniature.name, miniature.description, miniature.status, user_id
+                    "INSERT INTO miniatures (id, name, faction, model_type, status, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at",
+                    miniature_id, miniature.name, miniature.faction, miniature.model_type, miniature.status.value, miniature.notes, user_id
                 )
                 
                 # Add initial status log entry
                 status_entry = await conn.fetchrow(
                     "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, from_status, to_status, notes, is_manual, created_at",
-                    uuid4(), miniature.id, user_id, None, miniature.status, None, False
+                    uuid4(), miniature_id, user_id, None, miniature.status.value, None, False
                 )
                 
                 status_history = [StatusLogEntry(
@@ -376,8 +385,10 @@ class PostgreSQLDatabase(DatabaseInterface):
                 return Miniature(
                     id=miniature_row['id'],
                     name=miniature_row['name'],
-                    description=miniature_row['description'],
+                    faction=miniature_row['faction'],
+                    model_type=miniature_row['model_type'],
                     status=miniature_row['status'],
+                    notes=miniature_row['notes'],
                     user_id=miniature_row['user_id'],
                     status_history=status_history,
                     created_at=miniature_row['created_at'],
@@ -392,6 +403,10 @@ class PostgreSQLDatabase(DatabaseInterface):
         update_data = updates.model_dump(exclude_unset=True)
         if not update_data:
             return await self.get_miniature(miniature_id, user_id)
+        
+        # Convert enum status to string if present
+        if 'status' in update_data and update_data['status'] is not None:
+            update_data['status'] = update_data['status'].value
         
         async with self._pool.acquire() as conn:
             async with conn.transaction():
@@ -421,7 +436,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     UPDATE miniatures 
                     SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
                     WHERE id = ${len(values)} AND user_id = ${len(values)-1}
-                    RETURNING id, name, description, status, user_id, created_at, updated_at
+                    RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at
                 """
                 
                 miniature_row = await conn.fetchrow(query, *values)
