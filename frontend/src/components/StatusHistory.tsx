@@ -91,7 +91,7 @@ const StatusHistory: React.FC<StatusHistoryProps> = ({ miniature, onUpdate }) =>
   };
 
   const handleDeleteLog = async (logId: string) => {
-    if (!confirm('Are you sure you want to delete this log entry?')) return;
+    if (!window.confirm('Are you sure you want to delete this log entry?')) return;
 
     setIsLoading(true);
     setError(null);
