@@ -6,7 +6,13 @@ import {
   Miniature, MiniatureCreate, MiniatureUpdate, 
   User, UserCreate, LoginRequest, Token, 
   StatusLogEntryCreate, StatusLogEntryUpdate,
-  PasswordResetRequest, PasswordReset
+  PasswordResetRequest, PasswordReset,
+  Game,
+  UserPreferences,
+  UserPreferencesCreate,
+  UserPreferencesUpdate,
+  PlayerSearchRequest,
+  PlayerSearchResult
 } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -227,6 +233,62 @@ export const miniatureApi = {
       method: 'DELETE',
     });
   }
+};
+
+export const playerApi = {
+  /**
+   * Get all available games
+   */
+  async getGames(): Promise<Game[]> {
+    return apiRequest<Game[]>('/player/games');
+  },
+
+  /**
+   * Create a new game (admin function)
+   */
+  async createGame(name: string, description?: string): Promise<Game> {
+    return apiRequest<Game>('/player/games', {
+      method: 'POST',
+      body: JSON.stringify({ name, description }),
+    });
+  },
+
+  /**
+   * Get user preferences
+   */
+  async getPreferences(): Promise<UserPreferences> {
+    return apiRequest<UserPreferences>('/player/preferences');
+  },
+
+  /**
+   * Create user preferences
+   */
+  async createPreferences(preferences: UserPreferencesCreate): Promise<UserPreferences> {
+    return apiRequest<UserPreferences>('/player/preferences', {
+      method: 'POST',
+      body: JSON.stringify(preferences),
+    });
+  },
+
+  /**
+   * Update user preferences
+   */
+  async updatePreferences(updates: UserPreferencesUpdate): Promise<UserPreferences> {
+    return apiRequest<UserPreferences>('/player/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Search for players
+   */
+  async searchPlayers(searchRequest: PlayerSearchRequest): Promise<PlayerSearchResult[]> {
+    return apiRequest<PlayerSearchResult[]>('/player/search', {
+      method: 'POST',
+      body: JSON.stringify(searchRequest),
+    });
+  },
 };
 
 export { ApiError }; 

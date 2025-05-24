@@ -146,4 +146,64 @@ export interface ChangelogEntry {
   description: string;
   type: 'feature' | 'improvement' | 'bugfix' | 'security';
   items: string[];
-} 
+}
+
+// Player Discovery Types
+
+export type GameType = "competitive" | "narrative" | "both";
+
+export interface Game {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
+
+export interface UserPreferencesCreate {
+  games: string[];
+  postcode: string;
+  game_types: GameType[];
+  bio: string;
+}
+
+export interface UserPreferencesUpdate {
+  games?: string[];
+  postcode?: string;
+  game_types?: GameType[];
+  bio?: string;
+}
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  games: string[];
+  postcode: string;
+  game_types: GameType[];
+  bio: string;
+  latitude?: number;
+  longitude?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlayerSearchRequest {
+  games?: string[];
+  game_types?: GameType[];
+  max_distance_km: number;
+}
+
+export interface PlayerSearchResult {
+  user_id: string;
+  username: string;
+  games: Game[];
+  game_types: GameType[];
+  bio: string;
+  distance_km: number;
+  postcode: string;
+}
+
+export const GAME_TYPE_LABELS = {
+  competitive: "Competitive",
+  narrative: "Narrative",
+  both: "Both"
+} as const; 
