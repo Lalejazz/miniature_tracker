@@ -25,6 +25,7 @@ class GameSystem(str, Enum):
     
     WARHAMMER_40K = "warhammer_40k"
     AGE_OF_SIGMAR = "age_of_sigmar"
+    WARHAMMER_THE_OLD_WORLD = "warhammer_the_old_world"
     KILL_TEAM = "kill_team"
     WARCRY = "warcry"
     NECROMUNDA = "necromunda"
@@ -48,6 +49,7 @@ class GameSystem(str, Enum):
     MORDHEIM = "mordheim"
     GASLANDS = "gaslands"
     ZOMBICIDE = "zombicide"
+    TRENCH_CRUSADE = "trench_crusade"
     OTHER = "other"
 
 
@@ -110,6 +112,12 @@ GAME_SYSTEM_FACTIONS = {
         "Flesh-eater Courts", "Legions of Nagash", "Nighthaunt", "Ossiarch Bonereapers",
         "Soulblight Gravelords", "Gloomspite Gitz", "Ironjawz", "Bonesplitterz",
         "Sons of Behemat", "Ogor Mawtribes", "Other"
+    ],
+    GameSystem.WARHAMMER_THE_OLD_WORLD: [
+        "Empire", "Bretonnia", "High Elves", "Wood Elves", "Dark Elves", "Dwarfs",
+        "Warriors of Chaos", "Daemons of Chaos", "Beastmen", "Orcs & Goblins",
+        "Skaven", "Vampire Counts", "Tomb Kings", "Lizardmen", "Ogre Kingdoms",
+        "Chaos Dwarfs", "Other"
     ],
     GameSystem.KILL_TEAM: [
         "Space Marines", "Imperial Guard", "Adeptus Mechanicus", "Sisters of Battle",
@@ -212,6 +220,10 @@ GAME_SYSTEM_FACTIONS = {
     ],
     GameSystem.ZOMBICIDE: [
         "Survivors", "Zombies", "Abominations", "Other"
+    ],
+    GameSystem.TRENCH_CRUSADE: [
+        "Iron Sultanate", "Heretic Legions", "Court of the Seven-Headed Serpent",
+        "New Antioch", "Trench Pilgrims", "Mercenaries", "Other"
     ],
     GameSystem.OTHER: ["Custom"]
 }

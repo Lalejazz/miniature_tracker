@@ -280,11 +280,11 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("""
                 UPDATE miniatures SET game_system = 'other' 
                 WHERE game_system NOT IN (
-                    'warhammer_40k', 'age_of_sigmar', 'kill_team', 'warcry', 'necromunda', 'blood_bowl',
+                    'warhammer_40k', 'age_of_sigmar', 'warhammer_the_old_world', 'kill_team', 'warcry', 'necromunda', 'blood_bowl',
                     'middle_earth', 'bolt_action', 'flames_of_war', 'saga', 'kings_of_war', 'infinity',
                     'malifaux', 'warmachine_hordes', 'x_wing', 'star_wars_legion', 'battletech',
                     'dropzone_commander', 'guild_ball', 'dungeons_and_dragons', 'pathfinder',
-                    'frostgrave', 'mordheim', 'gaslands', 'zombicide', 'other'
+                    'frostgrave', 'mordheim', 'gaslands', 'zombicide', 'trench_crusade', 'other'
                 )
             """)
             
@@ -1247,6 +1247,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             default_games = [
                 ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
                 ("Age of Sigmar", "Fantasy battles in the Mortal Realms"),
+                ("Warhammer: The Old World", "Classic fantasy battles in the Old World"),
                 ("Kill Team", "Small-scale skirmish battles in the 40K universe"),
                 ("Warcry", "Fast-paced skirmish combat in Age of Sigmar"),
                 ("Bolt Action", "World War II historical wargaming"),
@@ -1264,7 +1265,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                 ("Middle-earth Strategy Battle Game", "Battle in Tolkien's world"),
                 ("Battletech", "Giant robot combat"),
                 ("Dropzone Commander", "10mm sci-fi warfare"),
-                ("Warmachine/Hordes", "Steampunk fantasy battles")
+                ("Warmachine/Hordes", "Steampunk fantasy battles"),
+                ("Trench Crusade", "Grimdark alternate history warfare")
             ]
             
             for name, description in default_games:
@@ -1297,6 +1299,7 @@ class FileDatabase(DatabaseInterface):
             default_games = [
                 {"id": str(uuid4()), "name": "Warhammer 40,000", "description": "The iconic grimdark sci-fi wargame", "is_active": True},
                 {"id": str(uuid4()), "name": "Age of Sigmar", "description": "Fantasy battles in the Mortal Realms", "is_active": True},
+                {"id": str(uuid4()), "name": "Warhammer: The Old World", "description": "Classic fantasy battles in the Old World", "is_active": True},
                 {"id": str(uuid4()), "name": "Kill Team", "description": "Small-scale skirmish battles in the 40K universe", "is_active": True},
                 {"id": str(uuid4()), "name": "Warcry", "description": "Fast-paced skirmish combat in Age of Sigmar", "is_active": True},
                 {"id": str(uuid4()), "name": "Bolt Action", "description": "World War II historical wargaming", "is_active": True},
@@ -1314,7 +1317,8 @@ class FileDatabase(DatabaseInterface):
                 {"id": str(uuid4()), "name": "Middle-earth Strategy Battle Game", "description": "Battle in Tolkien's world", "is_active": True},
                 {"id": str(uuid4()), "name": "Battletech", "description": "Giant robot combat", "is_active": True},
                 {"id": str(uuid4()), "name": "Dropzone Commander", "description": "10mm sci-fi warfare", "is_active": True},
-                {"id": str(uuid4()), "name": "Warmachine/Hordes", "description": "Steampunk fantasy battles", "is_active": True}
+                {"id": str(uuid4()), "name": "Warmachine/Hordes", "description": "Steampunk fantasy battles", "is_active": True},
+                {"id": str(uuid4()), "name": "Trench Crusade", "description": "Grimdark alternate history warfare", "is_active": True}
             ]
             with open(self.games_file, 'w') as f:
                 json.dump(default_games, f, indent=2)
