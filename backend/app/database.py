@@ -16,8 +16,9 @@ except ImportError:
 from app.auth_models import User, UserCreate, UserInDB, UserUpdate
 from app.models import (
     PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry,
+    Unit, UnitCreate, UnitUpdate,
     Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
-    PlayerSearchRequest, PlayerSearchResult, GameType
+    PlayerSearchRequest, PlayerSearchResult, GameType, CollectionStatistics
 )
 from app.geocoding import GeocodingService
 
@@ -204,6 +205,14 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS model_type VARCHAR(100)")
             await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS notes TEXT")
             
+            # Add new Unit fields
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS game_system VARCHAR(50)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS unit_type VARCHAR(50)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS base_dimension VARCHAR(50)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS custom_base_size VARCHAR(50)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS cost DECIMAL(10,2)")
+            
             # Copy description to notes if notes is empty and description exists
             await self._pool.execute("""
                 UPDATE miniatures 
@@ -214,10 +223,16 @@ class PostgreSQLDatabase(DatabaseInterface):
             # Set default values for required columns if they're NULL
             await self._pool.execute("UPDATE miniatures SET faction = 'Unknown' WHERE faction IS NULL")
             await self._pool.execute("UPDATE miniatures SET model_type = 'Unknown' WHERE model_type IS NULL")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'other' WHERE game_system IS NULL")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'other' WHERE unit_type IS NULL")
+            await self._pool.execute("UPDATE miniatures SET quantity = 1 WHERE quantity IS NULL")
             
-            # Now make faction and model_type NOT NULL
+            # Now make required columns NOT NULL
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN faction SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN model_type SET NOT NULL")
+            await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN game_system SET NOT NULL")
+            await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN unit_type SET NOT NULL")
+            await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN quantity SET NOT NULL")
             
         except Exception as e:
             print(f"Migration warning: {e}")  # Log but don't fail
@@ -420,7 +435,9 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             # Get miniatures
             miniature_rows = await conn.fetch(
-                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at FROM miniatures WHERE user_id = $1 ORDER BY created_at",
+                """SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
+                   game_system, unit_type, quantity, base_dimension, custom_base_size, cost 
+                   FROM miniatures WHERE user_id = $1 ORDER BY created_at""",
                 user_id
             )
             
@@ -453,7 +470,14 @@ class PostgreSQLDatabase(DatabaseInterface):
                     user_id=row['user_id'],
                     status_history=status_history,
                     created_at=row['created_at'],
-                    updated_at=row['updated_at']
+                    updated_at=row['updated_at'],
+                    # New Unit fields
+                    game_system=row.get('game_system'),
+                    unit_type=row.get('unit_type'),
+                    quantity=row.get('quantity', 1),
+                    base_dimension=row.get('base_dimension'),
+                    custom_base_size=row.get('custom_base_size'),
+                    cost=row.get('cost')
                 )
                 miniatures.append(miniature)
             
@@ -467,7 +491,7 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             # Get miniature
             row = await conn.fetchrow(
-                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at FROM miniatures WHERE id = $1 AND user_id = $2",
+                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at, game_system, unit_type, quantity, base_dimension, custom_base_size, cost FROM miniatures WHERE id = $1 AND user_id = $2",
                 miniature_id, user_id
             )
             if not row:
@@ -500,7 +524,14 @@ class PostgreSQLDatabase(DatabaseInterface):
                 user_id=row['user_id'],
                 status_history=status_history,
                 created_at=row['created_at'],
-                updated_at=row['updated_at']
+                updated_at=row['updated_at'],
+                # New Unit fields
+                game_system=row.get('game_system'),
+                unit_type=row.get('unit_type'),
+                quantity=row.get('quantity', 1),
+                base_dimension=row.get('base_dimension'),
+                custom_base_size=row.get('custom_base_size'),
+                cost=row.get('cost')
             )
     
     async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
@@ -515,8 +546,19 @@ class PostgreSQLDatabase(DatabaseInterface):
             async with conn.transaction():
                 # Insert miniature
                 miniature_row = await conn.fetchrow(
-                    "INSERT INTO miniatures (id, name, faction, model_type, status, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at",
-                    miniature_id, miniature.name, miniature.faction, miniature.model_type, miniature.status.value, miniature.notes, user_id
+                    """INSERT INTO miniatures (id, name, faction, model_type, status, notes, user_id, 
+                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+                       RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
+                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost""",
+                    miniature_id, miniature.name, miniature.faction, miniature.model_type, 
+                    miniature.status.value, miniature.notes, user_id,
+                    miniature.game_system.value if miniature.game_system else None,
+                    miniature.unit_type.value if miniature.unit_type else None,
+                    getattr(miniature, 'quantity', 1),
+                    miniature.base_dimension.value if miniature.base_dimension else None,
+                    getattr(miniature, 'custom_base_size', None),
+                    getattr(miniature, 'cost', None)
                 )
                 
                 # Add initial status log entry
@@ -544,7 +586,14 @@ class PostgreSQLDatabase(DatabaseInterface):
                     user_id=miniature_row['user_id'],
                     status_history=status_history,
                     created_at=miniature_row['created_at'],
-                    updated_at=miniature_row['updated_at']
+                    updated_at=miniature_row['updated_at'],
+                    # New Unit fields
+                    game_system=miniature_row.get('game_system'),
+                    unit_type=miniature_row.get('unit_type'),
+                    quantity=miniature_row.get('quantity', 1),
+                    base_dimension=miniature_row.get('base_dimension'),
+                    custom_base_size=miniature_row.get('custom_base_size'),
+                    cost=miniature_row.get('cost')
                 )
     
     async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
@@ -593,7 +642,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                     UPDATE miniatures 
                     SET {', '.join(set_clauses)}, updated_at = ${updated_at_index}
                     WHERE id = ${miniature_id_index} AND user_id = ${user_id_index}
-                    RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at
+                    RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
+                    game_system, unit_type, quantity, base_dimension, custom_base_size, cost
                 """
                 
                 miniature_row = await conn.fetchrow(query, *values)
