@@ -3,7 +3,7 @@ import './App.css';
 import { Miniature, MiniatureCreate, UserCreate, LoginRequest, UserPreferences } from './types';
 import { miniatureApi, authApi, tokenManager, playerApi } from './services/api';
 import MiniatureList from './components/MiniatureList';
-import MiniatureForm from './components/MiniatureForm';
+import UnitForm from './components/UnitForm';
 import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
 import ForgotPasswordForm from './components/ForgotPasswordForm';
@@ -38,7 +38,7 @@ function App() {
   const [resetToken, setResetToken] = useState<string | null>(null);
   
   // Tab state
-  const [currentTab, setCurrentTab] = useState<'miniatures' | 'preferences' | 'player-search'>('miniatures');
+  const [currentTab, setCurrentTab] = useState<'miniatures' | 'statistics' | 'preferences' | 'player-search'>('miniatures');
 
   // Miniature state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
@@ -334,8 +334,8 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🎨 Miniature Tracker</h1>
-        <p>Track your Warhammer miniature collection and painting progress</p>
+        <h1>🎨 Unit Tracker</h1>
+        <p>Track your Warhammer, AoS, D&D unit collection and painting progress</p>
       </header>
 
       <main className="App-main">
@@ -347,7 +347,13 @@ function App() {
             className={`tab-button ${currentTab === 'miniatures' ? 'active' : ''}`}
             onClick={() => setCurrentTab('miniatures')}
           >
-            🎨 My Miniatures
+            🎨 My Units
+          </button>
+          <button 
+            className={`tab-button ${currentTab === 'statistics' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('statistics')}
+          >
+            📊 Statistics
           </button>
           <button 
             className={`tab-button ${currentTab === 'preferences' ? 'active' : ''}`}
@@ -378,7 +384,7 @@ function App() {
                 className="add-button"
                 onClick={() => setShowForm(!showForm)}
               >
-                {showForm ? '✕ Cancel' : '+ Add Miniature'}
+                {showForm ? '✕ Cancel' : '+ Add Unit'}
               </button>
               <button 
                 className="refresh-button"
@@ -390,7 +396,7 @@ function App() {
             </div>
 
             {showForm && (
-              <MiniatureForm
+              <UnitForm
                 onSubmit={handleCreateMiniature}
                 onCancel={() => setShowForm(false)}
               />
@@ -407,6 +413,11 @@ function App() {
               />
             )}
           </>
+        )}
+
+        {currentTab === 'statistics' && (
+          // Implementation of statistics tab
+          <div>Statistics tab content</div>
         )}
 
         {currentTab === 'preferences' && (
@@ -426,7 +437,7 @@ function App() {
       <footer className="App-footer">
         <div className="footer-content">
           <div className="footer-info">
-            <p>Built with React + FastAPI | {miniatures.length} miniatures tracked</p>
+            <p>Built with React + FastAPI | {miniatures.length} units tracked</p>
             <p>Developed by Alex</p>
           </div>
           <div className="footer-links">
