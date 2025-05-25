@@ -82,36 +82,67 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     return (
       <div className="email-verification">
         <div className="verification-header">
-          <h2>Verifying Email Address</h2>
+          <h2>🎨 Email Verification</h2>
         </div>
 
         {isVerifying && (
           <div className="verification-loading">
+            <div className="loading-spinner"></div>
             <p>Verifying your email address...</p>
+            <p className="loading-subtext">Please wait while we confirm your email.</p>
           </div>
         )}
 
         {message && (
           <div className="success-message">
+            <div className="success-icon">✅</div>
+            <h3>Email Verified Successfully!</h3>
             <p>{message}</p>
-            <p>You will be redirected to the login page shortly.</p>
+            <p>You can now log in to your account and start tracking your miniatures!</p>
           </div>
         )}
 
         {error && (
           <div className="error-message">
+            <div className="error-icon">❌</div>
+            <h3>Verification Failed</h3>
             <p>{error}</p>
-            <p>Please try requesting a new verification email or contact support if the problem persists.</p>
+            <div className="error-help">
+              <h4>What can you do?</h4>
+              <ul>
+                <li>The verification link may have expired (links expire after 24 hours)</li>
+                <li>The link may have already been used</li>
+                <li>Try requesting a new verification email below</li>
+                <li>Contact support if the problem persists</li>
+              </ul>
+            </div>
+            {email && (
+              <div className="resend-section">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="btn-primary"
+                >
+                  {isResending ? 'Sending...' : 'Send New Verification Email'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {!isVerifying && (
-          <div className="form-actions">
+        <div className="form-actions">
+          {message && (
+            <button type="button" onClick={onBack} className="btn-primary">
+              Continue to Login
+            </button>
+          )}
+          {!message && (
             <button type="button" onClick={onBack} className="btn-secondary">
               Back to Login
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -158,6 +189,10 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
       )}
 
       <div className="verification-actions">
+        <button type="button" onClick={onBack} className="btn-primary">
+          Back to Login
+        </button>
+        
         {email && (
           <button
             type="button"
@@ -168,10 +203,6 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             {isResending ? 'Sending...' : 'Resend Verification Email'}
           </button>
         )}
-        
-        <button type="button" onClick={onBack} className="btn-primary">
-          Back to Login
-        </button>
       </div>
 
       <div className="verification-help">

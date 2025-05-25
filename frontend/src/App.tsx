@@ -85,15 +85,35 @@ function App() {
     checkAuth();
   }, []);
 
-  // Check for reset token in URL
+  // Check for tokens in URL and determine the correct mode
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    const currentPath = window.location.pathname;
+    
     if (token) {
-      setResetToken(token);
-      setAuthMode('reset-password');
-      // Clear the token from URL for security
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Determine the mode based on the URL path
+      if (currentPath.includes('/verify-email')) {
+        // This is an email verification link
+        setAuthMode('email-verification');
+        // Don't clear the token yet - let EmailVerification component handle it
+      } else if (currentPath.includes('/reset-password')) {
+        // This is a password reset link
+        setResetToken(token);
+        setAuthMode('reset-password');
+        // Clear the token from URL for security
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        // Default behavior - check token length to guess the type
+        // Email verification tokens are typically longer than password reset tokens
+        if (token.length > 32) {
+          setAuthMode('email-verification');
+        } else {
+          setResetToken(token);
+          setAuthMode('reset-password');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
     }
   }, []);
 
@@ -141,7 +161,14 @@ function App() {
         isLoading: false,
       });
     } catch (err: any) {
-      setAuthError(err.message || 'Login failed');
+      // Check if the error is about email verification
+      if (err.message && err.message.includes('verify your email')) {
+        setPendingVerificationEmail(credentials.email);
+        setAuthMode('email-verification');
+        setAuthError('Please verify your email address before logging in. Check your email for a verification link.');
+      } else {
+        setAuthError(err.message || 'Login failed');
+      }
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
