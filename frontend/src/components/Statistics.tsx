@@ -252,20 +252,22 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
           </button>
         </div>
         <div className="header-controls">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as PaintingStatus | '')}
-            className="status-filter-select"
-          >
-            <option value="">All Statuses</option>
-            {Object.entries(STATUS_INFO).map(([status, info]) => (
-              <option key={status} value={status}>
-                {info.label}
-              </option>
-            ))}
-          </select>
-          <button onClick={loadStatistics} className="refresh-button">
-            🔄 Refresh
+          {activeTab === 'overview' && (
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as PaintingStatus | '')}
+              className="status-filter-select"
+            >
+              <option value="">All Statuses</option>
+              {Object.entries(STATUS_INFO).map(([status, info]) => (
+                <option key={status} value={status}>
+                  {info.label}
+                </option>
+              ))}
+            </select>
+          )}
+          <button onClick={activeTab === 'overview' ? loadStatistics : loadTrendAnalysis} className="refresh-button">
+            🔄 {activeTab === 'overview' ? 'Refresh' : 'Refresh Trends'}
           </button>
         </div>
       </div>
