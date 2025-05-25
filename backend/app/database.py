@@ -185,6 +185,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(100)")
             await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50)")
             await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)")
+            await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE")
             await self._pool.execute("ALTER TABLE users ALTER COLUMN hashed_password DROP NOT NULL")
         except Exception as e:
             print(f"OAuth migration warning: {e}")  # Log but don't fail
@@ -192,6 +193,18 @@ class PostgreSQLDatabase(DatabaseInterface):
         # Create password reset tokens table
         await self._pool.execute("""
             CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id UUID PRIMARY KEY,
+                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                token VARCHAR(255) UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        
+        # Create email verification tokens table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS email_verification_tokens (
                 id UUID PRIMARY KEY,
                 user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                 token VARCHAR(255) UNIQUE NOT NULL,

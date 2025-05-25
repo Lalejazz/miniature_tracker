@@ -118,10 +118,30 @@ export const authApi = {
   /**
    * Register a new user
    */
-  async register(userData: UserCreate): Promise<User> {
-    return apiRequest<User>('/auth/register', {
+  async register(userData: UserCreate): Promise<{ message: string; user_id: string; email_sent: boolean }> {
+    return apiRequest<{ message: string; user_id: string; email_sent: boolean }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+  },
+
+  /**
+   * Verify email address with token
+   */
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  /**
+   * Resend email verification
+   */
+  async resendVerification(email: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   },
 

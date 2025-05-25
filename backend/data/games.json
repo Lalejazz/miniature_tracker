@@ -1,122 +1,188 @@
 [
   {
-    "id": "2fac3784-6674-4412-800a-a1a55df7082f",
+    "id": "17441406-44b4-4ee1-b93e-76a5dda387ec",
     "name": "Warhammer 40,000",
     "description": "The iconic grimdark sci-fi wargame",
     "is_active": true
   },
   {
-    "id": "e883ee04-2727-460f-9e84-0e50938a173b",
+    "id": "03f3f69c-2777-4bb9-aac2-19c7395a4508",
     "name": "Age of Sigmar",
     "description": "Fantasy battles in the Mortal Realms",
     "is_active": true
   },
   {
-    "id": "731094be-292f-4086-9537-4c097c236c14",
+    "id": "41173bf8-f108-449a-8cc3-4d1b32aa69c9",
+    "name": "Warhammer: The Old World",
+    "description": "Classic fantasy battles in the Old World",
+    "is_active": true
+  },
+  {
+    "id": "2671cbff-b6a4-4507-b08a-9ce2c39cfcc6",
+    "name": "Horus Heresy",
+    "description": "The galaxy-spanning civil war in the 31st millennium",
+    "is_active": true
+  },
+  {
+    "id": "b0b75cb0-b124-462b-8689-199587a987b1",
     "name": "Kill Team",
     "description": "Small-scale skirmish battles in the 40K universe",
     "is_active": true
   },
   {
-    "id": "17de2c50-59d1-4fc8-9c87-b782c4e62751",
+    "id": "2ddabbcb-8d4b-4e1e-ba57-f7a1e38b93ae",
     "name": "Warcry",
     "description": "Fast-paced skirmish combat in Age of Sigmar",
     "is_active": true
   },
   {
-    "id": "131671b0-0cb8-42b4-9a55-17b85b83c9c6",
-    "name": "Bolt Action",
-    "description": "World War II historical wargaming",
+    "id": "7c5340b3-0a22-4d73-a72e-25615d15265c",
+    "name": "Warhammer Underworlds",
+    "description": "Competitive deck-based skirmish game",
     "is_active": true
   },
   {
-    "id": "ff5bb9a3-e96d-4b2c-9d50-b634a33cfb21",
-    "name": "SAGA",
-    "description": "Dark Age skirmish gaming",
+    "id": "39515a22-4dd2-41b5-b060-1adf3095c860",
+    "name": "Adeptus Titanicus",
+    "description": "Epic-scale Titan warfare",
     "is_active": true
   },
   {
-    "id": "b9e7968e-243e-4618-a0c0-df2567e21a05",
-    "name": "Art de la Guerre",
-    "description": "Ancient and medieval warfare",
-    "is_active": true
-  },
-  {
-    "id": "a0fa191a-ca5d-429c-8f26-cb5b260ca130",
-    "name": "Kings of War",
-    "description": "Mass fantasy battles",
-    "is_active": true
-  },
-  {
-    "id": "35a32290-b5d5-4f2e-add3-8d38ebd99bb4",
-    "name": "Flames of War",
-    "description": "World War II tank combat",
-    "is_active": true
-  },
-  {
-    "id": "5c99cbaa-6712-4a14-9a42-36b10bc2bab2",
-    "name": "X-Wing",
-    "description": "Star Wars space combat",
-    "is_active": true
-  },
-  {
-    "id": "fa8db533-7e15-4dfa-82dc-3c7457c4b98d",
-    "name": "Star Wars Legion",
-    "description": "Ground battles in the Star Wars universe",
-    "is_active": true
-  },
-  {
-    "id": "b912b851-fbbe-45ea-b22d-5bb382a2f449",
-    "name": "Infinity",
-    "description": "Sci-fi skirmish with anime aesthetics",
-    "is_active": true
-  },
-  {
-    "id": "46571553-2eec-4014-a131-44237d67b43e",
-    "name": "Malifaux",
-    "description": "Gothic horror skirmish game",
-    "is_active": true
-  },
-  {
-    "id": "94d74c55-d422-4217-81ac-febc5548daf6",
-    "name": "Guild Ball",
-    "description": "Fantasy sports meets skirmish gaming",
-    "is_active": true
-  },
-  {
-    "id": "aef512d7-3e29-431d-9cca-5ed4b3fca60c",
-    "name": "Blood Bowl",
-    "description": "Fantasy football with violence",
-    "is_active": true
-  },
-  {
-    "id": "a734499f-bf8f-4cee-9312-9c631780d4ab",
+    "id": "4826c9fb-3cff-456d-8f2b-7d430d5cb5a2",
     "name": "Necromunda",
     "description": "Gang warfare in the underhive",
     "is_active": true
   },
   {
-    "id": "6c51996d-6284-4a1e-b859-1d09449f96c6",
-    "name": "Middle-earth Strategy Battle Game",
+    "id": "5559aa58-4f66-41f0-985a-cdba220e632f",
+    "name": "Blood Bowl",
+    "description": "Fantasy football with violence",
+    "is_active": true
+  },
+  {
+    "id": "3eea347e-772a-4e4e-98a1-01de45da5097",
+    "name": "Middle-earth SBG",
     "description": "Battle in Tolkien's world",
     "is_active": true
   },
   {
-    "id": "3e89f953-a556-456a-98ac-a5d7abf61160",
-    "name": "Battletech",
+    "id": "dd1af763-28e3-4d3a-a019-36b628302926",
+    "name": "Bolt Action",
+    "description": "World War II historical wargaming",
+    "is_active": true
+  },
+  {
+    "id": "04556c58-0623-4c2c-9cfc-a2f8137d7fc3",
+    "name": "Flames of War",
+    "description": "World War II tank combat",
+    "is_active": true
+  },
+  {
+    "id": "f7f11749-6879-46a4-adcd-52aa076c0800",
+    "name": "SAGA",
+    "description": "Dark Age skirmish gaming",
+    "is_active": true
+  },
+  {
+    "id": "cd8db47c-620a-40cc-a3ad-8ae9cc439841",
+    "name": "Kings of War",
+    "description": "Mass fantasy battles",
+    "is_active": true
+  },
+  {
+    "id": "90fdcde2-1142-4425-9387-9ff70f210bbe",
+    "name": "Infinity",
+    "description": "Sci-fi skirmish with anime aesthetics",
+    "is_active": true
+  },
+  {
+    "id": "398fd10d-4706-4f96-9f46-d8d31876ecf4",
+    "name": "Malifaux",
+    "description": "Gothic horror skirmish game",
+    "is_active": true
+  },
+  {
+    "id": "898a3ab5-8525-447d-b17b-108680368dda",
+    "name": "Warmachine/Hordes",
+    "description": "Steampunk fantasy battles",
+    "is_active": true
+  },
+  {
+    "id": "fe4b511b-b811-4fce-afca-ff1406acbbb0",
+    "name": "X-Wing",
+    "description": "Star Wars space combat",
+    "is_active": true
+  },
+  {
+    "id": "b27af2b6-4ff0-4865-a0f2-d72f6a063bc6",
+    "name": "Star Wars: Legion",
+    "description": "Ground battles in the Star Wars universe",
+    "is_active": true
+  },
+  {
+    "id": "d112c2ea-f40b-4ef2-ad94-b4581cea45c0",
+    "name": "BattleTech",
     "description": "Giant robot combat",
     "is_active": true
   },
   {
-    "id": "e1c6f20d-b3a5-479a-a0bc-41fb5a11910d",
+    "id": "97b1b01a-41e6-4b40-b88e-f4f3593cab96",
     "name": "Dropzone Commander",
     "description": "10mm sci-fi warfare",
     "is_active": true
   },
   {
-    "id": "d4e93348-0a72-4661-a06f-abd8f19061e3",
-    "name": "Warmachine/Hordes",
-    "description": "Steampunk fantasy battles",
+    "id": "a9e32eaf-03cb-4291-9f9a-12d06fb607bf",
+    "name": "Guild Ball",
+    "description": "Fantasy sports meets skirmish gaming",
+    "is_active": true
+  },
+  {
+    "id": "bbfcc1fa-8510-421b-8998-75ec4767ac80",
+    "name": "D&D / RPG",
+    "description": "Dungeons & Dragons and RPG miniatures",
+    "is_active": true
+  },
+  {
+    "id": "98daab06-7836-42e7-8248-506653127faf",
+    "name": "Pathfinder",
+    "description": "Fantasy RPG miniatures",
+    "is_active": true
+  },
+  {
+    "id": "a9f9329b-9026-475d-a8d9-6c0c9039e14c",
+    "name": "Frostgrave",
+    "description": "Wizard warband skirmish",
+    "is_active": true
+  },
+  {
+    "id": "37b1dcf5-2de8-4c36-bbcd-ca8f973007f6",
+    "name": "Mordheim",
+    "description": "Skirmish in the City of the Damned",
+    "is_active": true
+  },
+  {
+    "id": "08dbba90-06a3-48db-bbc9-bc7cb73c6076",
+    "name": "Gaslands",
+    "description": "Post-apocalyptic vehicular combat",
+    "is_active": true
+  },
+  {
+    "id": "bbebecda-b651-4302-ae29-61ec096aeb49",
+    "name": "Zombicide",
+    "description": "Cooperative zombie survival",
+    "is_active": true
+  },
+  {
+    "id": "d27b816b-2975-4edd-bee4-5552bd52b696",
+    "name": "Trench Crusade",
+    "description": "Grimdark alternate history warfare",
+    "is_active": true
+  },
+  {
+    "id": "3960bea7-0831-430a-af6a-706ea6c8418d",
+    "name": "Other Game System",
+    "description": "Custom or unlisted game systems",
     "is_active": true
   }
 ]

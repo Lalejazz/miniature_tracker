@@ -9,16 +9,18 @@ import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
 import ForgotPasswordForm from './components/ForgotPasswordForm';
 import ResetPasswordForm from './components/ResetPasswordForm';
+import { EmailVerification } from './components/EmailVerification';
 import { UserHeader } from './components/UserHeader';
 import Changelog from './components/Changelog';
 import UserPreferencesForm from './components/UserPreferencesForm';
 import PlayerSearch from './components/PlayerSearch';
 import ImportExport from './components/ImportExport';
 
-type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
+type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
+type Tab = 'units' | 'statistics' | 'changelog' | 'preferences' | 'players' | 'import-export';
 
 interface AuthState {
-  user: any | null;
+  user: any;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -33,42 +35,21 @@ function App() {
     isLoading: true,
   });
 
-  // UI state
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
-  
-  // Tab state
-  const [currentTab, setCurrentTab] = useState<'miniatures' | 'statistics' | 'preferences' | 'player-search'>('miniatures');
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
-  // Miniature state
+  // App state
   const [miniatures, setMiniatures] = useState<Miniature[]>([]);
-  const [miniaturesLoading, setMiniaturesLoading] = useState(false);
-  const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-
-  // Player preferences state
+  const [editingMiniature, setEditingMiniature] = useState<Miniature | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('units');
+  const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
-  
-  // UI state for changelog modal
-  const [showChangelog, setShowChangelog] = useState(false);
-  const [showImportExport, setShowImportExport] = useState(false);
 
-  // Check for password reset token in URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    
-    if (token) {
-      setResetToken(token);
-      setAuthMode('reset-password');
-      // Clear the URL parameter for security
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
-  // Check for existing token on mount
+  // Check for existing token on app load
   useEffect(() => {
     const checkAuth = async () => {
       const token = tokenManager.getToken();
@@ -81,7 +62,7 @@ function App() {
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (err) {
+        } catch (error) {
           // Token is invalid, clear it
           tokenManager.clearToken();
           setAuthState({
@@ -104,6 +85,18 @@ function App() {
     checkAuth();
   }, []);
 
+  // Check for reset token in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setAuthMode('reset-password');
+      // Clear the token from URL for security
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Load miniatures when authenticated
   useEffect(() => {
     if (authState.isAuthenticated) {
@@ -112,24 +105,23 @@ function App() {
     }
   }, [authState.isAuthenticated]);
 
+  const loadMiniatures = async () => {
+    try {
+      setMiniaturesError(null);
+      const data = await miniatureApi.getAll();
+      setMiniatures(data);
+    } catch (error: any) {
+      setMiniaturesError(error.message || 'Failed to load miniatures');
+    }
+  };
+
   const loadUserPreferences = async () => {
     try {
       const preferences = await playerApi.getPreferences();
       setUserPreferences(preferences);
-    } catch (err: any) {
-      // User might not have preferences yet, which is fine
-      if (!err.message?.includes('404')) {
-        console.error('Error loading preferences:', err);
-      }
+    } catch (error) {
+      // User preferences might not exist yet, that's okay
       setUserPreferences(null);
-    }
-  };
-
-  const handlePreferencesSave = (preferences: UserPreferences) => {
-    setUserPreferences(preferences);
-    // Optionally switch to player search tab after saving preferences
-    if (currentTab === 'preferences') {
-      setCurrentTab('player-search');
     }
   };
 
@@ -159,10 +151,13 @@ function App() {
       setAuthError(null);
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
-      await authApi.register(userData);
+      const response = await authApi.register(userData);
       
-      // Auto-login after registration
-      await handleLogin({ email: userData.email, password: userData.password });
+      // Registration successful, show email verification
+      setPendingVerificationEmail(userData.email);
+      setAuthMode('email-verification');
+      setAuthSuccess(response.message);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     } catch (err: any) {
       setAuthError(err.message || 'Registration failed');
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -180,6 +175,7 @@ function App() {
     setMiniatures([]);
     setShowForm(false);
     setMiniaturesError(null);
+    setUserPreferences(null);
   };
 
   const handlePasswordResetSuccess = () => {
@@ -193,94 +189,72 @@ function App() {
     setAuthState(prev => ({ ...prev, isLoading: false }));
   };
 
+  const handleEmailVerificationComplete = () => {
+    setAuthSuccess('Email verified successfully! You can now log in.');
+    setAuthMode('login');
+    setPendingVerificationEmail(null);
+  };
+
   const clearMessages = () => {
     setAuthError(null);
     setAuthSuccess(null);
   };
 
-  const loadMiniatures = async () => {
-    try {
-      setMiniaturesLoading(true);
-      setMiniaturesError(null);
-      const data = await miniatureApi.getAll();
-      setMiniatures(data);
-    } catch (err: any) {
-      setMiniaturesError(err.message || 'Failed to load miniatures');
-      console.error('Error loading miniatures:', err);
-    } finally {
-      setMiniaturesLoading(false);
-    }
-  };
-
   const handleCreateMiniature = async (miniatureData: MiniatureCreate) => {
     try {
-      setMiniaturesError(null);
       const newMiniature = await miniatureApi.create(miniatureData);
       setMiniatures(prev => [...prev, newMiniature]);
       setShowForm(false);
-    } catch (err: any) {
-      setMiniaturesError(err.message || 'Failed to create miniature');
-      console.error('Error creating miniature:', err);
+    } catch (error: any) {
+      setMiniaturesError(error.message || 'Failed to create miniature');
     }
   };
 
-  const handleUpdateMiniature = async (id: string, updates: Partial<Miniature>) => {
+  const handleUpdateMiniature = async (id: string, updates: any) => {
     try {
-      setMiniaturesError(null);
-      const updated = await miniatureApi.update(id, updates);
+      const updatedMiniature = await miniatureApi.update(id, updates);
       setMiniatures(prev => 
-        prev.map(m => m.id === id ? updated : m)
+        prev.map(m => m.id === id ? updatedMiniature : m)
       );
-    } catch (err: any) {
-      setMiniaturesError(err.message || 'Failed to update miniature');
-      console.error('Error updating miniature:', err);
+      setEditingMiniature(null);
+    } catch (error: any) {
+      setMiniaturesError(error.message || 'Failed to update miniature');
     }
-  };
-
-  const handleMiniatureUpdate = (updatedMiniature: Miniature) => {
-    setMiniatures(prev => 
-      prev.map(m => m.id === updatedMiniature.id ? updatedMiniature : m)
-    );
   };
 
   const handleDeleteMiniature = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this miniature?')) {
-      return;
-    }
-
     try {
-      setMiniaturesError(null);
       await miniatureApi.delete(id);
       setMiniatures(prev => prev.filter(m => m.id !== id));
-    } catch (err: any) {
-      setMiniaturesError(err.message || 'Failed to delete miniature');
-      console.error('Error deleting miniature:', err);
+    } catch (error: any) {
+      setMiniaturesError(error.message || 'Failed to delete miniature');
     }
   };
 
+  const handleImportComplete = () => {
+    loadMiniatures(); // Reload miniatures after import
+  };
+
   // Show loading spinner during initial auth check
-  if (authState.isLoading) {
+  if (authState.isLoading && !authState.isAuthenticated) {
     return (
-      <div className="App">
-        <div className="loading">Loading...</div>
+      <div className="app">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // Show authentication forms if not logged in
+  // Show authentication forms if not authenticated
   if (!authState.isAuthenticated) {
     return (
-      <div className="App">
+      <div className="app">
         <div className="auth-container">
           {authSuccess && (
             <div className="success-message">
               {authSuccess}
-            </div>
-          )}
-          
-          {authError && (
-            <div className="error-message">
-              {authError}
             </div>
           )}
 
@@ -326,6 +300,23 @@ function App() {
               token={resetToken}
               onSuccess={handlePasswordResetSuccess}
               onError={handlePasswordResetError}
+              onBack={() => {
+                setAuthMode('login');
+                setResetToken(null);
+                clearMessages();
+              }}
+            />
+          )}
+
+          {authMode === 'email-verification' && (
+            <EmailVerification
+              email={pendingVerificationEmail || undefined}
+              onVerificationComplete={handleEmailVerificationComplete}
+              onBack={() => {
+                setAuthMode('login');
+                setPendingVerificationEmail(null);
+                clearMessages();
+              }}
             />
           )}
         </div>
@@ -333,75 +324,70 @@ function App() {
     );
   }
 
-  // Show main app for authenticated users
+  // Main authenticated app
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>🎨 Unit Tracker</h1>
-        <p>Track your Warhammer, AoS, D&D unit collection and painting progress</p>
-      </header>
+    <div className="app">
+      <UserHeader 
+        user={authState.user} 
+        onLogout={handleLogout}
+      />
 
-      <main className="App-main">
-        <UserHeader user={authState.user!} onLogout={handleLogout} />
+      <nav className="main-nav">
+        <button 
+          className={activeTab === 'units' ? 'active' : ''}
+          onClick={() => setActiveTab('units')}
+        >
+          My Units
+        </button>
+        <button 
+          className={activeTab === 'statistics' ? 'active' : ''}
+          onClick={() => setActiveTab('statistics')}
+        >
+          Statistics
+        </button>
+        <button 
+          className={activeTab === 'players' ? 'active' : ''}
+          onClick={() => setActiveTab('players')}
+        >
+          Player Search
+        </button>
+        <button 
+          className={activeTab === 'preferences' ? 'active' : ''}
+          onClick={() => setActiveTab('preferences')}
+        >
+          User Preferences
+        </button>
+        <button 
+          className={activeTab === 'import-export' ? 'active' : ''}
+          onClick={() => setActiveTab('import-export')}
+        >
+          Import/Export
+        </button>
+        <button 
+          className={activeTab === 'changelog' ? 'active' : ''}
+          onClick={() => setActiveTab('changelog')}
+        >
+          Changelog
+        </button>
+      </nav>
 
-        {/* Tab Navigation */}
-        <div className="tab-navigation">
-          <button 
-            className={`tab-button ${currentTab === 'miniatures' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('miniatures')}
-          >
-            🎨 My Units
-          </button>
-          <button 
-            className={`tab-button ${currentTab === 'statistics' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('statistics')}
-          >
-            📊 Statistics
-          </button>
-          <button 
-            className={`tab-button ${currentTab === 'preferences' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('preferences')}
-          >
-            🔧 Preferences
-          </button>
-          <button 
-            className={`tab-button ${currentTab === 'player-search' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('player-search')}
-          >
-            🔍 Player Search
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        {currentTab === 'miniatures' && (
+      <main className="main-content">
+        {activeTab === 'units' && (
           <>
             {miniaturesError && (
-              <div className="error-banner">
-                <span>⚠️ {miniaturesError}</span>
-                <button onClick={() => setMiniaturesError(null)}>✕</button>
+              <div className="error-message">
+                {miniaturesError}
+                <button onClick={() => setMiniaturesError(null)}>×</button>
               </div>
             )}
 
-            <div className="controls">
+            <div className="units-header">
+              <h2>My Miniature Collection</h2>
               <button 
                 className="add-button"
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => setShowForm(true)}
               >
-                {showForm ? '✕ Cancel' : '+ Add Unit'}
-              </button>
-              <button 
-                className="refresh-button"
-                onClick={loadMiniatures}
-                disabled={miniaturesLoading}
-              >
-                🔄 Refresh
-              </button>
-              <button 
-                className="add-button"
-                onClick={() => setShowImportExport(!showImportExport)}
-                style={{ backgroundColor: showImportExport ? '#6b7280' : '#3b82f6' }}
-              >
-                {showImportExport ? '✕ Close' : '📁 Import/Export'}
+                + Add Unit
               </button>
             </div>
 
@@ -412,72 +398,46 @@ function App() {
               />
             )}
 
-            {showImportExport && (
-              <ImportExport onImportComplete={() => {
-                loadMiniatures();
-                setShowImportExport(false);
-              }} />
-            )}
-
-            {miniaturesLoading ? (
-              <div className="loading">Loading miniatures...</div>
-            ) : (
-              <MiniatureList
-                miniatures={miniatures}
-                onUpdate={handleUpdateMiniature}
-                onDelete={handleDeleteMiniature}
-                onMiniatureUpdate={handleMiniatureUpdate}
+            {editingMiniature && (
+              <UnitForm
+                miniature={editingMiniature}
+                onSubmit={(data) => handleUpdateMiniature(editingMiniature.id, data)}
+                onCancel={() => setEditingMiniature(null)}
+                isEditing={true}
               />
             )}
+
+            <MiniatureList
+              miniatures={miniatures}
+              onEdit={setEditingMiniature}
+              onDelete={handleDeleteMiniature}
+            />
           </>
         )}
 
-        {currentTab === 'statistics' && (
+        {activeTab === 'statistics' && (
           <Statistics onError={setMiniaturesError} />
         )}
 
-        {currentTab === 'preferences' && (
-          <UserPreferencesForm 
+        {activeTab === 'players' && (
+          <PlayerSearch userHasPreferences={userPreferences !== null} />
+        )}
+
+        {activeTab === 'preferences' && (
+          <UserPreferencesForm
             existingPreferences={userPreferences}
-            onSave={handlePreferencesSave}
+            onSave={loadUserPreferences}
           />
         )}
 
-        {currentTab === 'player-search' && (
-          <PlayerSearch 
-            userHasPreferences={userPreferences !== null}
-          />
+        {activeTab === 'import-export' && (
+          <ImportExport onImportComplete={handleImportComplete} />
+        )}
+
+        {activeTab === 'changelog' && (
+          <Changelog />
         )}
       </main>
-
-      <footer className="App-footer">
-        <div className="footer-content">
-          <div className="footer-info">
-            <p>Built with React + FastAPI | {miniatures.length} units tracked</p>
-            <p>Developed by Alex</p>
-          </div>
-          <div className="footer-links">
-            <button className="footer-link" onClick={() => setShowChangelog(true)}>
-              📋 Changelog
-            </button>
-          </div>
-        </div>
-      </footer>
-      
-      {/* Changelog Modal */}
-      {showChangelog && (
-        <div className="modal-overlay" onClick={() => setShowChangelog(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Changelog</h2>
-              <button className="modal-close" onClick={() => setShowChangelog(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <Changelog />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

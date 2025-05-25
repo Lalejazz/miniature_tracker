@@ -374,6 +374,7 @@ export interface User {
   email: string;
   full_name?: string;
   is_active: boolean;
+  is_email_verified: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -383,6 +384,7 @@ export interface UserCreate {
   email: string;
   full_name?: string;
   password: string;
+  accept_terms: boolean;
 }
 
 export interface LoginRequest {
@@ -393,6 +395,14 @@ export interface LoginRequest {
 export interface Token {
   access_token: string;
   token_type: string;
+}
+
+export interface EmailVerificationRequest {
+  email: string;
+}
+
+export interface EmailVerificationConfirm {
+  token: string;
 }
 
 // Status information for UI

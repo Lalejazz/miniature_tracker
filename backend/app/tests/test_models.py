@@ -2,9 +2,9 @@
 
 import pytest
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, PaintingStatus
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, PaintingStatus, GameSystem, UnitType
 
 
 class TestPaintingStatus:
@@ -33,14 +33,16 @@ class TestMiniatureCreate:
         miniature_data = {
             "name": "Space Marine Captain",
             "faction": "Ultramarines",
-            "model_type": "Character",
+            "game_system": GameSystem.WARHAMMER_40K,
+            "unit_type": UnitType.CHARACTER,
         }
         
         miniature = MiniatureCreate(**miniature_data)
         
         assert miniature.name == "Space Marine Captain"
         assert miniature.faction == "Ultramarines"
-        assert miniature.model_type == "Character"
+        assert miniature.game_system == GameSystem.WARHAMMER_40K
+        assert miniature.unit_type == UnitType.CHARACTER
         assert miniature.status == PaintingStatus.WANT_TO_BUY
         assert miniature.notes is None
 
@@ -49,7 +51,8 @@ class TestMiniatureCreate:
         miniature_data = {
             "name": "Ork Warboss",
             "faction": "Orks",
-            "model_type": "HQ",
+            "game_system": GameSystem.WARHAMMER_40K,
+            "unit_type": UnitType.CHARACTER,
             "status": PaintingStatus.ASSEMBLED,
             "notes": "Need to add more dakka"
         }
@@ -63,20 +66,26 @@ class TestMiniatureCreate:
         """Test name field validation."""
         # Empty name should fail
         with pytest.raises(ValueError):
-            MiniatureCreate(name="", faction="Test", model_type="Test")
+            MiniatureCreate(
+                name="", 
+                faction="Test", 
+                game_system=GameSystem.WARHAMMER_40K,
+                unit_type=UnitType.INFANTRY
+            )
         
         # Too long name should fail
         with pytest.raises(ValueError):
             MiniatureCreate(
                 name="x" * 201, 
                 faction="Test", 
-                model_type="Test"
+                game_system=GameSystem.WARHAMMER_40K,
+                unit_type=UnitType.INFANTRY
             )
 
     def test_required_fields(self) -> None:
         """Test that required fields are enforced."""
         with pytest.raises(ValueError):
-            MiniatureCreate(faction="Test", model_type="Test")  # Missing name
+            MiniatureCreate(faction="Test", game_system=GameSystem.WARHAMMER_40K, unit_type=UnitType.INFANTRY)  # Missing name
 
 
 class TestMiniatureUpdate:
@@ -88,7 +97,8 @@ class TestMiniatureUpdate:
         
         assert update.name is None
         assert update.faction is None
-        assert update.model_type is None
+        assert update.game_system is None
+        assert update.unit_type is None
         assert update.status is None
         assert update.notes is None
 
@@ -112,7 +122,9 @@ class TestMiniature:
         miniature_data = {
             "name": "Tactical Squad",
             "faction": "Space Marines",
-            "model_type": "Troops"
+            "game_system": GameSystem.WARHAMMER_40K,
+            "unit_type": UnitType.INFANTRY,
+            "user_id": uuid4()
         }
         
         miniature = Miniature(**miniature_data)
@@ -124,15 +136,20 @@ class TestMiniature:
 
     def test_auto_generated_fields(self) -> None:
         """Test that UUID and timestamps are auto-generated."""
+        user_id = uuid4()
         miniature1 = Miniature(
             name="Test1", 
             faction="Test", 
-            model_type="Test"
+            game_system=GameSystem.WARHAMMER_40K,
+            unit_type=UnitType.INFANTRY,
+            user_id=user_id
         )
         miniature2 = Miniature(
             name="Test2", 
             faction="Test", 
-            model_type="Test"
+            game_system=GameSystem.WARHAMMER_40K,
+            unit_type=UnitType.INFANTRY,
+            user_id=user_id
         )
         
         # Each miniature should have unique ID

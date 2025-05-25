@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { UserCreate } from '../types';
+import { TermsAndConditions } from './TermsAndConditions';
 
 interface RegisterFormProps {
   onRegister: (userData: UserCreate) => Promise<void>;
@@ -22,6 +23,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +34,41 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       return;
     }
 
-    await onRegister({ email, username, password });
+    if (!acceptTerms) {
+      alert('You must accept the terms and conditions to register');
+      return;
+    }
+
+    await onRegister({ 
+      email, 
+      username, 
+      password, 
+      accept_terms: acceptTerms 
+    });
   };
+
+  const handleTermsAccept = () => {
+    setAcceptTerms(true);
+    setShowTerms(false);
+  };
+
+  const handleTermsDecline = () => {
+    setAcceptTerms(false);
+    setShowTerms(false);
+  };
+
+  if (showTerms) {
+    return (
+      <div className="auth-form">
+        <TermsAndConditions
+          isModal={true}
+          onAccept={handleTermsAccept}
+          onDecline={handleTermsDecline}
+          showButtons={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="auth-form">
@@ -82,8 +118,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={isLoading}
-            placeholder="Enter a password (min 6 characters)"
-            minLength={6}
+            placeholder="Enter a password (min 8 characters)"
+            minLength={8}
           />
         </div>
 
@@ -97,14 +133,36 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             required
             disabled={isLoading}
             placeholder="Confirm your password"
-            minLength={6}
+            minLength={8}
           />
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              disabled={isLoading}
+            />
+            <span>
+              I accept the{' '}
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setShowTerms(true)}
+                disabled={isLoading}
+              >
+                Terms and Conditions
+              </button>
+            </span>
+          </label>
         </div>
 
         <button 
           type="submit" 
           className="auth-button"
-          disabled={isLoading}
+          disabled={isLoading || !acceptTerms}
         >
           {isLoading ? 'Registering...' : 'Register'}
         </button>
