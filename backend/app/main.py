@@ -16,6 +16,7 @@ from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
 from app.oauth_routes import router as oauth_router
+from app.user_crud import UserDB
 
 
 # Create FastAPI app
@@ -547,6 +548,28 @@ async def migrate_games_endpoint(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
+
+@app.delete("/admin/users/{user_id}")
+async def delete_user(
+    user_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> dict:
+    """Delete a user (admin only - for now, any authenticated user can delete)."""
+    user_db = UserDB()
+    
+    # Check if user exists
+    user = await user_db.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete the user
+    success = await user_db.delete_user(user_id)
+    
+    if success:
+        return {"message": f"User {user.email} deleted successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to delete user")
 
 
 # Add CORS middleware for frontend integration

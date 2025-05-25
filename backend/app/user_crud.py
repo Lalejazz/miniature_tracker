@@ -125,6 +125,11 @@ class UserDB:
         await self._ensure_db_initialized()
         return await self.db.get_all_users()
     
+    async def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user and all their associated data."""
+        await self._ensure_db_initialized()
+        return await self.db.delete_user(user_id)
+    
     # Password Reset Token Methods
     
     def create_password_reset_token(self, user_id: UUID) -> PasswordResetToken:

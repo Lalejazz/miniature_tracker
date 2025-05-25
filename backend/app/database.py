@@ -58,6 +58,11 @@ class DatabaseInterface(ABC):
         pass
     
     @abstractmethod
+    async def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user and all their associated data."""
+        pass
+    
+    @abstractmethod
     async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
         """Get all miniatures for a user."""
         pass
@@ -500,6 +505,18 @@ class PostgreSQLDatabase(DatabaseInterface):
                 "SELECT id, email, username, full_name, oauth_provider, oauth_id, is_active, created_at, updated_at FROM users ORDER BY created_at"
             )
             return [User(**dict(row)) for row in rows]
+    
+    async def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user and all their associated data."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM users WHERE id = $1",
+                user_id
+            )
+            return result.split()[-1] != '0'  # Check if any rows were affected
     
     async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
         """Get all miniatures for a user."""
@@ -1473,6 +1490,17 @@ class FileDatabase(DatabaseInterface):
             user_dict.pop("hashed_password", None)
             user_list.append(User(**user_dict))
         return user_list
+    
+    async def delete_user(self, user_id: UUID) -> bool:
+        """Delete a user and all their associated data."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                del users[i]
+                self._save_users(users)
+                return True
+        return False
     
     async def get_all_miniatures(self, user_id: UUID) -> List[Miniature]:
         """Get all miniatures for a user."""
