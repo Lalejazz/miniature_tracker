@@ -109,8 +109,21 @@ async def export_collection(
                     "username": username,
                     "total_units": len(miniatures)
                 },
-                "miniatures": [miniature.model_dump() for miniature in miniatures]
+                "miniatures": []
             }
+            
+            # Process each miniature for JSON export
+            for miniature in miniatures:
+                miniature_data = miniature.model_dump()
+                
+                # Add status timeline summary for easier analysis
+                status_timeline = {}
+                for log_entry in miniature.status_history:
+                    log_date = log_entry.date if hasattr(log_entry, 'date') else log_entry.created_at
+                    status_timeline[log_entry.to_status] = log_date.isoformat() if log_date else None
+                
+                miniature_data["status_timeline"] = status_timeline
+                export_data["miniatures"].append(miniature_data)
             
             # Create JSON response
             json_content = json.dumps(export_data, indent=2, default=str)
@@ -131,17 +144,30 @@ async def export_collection(
             output = io.StringIO()
             writer = csv.writer(output)
             
-            # Write header
+            # Get all possible statuses for column headers
+            from app.models import PaintingStatus
+            status_columns = [f"status_{status.value}" for status in PaintingStatus]
+            
+            # Write header - basic info + status timeline columns
             headers = [
-                "id", "name", "faction", "unit_type", "game_system", "status", 
+                "id", "name", "faction", "unit_type", "game_system", "current_status", 
                 "quantity", "base_dimension", "custom_base_size", "cost", 
                 "notes", "created_at", "updated_at"
-            ]
+            ] + status_columns
             writer.writerow(headers)
             
             # Write data rows (even if empty, we still have headers)
             for miniature in miniatures:
                 try:
+                    # Build status timeline dictionary
+                    status_timeline = {}
+                    for log_entry in miniature.status_history:
+                        # Use the date when the miniature moved TO this status
+                        status_key = f"status_{log_entry.to_status}"
+                        log_date = log_entry.date if hasattr(log_entry, 'date') else log_entry.created_at
+                        status_timeline[status_key] = log_date.isoformat() if log_date else ""
+                    
+                    # Basic miniature data
                     row = [
                         str(miniature.id),
                         miniature.name,
@@ -157,6 +183,11 @@ async def export_collection(
                         miniature.created_at.isoformat() if miniature.created_at else "",
                         miniature.updated_at.isoformat() if miniature.updated_at else ""
                     ]
+                    
+                    # Add status timeline columns
+                    for status_col in status_columns:
+                        row.append(status_timeline.get(status_col, ""))
+                    
                     writer.writerow(row)
                 except Exception as e:
                     # Log the error but continue with other miniatures
