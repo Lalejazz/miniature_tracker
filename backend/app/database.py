@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from datetime import datetime
+import math
 
 try:
     import asyncpg
@@ -681,9 +682,16 @@ class PostgreSQLDatabase(DatabaseInterface):
         preferences_id = uuid4()
         
         # Geocode address to get coordinates
-        coordinates = await GeocodingService.get_coordinates_from_address(preferences_create.location)
-        latitude = coordinates[0] if coordinates else None
-        longitude = coordinates[1] if coordinates else None
+        print(f"🔍 Geocoding location: '{preferences_create.location}'")
+        try:
+            coordinates = await GeocodingService.get_coordinates_from_address(preferences_create.location)
+            latitude = coordinates[0] if coordinates else None
+            longitude = coordinates[1] if coordinates else None
+            print(f"📍 Geocoding result: lat={latitude}, lon={longitude}")
+        except Exception as e:
+            print(f"❌ Geocoding error: {e}")
+            latitude = None
+            longitude = None
         
         async with self._pool.acquire() as conn:
             try:
@@ -695,8 +703,10 @@ class PostgreSQLDatabase(DatabaseInterface):
                     preferences_create.game_type, preferences_create.bio, preferences_create.show_email,
                     latitude, longitude
                 )
+                print(f"💾 Database saved: lat={row['latitude']}, lon={row['longitude']}")
                 return UserPreferences(**dict(row))
             except Exception as e:
+                print(f"❌ Database error: {e}")
                 if "unique" in str(e).lower():
                     raise ValueError("User preferences already exist")
                 raise
@@ -1164,6 +1174,19 @@ class FileDatabase(DatabaseInterface):
         """Create user preferences."""
         preferences_list = self._load_preferences()
         preference_id = str(uuid4())
+        
+        # Geocode address to get coordinates
+        print(f"🔍 [FileDB] Geocoding location: '{preferences_create.location}'")
+        try:
+            coordinates = await GeocodingService.get_coordinates_from_address(preferences_create.location)
+            latitude = coordinates[0] if coordinates else None
+            longitude = coordinates[1] if coordinates else None
+            print(f"📍 [FileDB] Geocoding result: lat={latitude}, lon={longitude}")
+        except Exception as e:
+            print(f"❌ [FileDB] Geocoding error: {e}")
+            latitude = None
+            longitude = None
+        
         preference = UserPreferences(
             id=preference_id,
             user_id=user_id,
@@ -1171,10 +1194,13 @@ class FileDatabase(DatabaseInterface):
             location=preferences_create.location,
             game_type=preferences_create.game_type,
             bio=preferences_create.bio,
-            show_email=preferences_create.show_email
+            show_email=preferences_create.show_email,
+            latitude=latitude,
+            longitude=longitude
         )
         preferences_list.append(preference.model_dump())
         self._save_preferences(preferences_list)
+        print(f"💾 [FileDB] Saved with coordinates: lat={latitude}, lon={longitude}")
         return preference
     
     async def update_user_preferences(self, user_id: UUID, updates: UserPreferencesUpdate) -> Optional[UserPreferences]:
@@ -1184,6 +1210,24 @@ class FileDatabase(DatabaseInterface):
             if preference.get("user_id") == str(user_id):
                 update_data = updates.model_dump(exclude_unset=True)
                 if update_data:
+                    # Geocode location if it changed
+                    if 'location' in update_data and update_data['location'] is not None:
+                        print(f"🔍 [FileDB] Geocoding updated location: '{update_data['location']}'")
+                        try:
+                            coordinates = await GeocodingService.get_coordinates_from_address(update_data['location'])
+                            if coordinates:
+                                update_data['latitude'] = coordinates[0]
+                                update_data['longitude'] = coordinates[1]
+                                print(f"📍 [FileDB] Updated geocoding result: lat={coordinates[0]}, lon={coordinates[1]}")
+                            else:
+                                update_data['latitude'] = None
+                                update_data['longitude'] = None
+                                print(f"❌ [FileDB] No coordinates found for location")
+                        except Exception as e:
+                            print(f"❌ [FileDB] Geocoding error: {e}")
+                            update_data['latitude'] = None
+                            update_data['longitude'] = None
+                    
                     for key, value in update_data.items():
                         if key in preference:
                             preference[key] = value
@@ -1196,8 +1240,100 @@ class FileDatabase(DatabaseInterface):
     
     async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
         """Search for players based on criteria."""
-        # For file database, return empty list (location-based search not implemented)
-        return []
+        # Get searcher's preferences to find their location
+        searcher_prefs = await self.get_user_preferences(searcher_user_id)
+        if not searcher_prefs or not searcher_prefs.latitude or not searcher_prefs.longitude:
+            return []  # Searcher has no location set
+        
+        searcher_lat = float(searcher_prefs.latitude)
+        searcher_lon = float(searcher_prefs.longitude)
+        
+        # Load all preferences and users
+        preferences = self._load_preferences()
+        users = self._load_users()
+        games = self._load_games()
+        
+        # Create user lookup
+        user_lookup = {user['id']: user for user in users}
+        game_lookup = {game['id']: game for game in games}
+        
+        results = []
+        
+        for pref in preferences:
+            # Skip searcher themselves
+            if pref.get('user_id') == str(searcher_user_id):
+                continue
+                
+            # Skip if no coordinates
+            if not pref.get('latitude') or not pref.get('longitude'):
+                continue
+            
+            pref_lat = float(pref['latitude'])
+            pref_lon = float(pref['longitude'])
+            
+            # Calculate distance using Haversine formula
+            def haversine_distance(lat1, lon1, lat2, lon2):
+                R = 6371  # Earth's radius in kilometers
+                
+                lat1_rad = math.radians(lat1)
+                lon1_rad = math.radians(lon1)
+                lat2_rad = math.radians(lat2)
+                lon2_rad = math.radians(lon2)
+                
+                dlat = lat2_rad - lat1_rad
+                dlon = lon2_rad - lon1_rad
+                
+                a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+                c = 2 * math.asin(math.sqrt(a))
+                
+                return R * c
+            
+            distance_km = haversine_distance(searcher_lat, searcher_lon, pref_lat, pref_lon)
+            
+            # Filter by distance
+            if distance_km > search_request.max_distance_km:
+                continue
+            
+            # Filter by games if specified
+            if search_request.games:
+                pref_games = set(pref.get('games', []))
+                search_games = set(str(g) for g in search_request.games)
+                if not pref_games.intersection(search_games):
+                    continue
+            
+            # Filter by game type if specified
+            if search_request.game_type and pref.get('game_type') != search_request.game_type.value:
+                continue
+            
+            # Get user details
+            user = user_lookup.get(pref['user_id'])
+            if not user:
+                continue
+            
+            # Get game details
+            user_games = []
+            for game_id in pref.get('games', []):
+                game = game_lookup.get(game_id)
+                if game:
+                    user_games.append(Game(**game))
+            
+            # Create result
+            result = PlayerSearchResult(
+                user_id=pref['user_id'],
+                username=user['username'],
+                email=user['email'] if pref.get('show_email') else None,
+                games=user_games,
+                game_type=GameType(pref.get('game_type', 'competitive')),
+                bio=pref.get('bio'),
+                distance_km=round(distance_km, 2),
+                location=pref['location'][:10] + "***" if len(pref['location']) > 10 else pref['location']
+            )
+            results.append(result)
+        
+        # Sort by distance
+        results.sort(key=lambda x: x.distance_km)
+        
+        return results[:50]  # Limit to 50 results
 
 
 # Global database instance to ensure singleton pattern
