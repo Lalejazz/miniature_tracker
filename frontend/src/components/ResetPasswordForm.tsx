@@ -6,12 +6,14 @@ interface ResetPasswordFormProps {
   token: string;
   onSuccess: () => void;
   onError: (error: string) => void;
+  onBack: () => void;
 }
 
 const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   token,
   onSuccess,
-  onError
+  onError,
+  onBack
 }) => {
   const [formData, setFormData] = useState({
     password: '',
@@ -133,6 +135,13 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
         </div>
 
         <div className="form-actions">
+          <button
+            type="button"
+            onClick={onBack}
+            className="btn-secondary"
+          >
+            Back to Login
+          </button>
           <button
             type="submit"
             disabled={isLoading || !formData.password || !formData.confirmPassword}
