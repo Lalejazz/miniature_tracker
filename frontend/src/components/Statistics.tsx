@@ -22,6 +22,7 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'trends'>('overview');
+  const [statusFilter, setStatusFilter] = useState<PaintingStatus | ''>('');
   
   // Trend analysis filters
   const [trendFilters, setTrendFilters] = useState<TrendRequest>({
@@ -98,6 +99,81 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
     return dateStr;
   };
 
+  // Create filtered statistics based on status filter
+  const getFilteredStatistics = () => {
+    if (!statistics || !statusFilter) return statistics;
+    
+    // Calculate filtered statistics
+    const filteredStats = {
+      ...statistics,
+      total_units: statistics.status_breakdown[statusFilter] || 0,
+      total_models: statistics.total_models, // This would need to be calculated properly in a real implementation
+      completion_percentage: statusFilter === PaintingStatus.PARADE_READY ? 100 : 
+                           statusFilter === PaintingStatus.GAME_READY ? 80 :
+                           statusFilter === PaintingStatus.PRIMED ? 40 :
+                           statusFilter === PaintingStatus.ASSEMBLED ? 20 :
+                           statusFilter === PaintingStatus.PURCHASED ? 10 : 0,
+      status_breakdown: { [statusFilter]: statistics.status_breakdown[statusFilter] || 0 }
+    };
+    
+    return filteredStats;
+  };
+
+  const renderStatusChart = () => {
+    if (!statistics) return null;
+    
+    const statusData = Object.entries(statistics.status_breakdown)
+      .map(([status, count]) => ({
+        status: status as PaintingStatus,
+        count,
+        info: STATUS_INFO[status as PaintingStatus]
+      }))
+      .filter(item => item.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    const maxCount = Math.max(...statusData.map(d => d.count));
+    
+    return (
+      <div className="status-chart-section">
+        <h3>📊 Status Distribution Chart</h3>
+        <div className="status-chart">
+          {statusData.map((item, index) => {
+            const height = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+            const isSelected = statusFilter === item.status;
+            
+            return (
+              <div 
+                key={item.status} 
+                className={`status-chart-bar ${isSelected ? 'selected' : ''}`}
+                onClick={() => setStatusFilter(statusFilter === item.status ? '' : item.status)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div 
+                  className="status-bar"
+                  style={{ 
+                    height: `${height}%`,
+                    backgroundColor: item.info.color,
+                    opacity: isSelected ? 1 : 0.8
+                  }}
+                  title={`${item.info.label}: ${item.count} units`}
+                />
+                <div className="status-bar-label">
+                  {item.info.label}
+                </div>
+                <div className="status-bar-count">
+                  {item.count}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="chart-help-text">
+          💡 Click on a status bar to filter the statistics by that status
+        </p>
+      </div>
+    );
+  };
+
   const renderTrendChart = (data: any[], title: string, valueKey: 'count' | 'cost' = 'count') => {
     if (!data || data.length === 0) return null;
 
@@ -172,20 +248,37 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
             📊 Trends
           </button>
         </div>
-        <button onClick={loadStatistics} className="refresh-button">
-          🔄 Refresh
-        </button>
+        <div className="header-controls">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as PaintingStatus | '')}
+            className="status-filter-select"
+          >
+            <option value="">All Statuses</option>
+            {Object.entries(STATUS_INFO).map(([status, info]) => (
+              <option key={status} value={status}>
+                {info.label}
+              </option>
+            ))}
+          </select>
+          <button onClick={loadStatistics} className="refresh-button">
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {activeTab === 'overview' && statistics && (
         <>
+          {/* Status Chart */}
+          {renderStatusChart()}
+
           {/* Overview Cards */}
           <div className="stats-overview">
             <div className="stat-card">
               <div className="stat-icon">🎨</div>
               <div className="stat-content">
-                <h3>{statistics.total_units}</h3>
-                <p>Total Units</p>
+                <h3>{(getFilteredStatistics() || statistics).total_units}</h3>
+                <p>{statusFilter ? `${STATUS_INFO[statusFilter].label} Units` : 'Total Units'}</p>
               </div>
             </div>
 
@@ -210,14 +303,14 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
             <div className="stat-card">
               <div className="stat-icon">✅</div>
               <div className="stat-content">
-                <h3>{statistics.completion_percentage}%</h3>
-                <p>Completion Rate</p>
+                <h3>{(getFilteredStatistics() || statistics).completion_percentage}%</h3>
+                <p>{statusFilter ? `${STATUS_INFO[statusFilter].label} Progress` : 'Completion Rate'}</p>
                 <div className="progress-bar">
                   <div 
                     className="progress-fill"
                     style={{ 
-                      width: `${statistics.completion_percentage}%`,
-                      backgroundColor: getProgressBarColor(statistics.completion_percentage)
+                      width: `${(getFilteredStatistics() || statistics).completion_percentage}%`,
+                      backgroundColor: getProgressBarColor((getFilteredStatistics() || statistics).completion_percentage)
                     }}
                   />
                 </div>

@@ -189,17 +189,6 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
         {/* Filters */}
         <div className="filters-section">
           <select
-            value={filters.faction}
-            onChange={(e) => handleFilterChange('faction', e.target.value)}
-            className="filter-select"
-          >
-            <option value="">All Factions</option>
-            {uniqueValues.factions.map(faction => (
-              <option key={faction} value={faction}>{faction}</option>
-            ))}
-          </select>
-
-          <select
             value={filters.game_system}
             onChange={(e) => handleFilterChange('game_system', e.target.value)}
             className="filter-select"
@@ -207,6 +196,17 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
             <option value="">All Game Systems</option>
             {uniqueValues.gameSystems.map(system => (
               <option key={system} value={system}>{system}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.faction}
+            onChange={(e) => handleFilterChange('faction', e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All Factions</option>
+            {uniqueValues.factions.map(faction => (
+              <option key={faction} value={faction}>{faction}</option>
             ))}
           </select>
 
