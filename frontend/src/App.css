@@ -2429,11 +2429,30 @@ body {
 @media (max-width: 768px) {
   .tab-navigation {
     margin: 15px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .tab-navigation::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
   
   .tab-button {
-    padding: 10px 15px;
-    font-size: 0.9rem;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    min-width: fit-content;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-button {
+    padding: 8px 10px;
+    font-size: 0.8rem;
   }
 }
 
