@@ -187,28 +187,7 @@ function App() {
 
   const handlePasswordResetError = (error: string) => {
     setAuthError(error);
-    setAuthMode('login');
-    setResetToken(null);
-  };
-
-  const handleOAuthSuccess = async (token: string) => {
-    try {
-      setAuthError(null);
-      setAuthState(prev => ({ ...prev, isLoading: true }));
-
-      tokenManager.setToken(token);
-      const user = await authApi.getCurrentUser();
-      
-      setAuthState({
-        user,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (err: any) {
-      setAuthError(err.message || 'OAuth authentication failed');
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-    }
+    setAuthState(prev => ({ ...prev, isLoading: false }));
   };
 
   const clearMessages = () => {
@@ -313,7 +292,6 @@ function App() {
                 setAuthMode('forgot-password');
                 clearMessages();
               }}
-              onOAuthSuccess={handleOAuthSuccess}
               isLoading={authState.isLoading}
               error={authError}
             />
