@@ -5,9 +5,8 @@ import EditMiniatureForm from './EditMiniatureForm';
 
 interface MiniatureTableProps {
   miniatures: Miniature[];
-  onUpdate: (id: string, updates: Partial<Miniature>) => void;
+  onEdit: (miniature: Miniature) => void;
   onDelete: (id: string) => void;
-  onMiniatureUpdate: (updatedMiniature: Miniature) => void;
   sortField: string;
   sortOrder: 'asc' | 'desc';
   onSort: (field: any) => void;
@@ -15,9 +14,8 @@ interface MiniatureTableProps {
 
 const MiniatureTable: React.FC<MiniatureTableProps> = ({
   miniatures,
-  onUpdate,
+  onEdit,
   onDelete,
-  onMiniatureUpdate,
   sortField,
   sortOrder,
   onSort
@@ -32,7 +30,10 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
   };
 
   const handleStatusChange = (id: string, newStatus: PaintingStatus) => {
-    onUpdate(id, { status: newStatus });
+    const miniature = miniatures.find(m => m.id === id);
+    if (miniature) {
+      onEdit({ ...miniature, status: newStatus });
+    }
   };
 
   const startEdit = (miniature: Miniature, field: string) => {
@@ -41,7 +42,10 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
   };
 
   const saveEdit = (id: string, field: string) => {
-    onUpdate(id, { [field]: editValue });
+    const miniature = miniatures.find(m => m.id === id);
+    if (miniature) {
+      onEdit({ ...miniature, [field]: editValue });
+    }
     setEditingField(null);
   };
 
@@ -63,7 +67,7 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
   };
 
   const handleEditSave = (updatedMiniature: Miniature) => {
-    onMiniatureUpdate(updatedMiniature);
+    onEdit(updatedMiniature);
     setEditingMiniature(null);
   };
 
@@ -255,7 +259,7 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                     <td colSpan={8} className="history-cell">
                       <StatusHistory 
                         miniature={miniature}
-                        onUpdate={onMiniatureUpdate}
+                        onUpdate={onEdit}
                       />
                     </td>
                   </tr>

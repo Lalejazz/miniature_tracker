@@ -5,16 +5,14 @@ import StatusHistory from './StatusHistory';
 
 interface MiniatureCardProps {
   miniature: Miniature;
-  onUpdate: (id: string, updates: Partial<Miniature>) => void;
+  onEdit: (miniature: Miniature) => void;
   onDelete: (id: string) => void;
-  onMiniatureUpdate: (updatedMiniature: Miniature) => void;
 }
 
 const MiniatureCard: React.FC<MiniatureCardProps> = ({
   miniature,
-  onUpdate,
-  onDelete,
-  onMiniatureUpdate
+  onEdit,
+  onDelete
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -23,16 +21,16 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
   const statusInfo = STATUS_INFO[miniature.status];
 
   const handleStatusChange = (newStatus: PaintingStatus) => {
-    onUpdate(miniature.id, { status: newStatus });
+    onEdit({ ...miniature, status: newStatus });
   };
 
   const handleNotesUpdate = () => {
-    onUpdate(miniature.id, { notes: editNotes });
+    onEdit({ ...miniature, notes: editNotes });
     setIsEditingNotes(false);
   };
 
   const handleEditSave = (updatedMiniature: Miniature) => {
-    onMiniatureUpdate(updatedMiniature);
+    onEdit(updatedMiniature);
     setIsEditing(false);
   };
 
@@ -151,7 +149,7 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
 
           <StatusHistory 
             miniature={miniature}
-            onUpdate={onMiniatureUpdate}
+            onUpdate={onEdit}
           />
         </div>
 
