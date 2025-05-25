@@ -712,6 +712,101 @@ class PostgreSQLDatabase(DatabaseInterface):
                 # Return updated miniature
                 return await self.get_miniature(miniature_id, user_id)
 
+    async def delete_status_log_entry(self, miniature_id: UUID, log_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Delete a status log entry."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Verify the log entry exists and belongs to the user
+                log_exists = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM status_log_entries sle 
+                        JOIN miniatures m ON sle.miniature_id = m.id 
+                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3 AND sle.is_manual = TRUE
+                    )""",
+                    log_id, miniature_id, user_id
+                )
+                if not log_exists:
+                    return None
+                
+                # Delete the status log entry
+                result = await conn.execute(
+                    "DELETE FROM status_log_entries WHERE id = $1 AND miniature_id = $2 AND is_manual = TRUE",
+                    log_id, miniature_id
+                )
+                
+                # Check if any rows were affected
+                if result.split()[-1] == '0':
+                    return None
+                
+                # Return updated miniature
+                return await self.get_miniature(miniature_id, user_id)
+
+    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
+        """Get collection statistics for a user."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Get all miniatures for the user
+            miniatures = await self.get_all_miniatures(user_id)
+            
+            if not miniatures:
+                return CollectionStatistics(
+                    total_units=0,
+                    total_models=0,
+                    total_cost=None,
+                    status_breakdown={},
+                    game_system_breakdown={},
+                    faction_breakdown={},
+                    unit_type_breakdown={},
+                    completion_percentage=0.0
+                )
+            
+            # Calculate statistics
+            total_units = len(miniatures)
+            total_models = sum(m.quantity for m in miniatures)
+            total_cost = sum(m.cost for m in miniatures if m.cost is not None)
+            
+            # Status breakdown
+            from app.models import PaintingStatus, GameSystem, UnitType
+            status_breakdown = {}
+            for status in PaintingStatus:
+                status_breakdown[status] = sum(1 for m in miniatures if m.status == status)
+            
+            # Game system breakdown
+            game_system_breakdown = {}
+            for system in GameSystem:
+                game_system_breakdown[system] = sum(1 for m in miniatures if m.game_system == system)
+            
+            # Faction breakdown
+            faction_breakdown = {}
+            for miniature in miniatures:
+                faction = miniature.faction
+                faction_breakdown[faction] = faction_breakdown.get(faction, 0) + 1
+            
+            # Unit type breakdown
+            unit_type_breakdown = {}
+            for unit_type in UnitType:
+                unit_type_breakdown[unit_type] = sum(1 for m in miniatures if m.unit_type == unit_type)
+            
+            # Completion percentage (game_ready + parade_ready)
+            completed_units = sum(1 for m in miniatures if m.status in [PaintingStatus.GAME_READY, PaintingStatus.PARADE_READY])
+            completion_percentage = (completed_units / total_units * 100) if total_units > 0 else 0.0
+            
+            return CollectionStatistics(
+                total_units=total_units,
+                total_models=total_models,
+                total_cost=total_cost if total_cost > 0 else None,
+                status_breakdown=status_breakdown,
+                game_system_breakdown=game_system_breakdown,
+                faction_breakdown=faction_breakdown,
+                unit_type_breakdown=unit_type_breakdown,
+                completion_percentage=round(completion_percentage, 1)
+            )
+
     # Game management methods
     async def get_all_games(self) -> List[Game]:
         """Get all available games."""
@@ -912,60 +1007,6 @@ class PostgreSQLDatabase(DatabaseInterface):
                 results.append(result)
             
             return results
-
-    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
-        """Get collection statistics for a user."""
-        if self._pool is None:
-            raise RuntimeError("Database not initialized")
-        
-        async with self._pool.acquire() as conn:
-            # Get all miniatures for the user
-            miniatures = await self.get_all_miniatures(user_id)
-            
-            if not miniatures:
-                return CollectionStatistics()
-            
-            # Calculate statistics
-            total_units = len(miniatures)
-            total_models = sum(m.quantity for m in miniatures)
-            total_cost = sum(m.cost for m in miniatures if m.cost is not None)
-            
-            # Status breakdown
-            from app.models import PaintingStatus, GameSystem, UnitType
-            status_breakdown = {}
-            for status in PaintingStatus:
-                status_breakdown[status] = sum(1 for m in miniatures if m.status == status)
-            
-            # Game system breakdown
-            game_system_breakdown = {}
-            for system in GameSystem:
-                game_system_breakdown[system] = sum(1 for m in miniatures if m.game_system == system)
-            
-            # Faction breakdown
-            faction_breakdown = {}
-            for miniature in miniatures:
-                faction = miniature.faction
-                faction_breakdown[faction] = faction_breakdown.get(faction, 0) + 1
-            
-            # Unit type breakdown
-            unit_type_breakdown = {}
-            for unit_type in UnitType:
-                unit_type_breakdown[unit_type] = sum(1 for m in miniatures if m.unit_type == unit_type)
-            
-            # Completion percentage (game_ready + parade_ready)
-            completed_units = sum(1 for m in miniatures if m.status in [PaintingStatus.GAME_READY, PaintingStatus.PARADE_READY])
-            completion_percentage = (completed_units / total_units * 100) if total_units > 0 else 0.0
-            
-            return CollectionStatistics(
-                total_units=total_units,
-                total_models=total_models,
-                total_cost=total_cost if total_cost > 0 else None,
-                status_breakdown=status_breakdown,
-                game_system_breakdown=game_system_breakdown,
-                faction_breakdown=faction_breakdown,
-                unit_type_breakdown=unit_type_breakdown,
-                completion_percentage=round(completion_percentage, 1)
-            )
 
     async def _populate_default_games(self) -> None:
         """Populate the games table with default popular wargames."""
@@ -1275,6 +1316,95 @@ class FileDatabase(DatabaseInterface):
                 self._save_users(users)
                 return Miniature(**status_log_entry)
         return None
+
+    async def delete_status_log_entry(self, miniature_id: UUID, log_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Delete a status log entry."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                for miniature in miniature_data:
+                    if miniature.get("id") == str(miniature_id):
+                        status_history = miniature.get("status_history", [])
+                        for j, log_entry in enumerate(status_history):
+                            if log_entry.get("id") == str(log_id) and log_entry.get("is_manual", False):
+                                del status_history[j]
+                                miniature["status_history"] = status_history
+                                miniature["updated_at"] = datetime.utcnow().isoformat()
+                                user_data["updated_at"] = datetime.utcnow().isoformat()
+                                users[i] = user_data
+                                self._save_users(users)
+                                return Miniature(**miniature)
+        return None
+
+    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
+        """Get collection statistics for a user."""
+        miniatures = await self.get_all_miniatures(user_id)
+        
+        if not miniatures:
+            return CollectionStatistics(
+                total_units=0,
+                total_models=0,
+                total_cost=None,
+                status_breakdown={},
+                game_system_breakdown={},
+                faction_breakdown={},
+                unit_type_breakdown={},
+                completion_percentage=0.0
+            )
+        
+        # Calculate statistics
+        total_units = len(miniatures)
+        total_models = sum(getattr(m, 'quantity', 1) for m in miniatures)
+        total_cost = sum(getattr(m, 'cost', 0) or 0 for m in miniatures)
+        
+        # Status breakdown
+        status_breakdown = {}
+        for miniature in miniatures:
+            status = miniature.status.value if hasattr(miniature.status, 'value') else str(miniature.status)
+            status_breakdown[status] = status_breakdown.get(status, 0) + 1
+        
+        # Game system breakdown
+        game_system_breakdown = {}
+        for miniature in miniatures:
+            game_system = getattr(miniature, 'game_system', None)
+            if game_system:
+                system_key = game_system.value if hasattr(game_system, 'value') else str(game_system)
+                game_system_breakdown[system_key] = game_system_breakdown.get(system_key, 0) + 1
+        
+        # Faction breakdown
+        faction_breakdown = {}
+        for miniature in miniatures:
+            faction = miniature.faction
+            faction_breakdown[faction] = faction_breakdown.get(faction, 0) + 1
+        
+        # Unit type breakdown
+        unit_type_breakdown = {}
+        for miniature in miniatures:
+            unit_type = getattr(miniature, 'unit_type', None)
+            if unit_type:
+                type_key = unit_type.value if hasattr(unit_type, 'value') else str(unit_type)
+                unit_type_breakdown[type_key] = unit_type_breakdown.get(type_key, 0) + 1
+        
+        # Calculate completion percentage (painted vs total)
+        completed_statuses = ['painted', 'completed', 'finished']
+        completed_units = sum(
+            count for status, count in status_breakdown.items() 
+            if status.lower() in completed_statuses
+        )
+        completion_percentage = (completed_units / total_units * 100) if total_units > 0 else 0.0
+        
+        return CollectionStatistics(
+            total_units=total_units,
+            total_models=total_models,
+            total_cost=total_cost if total_cost > 0 else None,
+            status_breakdown=status_breakdown,
+            game_system_breakdown=game_system_breakdown,
+            faction_breakdown=faction_breakdown,
+            unit_type_breakdown=unit_type_breakdown,
+            completion_percentage=round(completion_percentage, 1)
+        )
 
     # Game management methods
     async def get_all_games(self) -> List[Game]:
