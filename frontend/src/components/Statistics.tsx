@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CollectionStatistics, 
   PaintingStatus, 
@@ -18,11 +18,7 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
   const [statistics, setStatistics] = useState<CollectionStatistics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStatistics();
-  }, []);
-
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     try {
       setLoading(true);
       const stats = await miniatureApi.getStatistics();
@@ -32,7 +28,11 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [onError]);
+
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
