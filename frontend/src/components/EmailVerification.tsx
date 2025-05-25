@@ -2,7 +2,7 @@
  * Email verification component
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { authApi } from '../services/api';
 
 interface EmailVerificationProps {
@@ -22,17 +22,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Check for verification token in URL on component mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      setVerificationToken(token);
-      handleVerifyEmail(token);
-    }
-  }, []);
-
-  const handleVerifyEmail = async (token: string) => {
+  const handleVerifyEmail = useCallback(async (token: string) => {
     setIsVerifying(true);
     setError(null);
     setMessage(null);
@@ -55,7 +45,17 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [onVerificationComplete]);
+
+  // Check for verification token in URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setVerificationToken(token);
+      handleVerifyEmail(token);
+    }
+  }, [handleVerifyEmail]);
 
   const handleResendVerification = async () => {
     if (!email) {
