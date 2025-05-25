@@ -183,7 +183,7 @@ export const miniatureApi = {
    * Get trend analysis for current user
    */
   async getTrendAnalysis(trendRequest: TrendRequest): Promise<TrendAnalysis> {
-    const response = await fetch('/api/miniatures/trends', {
+    const response = await fetch(`${API_BASE_URL}/miniatures/trends`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import { UserHeader } from './components/UserHeader';
 import Changelog from './components/Changelog';
 import UserPreferencesForm from './components/UserPreferencesForm';
 import PlayerSearch from './components/PlayerSearch';
+import ImportExport from './components/ImportExport';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
@@ -52,6 +53,7 @@ function App() {
   
   // UI state for changelog modal
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
 
   // Check for password reset token in URL
   useEffect(() => {
@@ -394,6 +396,13 @@ function App() {
               >
                 🔄 Refresh
               </button>
+              <button 
+                className="add-button"
+                onClick={() => setShowImportExport(!showImportExport)}
+                style={{ backgroundColor: showImportExport ? '#6b7280' : '#3b82f6' }}
+              >
+                {showImportExport ? '✕ Close' : '📁 Import/Export'}
+              </button>
             </div>
 
             {showForm && (
@@ -401,6 +410,13 @@ function App() {
                 onSubmit={handleCreateMiniature}
                 onCancel={() => setShowForm(false)}
               />
+            )}
+
+            {showImportExport && (
+              <ImportExport onImportComplete={() => {
+                loadMiniatures();
+                setShowImportExport(false);
+              }} />
             )}
 
             {miniaturesLoading ? (
