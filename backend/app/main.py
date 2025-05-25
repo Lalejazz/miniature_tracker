@@ -465,6 +465,90 @@ async def delete_status_log(
         )
 
 
+@app.post("/admin/migrate-games")
+async def migrate_games_endpoint(
+    db: MiniatureDB = Depends(get_db)
+):
+    """Admin endpoint to add missing games to the database."""
+    try:
+        # All games that should be in the database
+        expected_games = [
+            ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
+            ("Age of Sigmar", "Fantasy battles in the Mortal Realms"),
+            ("Warhammer: The Old World", "Classic fantasy battles in the Old World"),
+            ("Horus Heresy", "The galaxy-spanning civil war in the 31st millennium"),
+            ("Kill Team", "Small-scale skirmish battles in the 40K universe"),
+            ("Warcry", "Fast-paced skirmish combat in Age of Sigmar"),
+            ("Warhammer Underworlds", "Competitive deck-based skirmish game"),
+            ("Adeptus Titanicus", "Epic-scale Titan warfare"),
+            ("Necromunda", "Gang warfare in the underhive"),
+            ("Blood Bowl", "Fantasy football with violence"),
+            ("Middle-earth SBG", "Battle in Tolkien's world"),
+            ("Bolt Action", "World War II historical wargaming"),
+            ("Flames of War", "World War II tank combat"),
+            ("SAGA", "Dark Age skirmish gaming"),
+            ("Kings of War", "Mass fantasy battles"),
+            ("Infinity", "Sci-fi skirmish with anime aesthetics"),
+            ("Malifaux", "Gothic horror skirmish game"),
+            ("Warmachine/Hordes", "Steampunk fantasy battles"),
+            ("X-Wing", "Star Wars space combat"),
+            ("Star Wars: Legion", "Ground battles in the Star Wars universe"),
+            ("BattleTech", "Giant robot combat"),
+            ("Dropzone Commander", "10mm sci-fi warfare"),
+            ("Guild Ball", "Fantasy sports meets skirmish gaming"),
+            ("D&D / RPG", "Dungeons & Dragons and RPG miniatures"),
+            ("Pathfinder", "Fantasy RPG miniatures"),
+            ("Frostgrave", "Wizard warband skirmish"),
+            ("Mordheim", "Skirmish in the City of the Damned"),
+            ("Gaslands", "Post-apocalyptic vehicular combat"),
+            ("Zombicide", "Cooperative zombie survival"),
+            ("Trench Crusade", "Grimdark alternate history warfare"),
+            ("Other Game System", "Custom or unlisted game systems")
+        ]
+        
+        # Get current games
+        current_games = await db.get_all_games()
+        current_game_names = [game.name for game in current_games]
+        
+        # Find missing games
+        missing_games = []
+        for name, description in expected_games:
+            if name not in current_game_names:
+                missing_games.append((name, description))
+        
+        if not missing_games:
+            return {
+                "message": "All games are already present",
+                "total_games": len(current_games),
+                "added_games": 0
+            }
+        
+        # Add missing games
+        added_games = []
+        failed_games = []
+        
+        for name, description in missing_games:
+            try:
+                await db.create_game(name, description)
+                added_games.append(name)
+            except Exception as e:
+                failed_games.append({"name": name, "error": str(e)})
+        
+        # Get final count
+        final_games = await db.get_all_games()
+        
+        return {
+            "message": f"Migration complete! Added {len(added_games)} games",
+            "total_games": len(final_games),
+            "added_games": len(added_games),
+            "added_game_names": added_games,
+            "failed_games": failed_games
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
+
 # Add CORS middleware for frontend integration
 from fastapi.middleware.cors import CORSMiddleware
 
