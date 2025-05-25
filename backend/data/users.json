@@ -43,5 +43,77 @@
     "created_at": "2025-05-24 20:48:32.454036",
     "updated_at": "2025-05-24 20:48:32.454038",
     "hashed_password": "$2b$12$uniRrHxqx9HdHfEk5LmAR.hMor8GMC2YEwCsXVWafksNBUYIpN5we"
+  },
+  {
+    "email": "testcork1@abc.com",
+    "username": "testcork1",
+    "is_active": true,
+    "id": "e6091688-da57-4a9c-bc45-1ed72eaedc4e",
+    "created_at": "2025-05-24 20:57:08.155594",
+    "updated_at": "2025-05-24 20:57:08.155596",
+    "hashed_password": "$2b$12$OhSn1Rt9IJtmTIZsHkGRA.iF93swaIB/rwgSyF3hSiQ9i0FsuGA3G"
+  },
+  {
+    "email": "testcork2@abc.com",
+    "username": "testcork2",
+    "is_active": true,
+    "id": "d880d41b-4dc3-4f8c-90f9-ebac5a9d0c9d",
+    "created_at": "2025-05-24 20:57:41.201644",
+    "updated_at": "2025-05-24 20:57:41.201648",
+    "hashed_password": "$2b$12$wFTC9Lf3WM86nb56xFIedO/ATyPzSL0AGzxahSypErSJOlPYGp/aK"
+  },
+  {
+    "email": "cork1@test.com",
+    "username": "corkplayer1",
+    "is_active": true,
+    "id": "8a574418-64b3-4c13-8336-0b9bb0cdd830",
+    "created_at": "2025-05-25 06:09:13.029912",
+    "updated_at": "2025-05-25 06:09:13.029917",
+    "hashed_password": "$2b$12$rsYwDs44fZpXtnBzD1eT5.0/nCKojAweB8PesFV2ldds4U/qW.uiq"
+  },
+  {
+    "email": "cork2@test.com",
+    "username": "corkplayer2",
+    "is_active": true,
+    "id": "921d2d61-f257-4b30-a675-673da311e152",
+    "created_at": "2025-05-25 06:09:19.388154",
+    "updated_at": "2025-05-25 06:09:19.388161",
+    "hashed_password": "$2b$12$ONIRpCfNKA41k0z.aSZeyeBo6qsofu/KBsswhY6ElCrSW0btIFbye"
+  },
+  {
+    "email": "testgeo@test.com",
+    "username": "testgeocode",
+    "is_active": true,
+    "id": "4b245d0f-9e8d-4c14-9857-b94c56095515",
+    "created_at": "2025-05-25 06:10:42.197460",
+    "updated_at": "2025-05-25 06:10:42.197463",
+    "hashed_password": "$2b$12$8epy9oU49Amf.DrCf0.PGedICFranRynxcfHpTDyzVmxybVBHxyuq"
+  },
+  {
+    "email": "debug@test.com",
+    "username": "debugtest",
+    "is_active": true,
+    "id": "09ce15ed-5805-4748-a7ca-d8380cdddad5",
+    "created_at": "2025-05-25 06:11:30.360460",
+    "updated_at": "2025-05-25 06:11:30.360472",
+    "hashed_password": "$2b$12$rp7mnfycDn.eSJhJdIUDveIpKLsFBlJ/UmFosQXI3/n7GSGd4fBDq"
+  },
+  {
+    "email": "filedb@test.com",
+    "username": "filedbtest",
+    "is_active": true,
+    "id": "f21318d1-9d3e-478f-b9ad-acfe8765a627",
+    "created_at": "2025-05-25 06:12:54.339969",
+    "updated_at": "2025-05-25 06:12:54.339973",
+    "hashed_password": "$2b$12$IpDyQa4Rmv4/H.GTTAkj6.qChOSCTRqZ3E4c/JG4TMYl2cQdMXDW6"
+  },
+  {
+    "email": "cork3nearby@test.com",
+    "username": "corkplayer3",
+    "is_active": true,
+    "id": "3d2cb14a-ab95-4439-a34d-fc7b58844582",
+    "created_at": "2025-05-25 06:13:34.497885",
+    "updated_at": "2025-05-25 06:13:34.497919",
+    "hashed_password": "$2b$12$HLhGDW5dpFac4DS2XopuR.b.J/XhwXOO1K0U7lBcXSjZpvOFvGuw6"
   }
 ]

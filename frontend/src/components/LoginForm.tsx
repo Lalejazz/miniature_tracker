@@ -4,11 +4,13 @@
 
 import React, { useState } from 'react';
 import { LoginRequest } from '../types';
+import OAuthLogin from './OAuthLogin';
 
 interface LoginFormProps {
   onLogin: (credentials: LoginRequest) => Promise<void>;
   onSwitchToRegister: () => void;
   onForgotPassword: () => void;
+  onOAuthSuccess?: (token: string) => void;
   isLoading: boolean;
   error: string | null;
 }
@@ -17,6 +19,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,
   onSwitchToRegister,
   onForgotPassword,
+  onOAuthSuccess,
   isLoading,
   error,
 }) => {
@@ -85,6 +88,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {isLoading ? 'Logging in...' : 'Login'}
         </button>
       </form>
+
+      {/* OAuth Login Options */}
+      <div className="oauth-divider">
+        <span>or</span>
+      </div>
+      
+      <OAuthLogin onSuccess={onOAuthSuccess} />
 
       <p className="auth-switch">
         Don't have an account?{' '}

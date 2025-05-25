@@ -661,7 +661,7 @@ body {
 }
 
 .link-button:disabled {
-  color: #9ca3af;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -1813,9 +1813,8 @@ body {
 }
 
 .link-button:disabled {
-  color: #6c757d;
+  opacity: 0.5;
   cursor: not-allowed;
-  text-decoration: none;
 }
 
 /* Enhanced Status History Styles */
@@ -2600,4 +2599,27 @@ body {
 .game-tag {
   background-color: #d4edda;
   color: #155724;
+}
+
+/* OAuth Divider */
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.oauth-divider span {
+  padding: 0 1rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
 } 

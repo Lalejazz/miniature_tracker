@@ -14,6 +14,7 @@ from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEnt
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
+from app.oauth_routes import router as oauth_router
 
 
 # Create FastAPI app
@@ -26,6 +27,7 @@ app = FastAPI(
 # Include authentication routes
 app.include_router(auth_router)
 app.include_router(player_router)
+app.include_router(oauth_router)
 
 
 def get_db() -> MiniatureDB:

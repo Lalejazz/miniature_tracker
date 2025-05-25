@@ -30,5 +30,129 @@
     "longitude": null,
     "created_at": "2025-05-24 21:49:25.666001",
     "updated_at": "2025-05-24 21:49:25.666004"
+  },
+  {
+    "id": "b38489de-cabb-45a1-83e9-a9713e3ebe48",
+    "user_id": "e6091688-da57-4a9c-bc45-1ed72eaedc4e",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f"
+    ],
+    "location": "T23R1w9",
+    "game_type": "competitive",
+    "bio": "",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-24 21:57:18.544289",
+    "updated_at": "2025-05-25T06:22:29.760111"
+  },
+  {
+    "id": "9b1ae5ef-1e71-4c96-a19e-876cc6c1d799",
+    "user_id": "d880d41b-4dc3-4f8c-90f9-ebac5a9d0c9d",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "e883ee04-2727-460f-9e84-0e50938a173b"
+    ],
+    "location": "T23KW61",
+    "game_type": "competitive",
+    "bio": "",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-24 21:57:52.951123",
+    "updated_at": "2025-05-24 21:57:52.951140"
+  },
+  {
+    "id": "e8f63951-2746-4299-be44-477191b3c8ac",
+    "user_id": "8a574418-64b3-4c13-8336-0b9bb0cdd830",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "731094be-292f-4086-9537-4c097c236c14"
+    ],
+    "location": "Cork City, Ireland",
+    "game_type": "competitive",
+    "bio": "Love 40K and Kill Team in Cork!",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-25 07:09:46.541989",
+    "updated_at": "2025-05-25 07:09:46.542000"
+  },
+  {
+    "id": "d9756e9e-ed15-49de-95c3-02a66c2e18d3",
+    "user_id": "921d2d61-f257-4b30-a675-673da311e152",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "e883ee04-2727-460f-9e84-0e50938a173b"
+    ],
+    "location": "Blackrock, Cork, Ireland",
+    "game_type": "narrative",
+    "bio": "Enjoy narrative 40K and AoS near Cork!",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-25 07:10:05.583317",
+    "updated_at": "2025-05-25 07:10:05.583330"
+  },
+  {
+    "id": "d8fdc929-aced-4eef-b845-6aa9a7fd4a3d",
+    "user_id": "4b245d0f-9e8d-4c14-9857-b94c56095515",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f"
+    ],
+    "location": "Dublin, Ireland",
+    "game_type": "competitive",
+    "bio": "Testing geocoding",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-25 07:11:00.429330",
+    "updated_at": "2025-05-25 07:11:00.429337"
+  },
+  {
+    "id": "948484b2-c9fd-4575-a7d8-bbce23443c45",
+    "user_id": "09ce15ed-5805-4748-a7ca-d8380cdddad5",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f"
+    ],
+    "location": "London, UK",
+    "game_type": "competitive",
+    "bio": "Debug test",
+    "show_email": true,
+    "latitude": null,
+    "longitude": null,
+    "created_at": "2025-05-25 07:11:47.556094",
+    "updated_at": "2025-05-25 07:11:47.556101"
+  },
+  {
+    "id": "ac39d179-5c65-4625-9cde-4677e211432f",
+    "user_id": "f21318d1-9d3e-478f-b9ad-acfe8765a627",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f"
+    ],
+    "location": "Cork, Ireland",
+    "game_type": "competitive",
+    "bio": "Testing FileDB geocoding",
+    "show_email": true,
+    "latitude": 51.8985136,
+    "longitude": -8.4726423,
+    "created_at": "2025-05-25 07:13:18.576843",
+    "updated_at": "2025-05-25 07:13:18.576859"
+  },
+  {
+    "id": "c3e9725c-f37c-4ff6-afa0-533ad60ff2d2",
+    "user_id": "3d2cb14a-ab95-4439-a34d-fc7b58844582",
+    "games": [
+      "2fac3784-6674-4412-800a-a1a55df7082f",
+      "e883ee04-2727-460f-9e84-0e50938a173b"
+    ],
+    "location": "Blackrock, Cork, Ireland",
+    "game_type": "narrative",
+    "bio": "Love narrative games near Cork!",
+    "show_email": true,
+    "latitude": 51.8974397,
+    "longitude": -8.4131177,
+    "created_at": "2025-05-25 07:13:51.584581",
+    "updated_at": "2025-05-25 07:13:51.584598"
   }
 ]

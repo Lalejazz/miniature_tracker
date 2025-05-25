@@ -153,12 +153,24 @@ class PostgreSQLDatabase(DatabaseInterface):
                 id UUID PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 username VARCHAR(50) UNIQUE NOT NULL,
-                hashed_password TEXT NOT NULL,
+                full_name VARCHAR(100),
+                hashed_password TEXT,
+                oauth_provider VARCHAR(50),
+                oauth_id VARCHAR(255),
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
+        # Add OAuth columns if they don't exist (migration)
+        try:
+            await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(100)")
+            await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50)")
+            await self._pool.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255)")
+            await self._pool.execute("ALTER TABLE users ALTER COLUMN hashed_password DROP NOT NULL")
+        except Exception as e:
+            print(f"OAuth migration warning: {e}")  # Log but don't fail
         
         # Create password reset tokens table
         await self._pool.execute("""
@@ -314,7 +326,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, email, username, is_active, created_at, updated_at FROM users WHERE id = $1", 
+                "SELECT id, email, username, full_name, oauth_provider, oauth_id, is_active, created_at, updated_at FROM users WHERE id = $1", 
                 user_id
             )
             if row:
@@ -323,25 +335,29 @@ class PostgreSQLDatabase(DatabaseInterface):
     
     async def create_user(self, user_create: UserCreate) -> User:
         """Create a new user."""
-        from app.auth_utils import get_password_hash
-        
         if self._pool is None:
             raise RuntimeError("Database not initialized")
         
+        # Handle password hashing for non-OAuth users
+        hashed_password = None
+        if user_create.password:
+            from app.auth_utils import get_password_hash
+            hashed_password = get_password_hash(user_create.password)
+        
         user_in_db = UserInDB(
             **user_create.model_dump(exclude={"password"}),
-            hashed_password=get_password_hash(user_create.password)
+            hashed_password=hashed_password
         )
         
         async with self._pool.acquire() as conn:
             try:
                 await conn.execute("""
-                    INSERT INTO users (id, email, username, hashed_password, is_active, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    INSERT INTO users (id, email, username, full_name, hashed_password, oauth_provider, oauth_id, is_active, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 """, 
-                user_in_db.id, user_in_db.email, user_in_db.username, 
-                user_in_db.hashed_password, user_in_db.is_active,
-                user_in_db.created_at, user_in_db.updated_at
+                user_in_db.id, user_in_db.email, user_in_db.username, user_in_db.full_name,
+                user_in_db.hashed_password, user_in_db.oauth_provider, user_in_db.oauth_id,
+                user_in_db.is_active, user_in_db.created_at, user_in_db.updated_at
                 )
                 return User(**user_in_db.model_dump(exclude={"hashed_password"}))
             except Exception as e:
@@ -376,7 +392,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             UPDATE users 
             SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
             WHERE id = ${len(values)}
-            RETURNING id, email, username, is_active, created_at, updated_at
+            RETURNING id, email, username, full_name, oauth_provider, oauth_id, is_active, created_at, updated_at
         """
         
         async with self._pool.acquire() as conn:
@@ -392,7 +408,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT id, email, username, is_active, created_at, updated_at FROM users ORDER BY created_at"
+                "SELECT id, email, username, full_name, oauth_provider, oauth_id, is_active, created_at, updated_at FROM users ORDER BY created_at"
             )
             return [User(**dict(row)) for row in rows]
     
@@ -996,7 +1012,19 @@ class FileDatabase(DatabaseInterface):
     
     async def create_user(self, user_create: UserCreate) -> User:
         """Create a new user."""
-        from app.auth_utils import get_password_hash
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        # Handle password hashing for non-OAuth users
+        hashed_password = None
+        if user_create.password:
+            from app.auth_utils import get_password_hash
+            hashed_password = get_password_hash(user_create.password)
+        
+        user_in_db = UserInDB(
+            **user_create.model_dump(exclude={"password"}),
+            hashed_password=hashed_password
+        )
         
         users = self._load_users()
         
@@ -1006,12 +1034,6 @@ class FileDatabase(DatabaseInterface):
         
         if any(u.get("username") == user_create.username for u in users):
             raise ValueError("User with this username already exists")
-        
-        # Create user with hashed password
-        user_in_db = UserInDB(
-            **user_create.model_dump(exclude={"password"}),
-            hashed_password=get_password_hash(user_create.password)
-        )
         
         users.append(user_in_db.model_dump())
         self._save_users(users)
