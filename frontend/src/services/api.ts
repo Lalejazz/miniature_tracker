@@ -13,7 +13,9 @@ import {
   UserPreferencesUpdate,
   PlayerSearchRequest,
   PlayerSearchResult,
-  CollectionStatistics
+  CollectionStatistics,
+  TrendAnalysis,
+  TrendRequest
 } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -175,6 +177,16 @@ export const miniatureApi = {
    */
   async getStatistics(): Promise<CollectionStatistics> {
     return apiRequest<CollectionStatistics>('/miniatures/statistics');
+  },
+
+  /**
+   * Get trend analysis for current user
+   */
+  async getTrendAnalysis(trendRequest: TrendRequest): Promise<TrendAnalysis> {
+    return apiRequest<TrendAnalysis>('/miniatures/trends', {
+      method: 'POST',
+      body: JSON.stringify(trendRequest),
+    });
   },
 
   /**

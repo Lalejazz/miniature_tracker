@@ -8,3 +8,4 @@ DONE add user preferences and friends lookup
 remember last login on same device (ask to remind?)
 problema refresh after edit
 cookie bar gdpr
+can we add export in json/csv and import via json/csv?

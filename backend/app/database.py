@@ -15,10 +15,11 @@ except ImportError:
 
 from app.auth_models import User, UserCreate, UserInDB, UserUpdate
 from app.models import (
-    PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry,
+    PasswordResetToken, Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
     Unit, UnitCreate, UnitUpdate,
     Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
-    PlayerSearchRequest, PlayerSearchResult, GameType, CollectionStatistics
+    PlayerSearchRequest, PlayerSearchResult, GameType, CollectionStatistics, TrendAnalysis,
+    TrendDataPoint, StatusTrendData, TrendRequest
 )
 from app.geocoding import GeocodingService
 
@@ -94,6 +95,11 @@ class DatabaseInterface(ABC):
     @abstractmethod
     async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
         """Get collection statistics for a user."""
+        pass
+
+    @abstractmethod
+    async def get_trend_analysis(self, user_id: UUID, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: str = "month") -> TrendAnalysis:
+        """Get trend analysis for a user's collection."""
         pass
 
     # Game management methods
@@ -806,6 +812,147 @@ class PostgreSQLDatabase(DatabaseInterface):
                 unit_type_breakdown=unit_type_breakdown,
                 completion_percentage=round(completion_percentage, 1)
             )
+
+    async def get_trend_analysis(self, user_id: UUID, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: str = "month") -> TrendAnalysis:
+        """Get trend analysis for a user's collection."""
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+        
+        # Set default date range if not provided
+        if not to_date:
+            to_date = datetime.now().strftime("%Y-%m-%d")
+        if not from_date:
+            # Default to 12 months ago
+            from_datetime = datetime.now() - timedelta(days=365)
+            from_date = from_datetime.strftime("%Y-%m-%d")
+        
+        # Get all miniatures for the user
+        miniatures = await self.get_all_miniatures(user_id)
+        
+        # Initialize data structures
+        purchases_by_period = defaultdict(lambda: {"count": 0, "cost": 0.0})
+        status_changes_by_period = defaultdict(lambda: defaultdict(int))
+        
+        # Helper function to get period key based on group_by
+        def get_period_key(date_obj):
+            if group_by == "day":
+                return date_obj.strftime("%Y-%m-%d")
+            elif group_by == "week":
+                # Get Monday of the week
+                monday = date_obj - timedelta(days=date_obj.weekday())
+                return monday.strftime("%Y-%m-%d")
+            elif group_by == "month":
+                return date_obj.strftime("%Y-%m")
+            elif group_by == "year":
+                return date_obj.strftime("%Y")
+            else:
+                return date_obj.strftime("%Y-%m")
+        
+        # Process each miniature
+        for miniature in miniatures:
+            # Process status history
+            for log_entry in miniature.status_history:
+                log_date = log_entry.date if hasattr(log_entry, 'date') else log_entry.created_at
+                
+                # Check if log entry is within date range
+                if from_date <= log_date.strftime("%Y-%m-%d") <= to_date:
+                    period_key = get_period_key(log_date)
+                    
+                    # Track purchases (transitions to "purchased" status)
+                    if log_entry.to_status == "purchased":
+                        purchases_by_period[period_key]["count"] += 1
+                        if miniature.cost:
+                            purchases_by_period[period_key]["cost"] += float(miniature.cost)
+                    
+                    # Track all status changes
+                    status_changes_by_period[period_key][log_entry.to_status] += 1
+        
+        # Generate time series data
+        from_datetime = datetime.strptime(from_date, "%Y-%m-%d")
+        to_datetime = datetime.strptime(to_date, "%Y-%m-%d")
+        
+        # Generate all periods in range
+        all_periods = []
+        current = from_datetime
+        while current <= to_datetime:
+            period_key = get_period_key(current)
+            if period_key not in all_periods:
+                all_periods.append(period_key)
+            
+            # Increment based on group_by
+            if group_by == "day":
+                current += timedelta(days=1)
+            elif group_by == "week":
+                current += timedelta(weeks=1)
+            elif group_by == "month":
+                if current.month == 12:
+                    current = current.replace(year=current.year + 1, month=1)
+                else:
+                    current = current.replace(month=current.month + 1)
+            elif group_by == "year":
+                current = current.replace(year=current.year + 1)
+            else:
+                current += timedelta(days=30)  # Default monthly
+        
+        # Build purchase trend data
+        purchases_over_time = []
+        spending_over_time = []
+        for period in sorted(all_periods):
+            data = purchases_by_period[period]
+            purchases_over_time.append(TrendDataPoint(
+                date=period,
+                count=data["count"]
+            ))
+            spending_over_time.append(TrendDataPoint(
+                date=period,
+                count=0,  # Not used for spending
+                cost=data["cost"] if data["cost"] > 0 else None
+            ))
+        
+        # Build status trend data
+        from app.models import PaintingStatus
+        status_trends = []
+        for status in PaintingStatus:
+            data_points = []
+            for period in sorted(all_periods):
+                count = status_changes_by_period[period].get(status.value, 0)
+                data_points.append(TrendDataPoint(
+                    date=period,
+                    count=count
+                ))
+            status_trends.append(StatusTrendData(
+                status=status,
+                data_points=data_points
+            ))
+        
+        # Calculate summary statistics
+        total_purchased = sum(data["count"] for data in purchases_by_period.values())
+        total_spent = sum(data["cost"] for data in purchases_by_period.values())
+        
+        # Find most active month
+        most_active_month = None
+        max_purchases = 0
+        for period, data in purchases_by_period.items():
+            if data["count"] > max_purchases:
+                max_purchases = data["count"]
+                most_active_month = period
+        
+        # Calculate averages
+        num_periods = len(all_periods) if all_periods else 1
+        average_monthly_purchases = total_purchased / num_periods
+        average_monthly_spending = total_spent / num_periods if total_spent > 0 else None
+        
+        return TrendAnalysis(
+            date_range={"from": from_date, "to": to_date},
+            purchases_over_time=purchases_over_time,
+            spending_over_time=spending_over_time,
+            status_trends=status_trends,
+            total_purchased=total_purchased,
+            total_spent=total_spent if total_spent > 0 else None,
+            most_active_month=most_active_month,
+            average_monthly_purchases=round(average_monthly_purchases, 1),
+            average_monthly_spending=round(average_monthly_spending, 2) if average_monthly_spending else None
+        )
 
     # Game management methods
     async def get_all_games(self) -> List[Game]:
@@ -1619,6 +1766,147 @@ class FileDatabase(DatabaseInterface):
         results.sort(key=lambda x: x.distance_km)
         
         return results[:50]  # Limit to 50 results
+
+    async def get_trend_analysis(self, user_id: UUID, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: str = "month") -> TrendAnalysis:
+        """Get trend analysis for a user's collection."""
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+        
+        # Set default date range if not provided
+        if not to_date:
+            to_date = datetime.now().strftime("%Y-%m-%d")
+        if not from_date:
+            # Default to 12 months ago
+            from_datetime = datetime.now() - timedelta(days=365)
+            from_date = from_datetime.strftime("%Y-%m-%d")
+        
+        # Get all miniatures for the user
+        miniatures = await self.get_all_miniatures(user_id)
+        
+        # Initialize data structures
+        purchases_by_period = defaultdict(lambda: {"count": 0, "cost": 0.0})
+        status_changes_by_period = defaultdict(lambda: defaultdict(int))
+        
+        # Helper function to get period key based on group_by
+        def get_period_key(date_obj):
+            if group_by == "day":
+                return date_obj.strftime("%Y-%m-%d")
+            elif group_by == "week":
+                # Get Monday of the week
+                monday = date_obj - timedelta(days=date_obj.weekday())
+                return monday.strftime("%Y-%m-%d")
+            elif group_by == "month":
+                return date_obj.strftime("%Y-%m")
+            elif group_by == "year":
+                return date_obj.strftime("%Y")
+            else:
+                return date_obj.strftime("%Y-%m")
+        
+        # Process each miniature
+        for miniature in miniatures:
+            # Process status history
+            for log_entry in miniature.status_history:
+                log_date = log_entry.date if hasattr(log_entry, 'date') else log_entry.created_at
+                
+                # Check if log entry is within date range
+                if from_date <= log_date.strftime("%Y-%m-%d") <= to_date:
+                    period_key = get_period_key(log_date)
+                    
+                    # Track purchases (transitions to "purchased" status)
+                    if log_entry.to_status == "purchased":
+                        purchases_by_period[period_key]["count"] += 1
+                        if miniature.cost:
+                            purchases_by_period[period_key]["cost"] += float(miniature.cost)
+                    
+                    # Track all status changes
+                    status_changes_by_period[period_key][log_entry.to_status] += 1
+        
+        # Generate time series data
+        from_datetime = datetime.strptime(from_date, "%Y-%m-%d")
+        to_datetime = datetime.strptime(to_date, "%Y-%m-%d")
+        
+        # Generate all periods in range
+        all_periods = []
+        current = from_datetime
+        while current <= to_datetime:
+            period_key = get_period_key(current)
+            if period_key not in all_periods:
+                all_periods.append(period_key)
+            
+            # Increment based on group_by
+            if group_by == "day":
+                current += timedelta(days=1)
+            elif group_by == "week":
+                current += timedelta(weeks=1)
+            elif group_by == "month":
+                if current.month == 12:
+                    current = current.replace(year=current.year + 1, month=1)
+                else:
+                    current = current.replace(month=current.month + 1)
+            elif group_by == "year":
+                current = current.replace(year=current.year + 1)
+            else:
+                current += timedelta(days=30)  # Default monthly
+        
+        # Build purchase trend data
+        purchases_over_time = []
+        spending_over_time = []
+        for period in sorted(all_periods):
+            data = purchases_by_period[period]
+            purchases_over_time.append(TrendDataPoint(
+                date=period,
+                count=data["count"]
+            ))
+            spending_over_time.append(TrendDataPoint(
+                date=period,
+                count=0,  # Not used for spending
+                cost=data["cost"] if data["cost"] > 0 else None
+            ))
+        
+        # Build status trend data
+        from app.models import PaintingStatus
+        status_trends = []
+        for status in PaintingStatus:
+            data_points = []
+            for period in sorted(all_periods):
+                count = status_changes_by_period[period].get(status.value, 0)
+                data_points.append(TrendDataPoint(
+                    date=period,
+                    count=count
+                ))
+            status_trends.append(StatusTrendData(
+                status=status,
+                data_points=data_points
+            ))
+        
+        # Calculate summary statistics
+        total_purchased = sum(data["count"] for data in purchases_by_period.values())
+        total_spent = sum(data["cost"] for data in purchases_by_period.values())
+        
+        # Find most active month
+        most_active_month = None
+        max_purchases = 0
+        for period, data in purchases_by_period.items():
+            if data["count"] > max_purchases:
+                max_purchases = data["count"]
+                most_active_month = period
+        
+        # Calculate averages
+        num_periods = len(all_periods) if all_periods else 1
+        average_monthly_purchases = total_purchased / num_periods
+        average_monthly_spending = total_spent / num_periods if total_spent > 0 else None
+        
+        return TrendAnalysis(
+            date_range={"from": from_date, "to": to_date},
+            purchases_over_time=purchases_over_time,
+            spending_over_time=spending_over_time,
+            status_trends=status_trends,
+            total_purchased=total_purchased,
+            total_spent=total_spent if total_spent > 0 else None,
+            most_active_month=most_active_month,
+            average_monthly_purchases=round(average_monthly_purchases, 1),
+            average_monthly_spending=round(average_monthly_spending, 2) if average_monthly_spending else None
+        )
 
 
 # Global database instance to ensure singleton pattern

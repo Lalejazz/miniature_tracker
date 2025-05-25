@@ -292,6 +292,39 @@ export interface CollectionStatistics {
   completion_percentage: number;
 }
 
+// Trend Analysis Types
+export interface TrendDataPoint {
+  date: string; // Date in YYYY-MM-DD format
+  count: number;
+  cost?: number;
+}
+
+export interface StatusTrendData {
+  status: PaintingStatus;
+  data_points: TrendDataPoint[];
+}
+
+export interface TrendAnalysis {
+  date_range: {
+    from: string;
+    to: string;
+  };
+  purchases_over_time: TrendDataPoint[];
+  spending_over_time: TrendDataPoint[];
+  status_trends: StatusTrendData[];
+  total_purchased: number;
+  total_spent?: number;
+  most_active_month?: string;
+  average_monthly_purchases: number;
+  average_monthly_spending?: number;
+}
+
+export interface TrendRequest {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string;   // YYYY-MM-DD format
+  group_by: 'day' | 'week' | 'month' | 'year';
+}
+
 // User management types
 export interface User {
   id: string;

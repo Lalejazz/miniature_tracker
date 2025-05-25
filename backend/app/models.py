@@ -466,6 +466,49 @@ class CollectionStatistics(BaseModel):
     completion_percentage: float = 0.0  # Percentage of units that are game_ready or parade_ready
 
 
+class TrendDataPoint(BaseModel):
+    """Model for a single data point in trend analysis."""
+    
+    date: str  # Date in YYYY-MM-DD format
+    count: int = 0
+    cost: Optional[Decimal] = None
+
+
+class StatusTrendData(BaseModel):
+    """Model for status trend analysis."""
+    
+    status: PaintingStatus
+    data_points: List[TrendDataPoint] = Field(default_factory=list)
+
+
+class TrendAnalysis(BaseModel):
+    """Model for comprehensive trend analysis."""
+    
+    date_range: dict[str, str]  # {"from": "YYYY-MM-DD", "to": "YYYY-MM-DD"}
+    
+    # Purchase trends
+    purchases_over_time: List[TrendDataPoint] = Field(default_factory=list)
+    spending_over_time: List[TrendDataPoint] = Field(default_factory=list)
+    
+    # Status progression trends
+    status_trends: List[StatusTrendData] = Field(default_factory=list)
+    
+    # Summary statistics for the period
+    total_purchased: int = 0
+    total_spent: Optional[Decimal] = None
+    most_active_month: Optional[str] = None
+    average_monthly_purchases: float = 0.0
+    average_monthly_spending: Optional[Decimal] = None
+
+
+class TrendRequest(BaseModel):
+    """Model for trend analysis request parameters."""
+    
+    from_date: Optional[str] = None  # YYYY-MM-DD format
+    to_date: Optional[str] = None    # YYYY-MM-DD format
+    group_by: str = "month"  # "day", "week", "month", "year"
+
+
 # Helper function to get factions for a game system
 def get_factions_for_game_system(game_system: GameSystem) -> List[str]:
     """Get available factions for a specific game system."""

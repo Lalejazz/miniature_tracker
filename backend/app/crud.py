@@ -9,7 +9,7 @@ from uuid import UUID
 from app.models import (
     Miniature, MiniatureCreate, MiniatureUpdate, 
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
-    PasswordResetToken, CollectionStatistics
+    PasswordResetToken, CollectionStatistics, TrendAnalysis
 )
 from app.database import get_database
 
@@ -154,4 +154,9 @@ class MiniatureDB:
     async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
         """Get collection statistics for a user."""
         await self._ensure_db_initialized()
-        return await self.db.get_collection_statistics(user_id) 
+        return await self.db.get_collection_statistics(user_id)
+
+    async def get_trend_analysis(self, user_id: UUID, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: str = "month") -> TrendAnalysis:
+        """Get trend analysis for a user's collection."""
+        await self._ensure_db_initialized()
+        return await self.db.get_trend_analysis(user_id, from_date, to_date, group_by) 
