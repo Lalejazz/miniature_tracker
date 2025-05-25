@@ -99,4 +99,4 @@ async def search_players(
 ) -> List[PlayerSearchResult]:
     """Search for players near you."""
     await db.initialize()
-    return await db.search_players(current_user_id, search_request) 
+    return await db.search_players(search_request, current_user_id) 

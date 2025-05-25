@@ -956,10 +956,16 @@ class PostgreSQLDatabase(DatabaseInterface):
         if request.games:
             game_conditions = []
             for game in request.games:
-                game_conditions.append(f"up.games ? ${param_index}")
-                query_params.append(game)
+                game_conditions.append(f"${param_index} = ANY(up.games)")
+                query_params.append(str(game))
                 param_index += 1
             query_conditions.append(f"({' OR '.join(game_conditions)})")
+        
+        # Filter by game type if specified
+        if request.game_type:
+            query_conditions.append(f"up.game_type = ${param_index}")
+            query_params.append(request.game_type.value)
+            param_index += 1
         
         # Calculate distance using Haversine formula
         distance_formula = f"""
@@ -979,8 +985,8 @@ class PostgreSQLDatabase(DatabaseInterface):
         
         query = f"""
             SELECT 
-                u.id, u.email, u.created_at,
-                up.display_name, up.bio, up.city, up.country, up.games,
+                u.id, u.username, u.email, u.created_at,
+                up.bio, up.location, up.game_type, up.games, up.show_email,
                 ({distance_formula}) as distance
             FROM users u
             JOIN user_preferences up ON u.id = up.user_id
@@ -992,17 +998,31 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(query, *query_params)
             
+            # Get all games for lookup
+            all_games = await self.get_all_games()
+            game_lookup = {str(game.id): game for game in all_games}
+            
             results = []
             for row in rows:
+                # Get user's games
+                user_games = []
+                for game_id in row['games'] or []:
+                    game = game_lookup.get(game_id)
+                    if game:
+                        user_games.append(game)
+                
+                # Determine if email should be shown
+                email = row['email'] if row['show_email'] else None
+                
                 result = PlayerSearchResult(
                     user_id=row['id'],
-                    display_name=row['display_name'],
+                    username=row['username'],
+                    email=email,
+                    games=user_games,
+                    game_type=GameType(row['game_type']),
                     bio=row['bio'],
-                    city=row['city'],
-                    country=row['country'],
                     distance_km=round(row['distance'], 1),
-                    games=row['games'] or [],
-                    member_since=row['created_at']
+                    location=row['location']
                 )
                 results.append(result)
             
@@ -1580,7 +1600,7 @@ class FileDatabase(DatabaseInterface):
             for game_id in pref.get('games', []):
                 game = game_lookup.get(game_id)
                 if game:
-                    user_games.append(Game(**game))
+                    user_games.append(game)
             
             # Create result
             result = PlayerSearchResult(
