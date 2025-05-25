@@ -371,37 +371,43 @@ export const STATUS_INFO = {
     label: "Want to Buy",
     description: "Unit you want to purchase",
     color: "#e0e0e0",
-    textColor: "#000"
+    textColor: "#000",
+    icon: "🛍️"
   },
   [PaintingStatus.PURCHASED]: {
     label: "Purchased",
     description: "Unit has been bought but not assembled",
     color: "#ff9800",
-    textColor: "#fff"
+    textColor: "#fff",
+    icon: "🛒"
   },
   [PaintingStatus.ASSEMBLED]: {
     label: "Assembled",
     description: "Unit is assembled and ready for priming",
     color: "#2196f3",
-    textColor: "#fff"
+    textColor: "#fff",
+    icon: "🔧"
   },
   [PaintingStatus.PRIMED]: {
     label: "Primed", 
     description: "Unit has been primed and ready for painting",
     color: "#9c27b0",
-    textColor: "#fff"
+    textColor: "#fff",
+    icon: "🎨"
   },
   [PaintingStatus.GAME_READY]: {
     label: "Game Ready",
     description: "Unit is painted to tabletop standard",
     color: "#4caf50",
-    textColor: "#fff"
+    textColor: "#fff",
+    icon: "🎲"
   },
   [PaintingStatus.PARADE_READY]: {
     label: "Parade Ready",
     description: "Unit is painted to display quality",
     color: "#ffd700",
-    textColor: "#000"
+    textColor: "#000",
+    icon: "🏆"
   }
 };
 

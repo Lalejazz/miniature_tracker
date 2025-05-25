@@ -31,6 +31,9 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
     group_by: 'month'
   });
 
+  // Selected status for trend chart
+  const [selectedTrendStatus, setSelectedTrendStatus] = useState<PaintingStatus>(PaintingStatus.PURCHASED);
+
   const loadStatistics = useCallback(async () => {
     try {
       setLoading(true);
@@ -527,6 +530,19 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
                 <option value="year">Yearly</option>
               </select>
             </div>
+            <div className="filter-group">
+              <label>Status to Chart:</label>
+              <select
+                value={selectedTrendStatus}
+                onChange={(e) => setSelectedTrendStatus(e.target.value as PaintingStatus)}
+              >
+                {Object.values(PaintingStatus).map(status => (
+                  <option key={status} value={status}>
+                    {STATUS_INFO[status].label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button onClick={loadTrendAnalysis} className="apply-filters-button" disabled={trendLoading}>
               {trendLoading ? 'Loading...' : 'Apply Filters'}
             </button>
@@ -539,15 +555,21 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
               {/* Summary Cards */}
               <div className="stats-overview">
                 <div className="stat-card">
-                  <div className="stat-icon">🛒</div>
+                  <div className="stat-icon" style={{ color: STATUS_INFO[selectedTrendStatus].color }}>
+                    {STATUS_INFO[selectedTrendStatus].icon}
+                  </div>
                   <div className="stat-content">
-                    <h3>{trendAnalysis.total_purchased}</h3>
-                    <p>Total Purchased</p>
+                    <h3>
+                      {trendAnalysis.status_trends
+                        .find(trend => trend.status === selectedTrendStatus)
+                        ?.data_points.reduce((sum, point) => sum + point.count, 0) || 0}
+                    </h3>
+                    <p>Total {STATUS_INFO[selectedTrendStatus].label}</p>
                     <small>in selected period</small>
                   </div>
                 </div>
 
-                {trendAnalysis.total_spent && (
+                {selectedTrendStatus === PaintingStatus.PURCHASED && trendAnalysis.total_spent && (
                   <div className="stat-card">
                     <div className="stat-icon">💸</div>
                     <div className="stat-content">
@@ -561,13 +583,24 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
                 <div className="stat-card">
                   <div className="stat-icon">📈</div>
                   <div className="stat-content">
-                    <h3>{trendAnalysis.average_monthly_purchases}</h3>
-                    <p>Avg. Monthly Purchases</p>
+                    <h3>
+                      {selectedTrendStatus === PaintingStatus.PURCHASED 
+                        ? trendAnalysis.average_monthly_purchases
+                        : (() => {
+                            const statusTrend = trendAnalysis.status_trends.find(trend => trend.status === selectedTrendStatus);
+                            if (!statusTrend || statusTrend.data_points.length === 0) return 0;
+                            const total = statusTrend.data_points.reduce((sum, point) => sum + point.count, 0);
+                            const average = total / statusTrend.data_points.length;
+                            return Math.round(average * 10) / 10; // Round to 1 decimal place
+                          })()
+                      }
+                    </h3>
+                    <p>Avg. Monthly {STATUS_INFO[selectedTrendStatus].label}</p>
                     <small>in selected period</small>
                   </div>
                 </div>
 
-                {trendAnalysis.average_monthly_spending && (
+                {selectedTrendStatus === PaintingStatus.PURCHASED && trendAnalysis.average_monthly_spending && (
                   <div className="stat-card">
                     <div className="stat-icon">💰</div>
                     <div className="stat-content">
@@ -582,8 +615,19 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
               {/* Trend Charts */}
               <div className="trends-section">
                 <div className="trends-grid">
-                  {renderTrendChart(trendAnalysis.purchases_over_time, '🛒 Purchases Over Time', 'count')}
-                  {trendAnalysis.spending_over_time.some(p => p.cost && p.cost > 0) && 
+                  {(() => {
+                    const selectedStatusTrend = trendAnalysis.status_trends.find(trend => trend.status === selectedTrendStatus);
+                    if (selectedStatusTrend) {
+                      return renderTrendChart(
+                        selectedStatusTrend.data_points, 
+                        `${STATUS_INFO[selectedTrendStatus].icon} ${STATUS_INFO[selectedTrendStatus].label} Over Time`, 
+                        'count'
+                      );
+                    }
+                    return null;
+                  })()}
+                  {selectedTrendStatus === PaintingStatus.PURCHASED && 
+                   trendAnalysis.spending_over_time.some(p => p.cost && p.cost > 0) && 
                     renderTrendChart(trendAnalysis.spending_over_time, '💸 Spending Over Time', 'cost')}
                 </div>
 
