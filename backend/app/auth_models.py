@@ -81,4 +81,11 @@ class Token(BaseModel):
     """Token model."""
     
     access_token: str
-    token_type: str = "bearer" 
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    """Token data model for JWT payload."""
+    
+    user_id: UUID
+    username: Optional[str] = None 
