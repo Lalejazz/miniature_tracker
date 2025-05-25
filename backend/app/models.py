@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List
 from uuid import UUID, uuid4
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
@@ -17,6 +18,84 @@ class PaintingStatus(str, Enum):
     PRIMED = "primed"
     GAME_READY = "game_ready"
     PARADE_READY = "parade_ready"
+
+
+class GameSystem(str, Enum):
+    """Enum for supported game systems."""
+    
+    WARHAMMER_40K = "warhammer_40k"
+    AGE_OF_SIGMAR = "age_of_sigmar"
+    DUNGEONS_AND_DRAGONS = "dungeons_and_dragons"
+    OTHER = "other"
+
+
+class UnitType(str, Enum):
+    """Enum for unit types."""
+    
+    INFANTRY = "infantry"
+    CAVALRY = "cavalry"
+    VEHICLE = "vehicle"
+    MONSTER = "monster"
+    CHARACTER = "character"
+    TERRAIN = "terrain"
+    OTHER = "other"
+
+
+class BaseDimension(str, Enum):
+    """Enum for base dimensions."""
+    
+    ROUND_25MM = "25mm_round"
+    ROUND_32MM = "32mm_round"
+    ROUND_40MM = "40mm_round"
+    ROUND_50MM = "50mm_round"
+    ROUND_60MM = "60mm_round"
+    ROUND_80MM = "80mm_round"
+    ROUND_90MM = "90mm_round"
+    ROUND_100MM = "100mm_round"
+    ROUND_120MM = "120mm_round"
+    ROUND_160MM = "160mm_round"
+    OVAL_60X35MM = "60x35mm_oval"
+    OVAL_75X42MM = "75x42mm_oval"
+    OVAL_90X52MM = "90x52mm_oval"
+    OVAL_105X70MM = "105x70mm_oval"
+    OVAL_120X92MM = "120x92mm_oval"
+    SQUARE_20MM = "20mm_square"
+    SQUARE_25MM = "25mm_square"
+    SQUARE_40MM = "40mm_square"
+    SQUARE_50MM = "50mm_square"
+    RECTANGULAR_60X100MM = "60x100mm_rectangular"
+    RECTANGULAR_70X105MM = "70x105mm_rectangular"
+    RECTANGULAR_90X120MM = "90x120mm_rectangular"
+    CUSTOM = "custom"
+
+
+# Game System specific factions
+GAME_SYSTEM_FACTIONS = {
+    GameSystem.WARHAMMER_40K: [
+        "Space Marines", "Imperial Guard", "Adeptus Mechanicus", "Sisters of Battle",
+        "Imperial Knights", "Custodes", "Grey Knights", "Deathwatch",
+        "Chaos Space Marines", "Death Guard", "Thousand Sons", "World Eaters",
+        "Chaos Daemons", "Chaos Knights",
+        "Aeldari", "Drukhari", "Harlequins", "Ynnari",
+        "Orks", "Tyranids", "Genestealer Cults", "Necrons", "T'au Empire",
+        "Other"
+    ],
+    GameSystem.AGE_OF_SIGMAR: [
+        "Stormcast Eternals", "Cities of Sigmar", "Fyreslayers", "Kharadron Overlords",
+        "Sylvaneth", "Daughters of Khaine", "Idoneth Deepkin", "Lumineth Realm-lords",
+        "Seraphon", "Beasts of Chaos", "Blades of Khorne", "Disciples of Tzeentch",
+        "Hedonites of Slaanesh", "Maggotkin of Nurgle", "Skaven", "Slaves to Darkness",
+        "Flesh-eater Courts", "Legions of Nagash", "Nighthaunt", "Ossiarch Bonereapers",
+        "Soulblight Gravelords", "Gloomspite Gitz", "Ironjawz", "Bonesplitterz",
+        "Sons of Behemat", "Ogor Mawtribes", "Other"
+    ],
+    GameSystem.DUNGEONS_AND_DRAGONS: [
+        "Player Characters", "NPCs", "Undead", "Fiends", "Celestials", "Elementals",
+        "Fey", "Giants", "Humanoids", "Monstrosities", "Oozes", "Plants",
+        "Beasts", "Dragons", "Constructs", "Aberrations", "Other"
+    ],
+    GameSystem.OTHER: ["Custom"]
+}
 
 
 class StatusLogEntry(BaseModel):
@@ -86,46 +165,78 @@ class PasswordReset(BaseModel):
     new_password: str = Field(..., min_length=8)
 
 
-class MiniatureBase(BaseModel):
-    """Base model for miniature data."""
+class UnitBase(BaseModel):
+    """Base model for unit data."""
     
-    name: str = Field(..., min_length=1, max_length=200)
-    faction: str = Field(..., min_length=1, max_length=100)
-    model_type: str = Field(..., min_length=1, max_length=100)
+    name: str = Field(..., min_length=1, max_length=200, description="Unit name")
+    game_system: GameSystem = Field(description="Game system this unit belongs to")
+    faction: str = Field(..., min_length=1, max_length=100, description="Faction/Army")
+    unit_type: UnitType = Field(description="Type of unit")
+    quantity: int = Field(default=1, ge=1, description="Number of models in this unit")
+    base_dimension: Optional[BaseDimension] = Field(None, description="Base size")
+    custom_base_size: Optional[str] = Field(None, max_length=50, description="Custom base size if not standard")
+    cost: Optional[Decimal] = Field(None, ge=0, description="Cost in local currency")
     status: PaintingStatus = PaintingStatus.WANT_TO_BUY
     notes: Optional[str] = Field(None, max_length=1000)
 
 
-class MiniatureCreate(MiniatureBase):
-    """Model for creating a new miniature."""
+class UnitCreate(UnitBase):
+    """Model for creating a new unit."""
     pass
 
 
-class MiniatureUpdate(BaseModel):
-    """Model for updating an existing miniature."""
+class UnitUpdate(BaseModel):
+    """Model for updating an existing unit."""
     
     name: Optional[str] = Field(None, min_length=1, max_length=200)
+    game_system: Optional[GameSystem] = None
     faction: Optional[str] = Field(None, min_length=1, max_length=100)
-    model_type: Optional[str] = Field(None, min_length=1, max_length=100)
+    unit_type: Optional[UnitType] = None
+    quantity: Optional[int] = Field(None, ge=1)
+    base_dimension: Optional[BaseDimension] = None
+    custom_base_size: Optional[str] = Field(None, max_length=50)
+    cost: Optional[Decimal] = Field(None, ge=0)
     status: Optional[PaintingStatus] = None
     notes: Optional[str] = Field(None, max_length=1000)
 
 
-class Miniature(MiniatureBase):
-    """Complete miniature model with metadata."""
+class Unit(UnitBase):
+    """Complete unit model with metadata."""
     
     model_config = ConfigDict(
         json_encoders={
             datetime: lambda v: v.isoformat(),
             UUID: lambda v: str(v),
+            Decimal: lambda v: str(v),
         }
     )
     
     id: UUID = Field(default_factory=uuid4)
-    user_id: UUID  # Owner of this miniature
+    user_id: UUID  # Owner of this unit
     status_history: List[StatusLogEntry] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+
+# Keep old models for backward compatibility (will be deprecated)
+class MiniatureBase(UnitBase):
+    """Deprecated: Use UnitBase instead."""
+    pass
+
+
+class MiniatureCreate(UnitCreate):
+    """Deprecated: Use UnitCreate instead."""
+    pass
+
+
+class MiniatureUpdate(UnitUpdate):
+    """Deprecated: Use UnitUpdate instead."""
+    pass
+
+
+class Miniature(Unit):
+    """Deprecated: Use Unit instead."""
+    pass
 
 
 # Player Discovery Models
@@ -219,4 +330,24 @@ class PlayerSearchResult(BaseModel):
     game_type: GameType = Field(description="Type of games player is interested in")
     bio: Optional[str]
     distance_km: float = Field(description="Distance from searcher in kilometers")
-    location: str = Field(description="Player's location (for privacy, might be partial)") 
+    location: str = Field(description="Player's location (for privacy, might be partial)")
+
+
+# Collection Statistics Models
+class CollectionStatistics(BaseModel):
+    """Model for collection statistics."""
+    
+    total_units: int = 0
+    total_models: int = 0
+    total_cost: Optional[Decimal] = None
+    status_breakdown: dict[PaintingStatus, int] = Field(default_factory=dict)
+    game_system_breakdown: dict[GameSystem, int] = Field(default_factory=dict)
+    faction_breakdown: dict[str, int] = Field(default_factory=dict)
+    unit_type_breakdown: dict[UnitType, int] = Field(default_factory=dict)
+    completion_percentage: float = 0.0  # Percentage of units that are game_ready or parade_ready
+
+
+# Helper function to get factions for a game system
+def get_factions_for_game_system(game_system: GameSystem) -> List[str]:
+    """Get available factions for a specific game system."""
+    return GAME_SYSTEM_FACTIONS.get(game_system, ["Other"]) 
