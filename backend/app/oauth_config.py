@@ -25,7 +25,10 @@ class OAuthConfig:
                 name='google',
                 client_id=self.google_client_id,
                 client_secret=self.google_client_secret,
-                server_metadata_url='https://accounts.google.com/.well-known/openid_configuration',
+                access_token_url='https://oauth2.googleapis.com/token',
+                authorize_url='https://accounts.google.com/o/oauth2/auth',
+                api_base_url='https://www.googleapis.com/',
+                userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
                 client_kwargs={
                     'scope': 'openid email profile'
                 }
