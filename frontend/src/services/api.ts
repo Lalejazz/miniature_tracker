@@ -265,7 +265,7 @@ export const miniatureApi = {
   },
 
   exportCollection: async (format: 'json' | 'csv'): Promise<void> => {
-    const response = await fetch(`/api/miniatures/export/${format}`, {
+    const response = await fetch(`/miniatures/export/${format}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${tokenManager.getToken()}`
@@ -311,7 +311,7 @@ export const miniatureApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`/api/miniatures/import/${format}?replace_existing=${replaceExisting}`, {
+    const response = await fetch(`/miniatures/import/${format}?replace_existing=${replaceExisting}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${tokenManager.getToken()}`

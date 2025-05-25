@@ -89,84 +89,96 @@ async def export_collection(
     if format.lower() not in ["json", "csv"]:
         raise HTTPException(status_code=400, detail="Format must be 'json' or 'csv'")
     
-    # Get all miniatures for the user
-    miniatures = await db.get_all_miniatures(current_user_id)
-    
-    # Get user info for filename
-    from app.database import get_database
-    database = get_database()
-    await database.initialize()
-    user = await database.get_user_by_id(current_user_id)
-    username = user.username if user else "user"
-    
-    if format.lower() == "json":
-        # Export as JSON
-        export_data = {
-            "export_info": {
-                "exported_at": datetime.utcnow().isoformat(),
-                "user_id": str(current_user_id),
-                "username": username,
-                "total_units": len(miniatures)
-            },
-            "miniatures": [miniature.model_dump() for miniature in miniatures]
-        }
+    try:
+        # Get all miniatures for the user
+        miniatures = await db.get_all_miniatures(current_user_id)
         
-        # Create JSON response
-        json_content = json.dumps(export_data, indent=2, default=str)
+        # Get user info for filename
+        from app.database import get_database
+        database = get_database()
+        await database.initialize()
+        user = await database.get_user_by_id(current_user_id)
+        username = user.username if user else "user"
         
-        return Response(
-            content=json_content,
-            media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=miniature_collection_{username}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        if format.lower() == "json":
+            # Export as JSON (works even with empty collection)
+            export_data = {
+                "export_info": {
+                    "exported_at": datetime.utcnow().isoformat(),
+                    "user_id": str(current_user_id),
+                    "username": username,
+                    "total_units": len(miniatures)
+                },
+                "miniatures": [miniature.model_dump() for miniature in miniatures]
             }
-        )
-    
-    else:  # CSV format
-        import io
-        import csv
+            
+            # Create JSON response
+            json_content = json.dumps(export_data, indent=2, default=str)
+            
+            return Response(
+                content=json_content,
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": f"attachment; filename=miniature_collection_{username}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+                }
+            )
         
-        # Create CSV content
-        output = io.StringIO()
-        writer = csv.writer(output)
-        
-        # Write header
-        headers = [
-            "id", "name", "faction", "unit_type", "game_system", "status", 
-            "quantity", "base_dimension", "custom_base_size", "cost", 
-            "notes", "created_at", "updated_at"
-        ]
-        writer.writerow(headers)
-        
-        # Write data rows
-        for miniature in miniatures:
-            row = [
-                str(miniature.id),
-                miniature.name,
-                miniature.faction,
-                miniature.unit_type.value if miniature.unit_type else "",
-                miniature.game_system.value if miniature.game_system else "",
-                miniature.status.value if hasattr(miniature.status, 'value') else str(miniature.status),
-                miniature.quantity,
-                miniature.base_dimension.value if miniature.base_dimension else "",
-                miniature.custom_base_size or "",
-                str(miniature.cost) if miniature.cost else "",
-                miniature.notes or "",
-                miniature.created_at.isoformat() if miniature.created_at else "",
-                miniature.updated_at.isoformat() if miniature.updated_at else ""
+        else:  # CSV format
+            import io
+            import csv
+            
+            # Create CSV content
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            headers = [
+                "id", "name", "faction", "unit_type", "game_system", "status", 
+                "quantity", "base_dimension", "custom_base_size", "cost", 
+                "notes", "created_at", "updated_at"
             ]
-            writer.writerow(row)
-        
-        csv_content = output.getvalue()
-        output.close()
-        
-        return Response(
-            content=csv_content,
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f"attachment; filename=miniature_collection_{username}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-            }
-        )
+            writer.writerow(headers)
+            
+            # Write data rows (even if empty, we still have headers)
+            for miniature in miniatures:
+                try:
+                    row = [
+                        str(miniature.id),
+                        miniature.name,
+                        miniature.faction,
+                        miniature.unit_type.value if miniature.unit_type else "",
+                        miniature.game_system.value if miniature.game_system else "",
+                        miniature.status.value if hasattr(miniature.status, 'value') else str(miniature.status),
+                        miniature.quantity,
+                        miniature.base_dimension.value if miniature.base_dimension else "",
+                        miniature.custom_base_size or "",
+                        str(miniature.cost) if miniature.cost else "",
+                        miniature.notes or "",
+                        miniature.created_at.isoformat() if miniature.created_at else "",
+                        miniature.updated_at.isoformat() if miniature.updated_at else ""
+                    ]
+                    writer.writerow(row)
+                except Exception as e:
+                    # Log the error but continue with other miniatures
+                    print(f"Error processing miniature {miniature.id}: {e}")
+                    continue
+            
+            csv_content = output.getvalue()
+            output.close()
+            
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=miniature_collection_{username}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+                }
+            )
+    
+    except Exception as e:
+        print(f"Export error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
 @app.post("/miniatures/import/{format}")
