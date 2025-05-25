@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO, UnitType, UNIT_TYPE_LABELS, GameSystem, GAME_SYSTEM_LABELS, BaseDimension, BASE_DIMENSION_LABELS } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO, UnitType, UNIT_TYPE_LABELS, GameSystem, GAME_SYSTEM_LABELS, BaseDimension, BASE_DIMENSION_LABELS, GAME_SYSTEM_FACTIONS } from '../types';
 import { miniatureApi } from '../services/api';
 
 interface EditMiniatureFormProps {
@@ -23,6 +23,20 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableFactions, setAvailableFactions] = useState<string[]>([]);
+
+  // Update available factions when game system changes
+  useEffect(() => {
+    const gameSystem = formData.game_system || GameSystem.WARHAMMER_40K;
+    const factions = GAME_SYSTEM_FACTIONS[gameSystem] || ['Other'];
+    setAvailableFactions(factions);
+    
+    // If current faction is not available in new game system, reset to first option
+    const currentFaction = formData.faction || '';
+    if (!factions.includes(currentFaction)) {
+      setFormData(prev => ({ ...prev, faction: factions[0] }));
+    }
+  }, [formData.game_system, formData.faction]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,14 +101,19 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
 
           <div className="form-row">
             <label htmlFor="faction">Faction *</label>
-            <input
+            <select
               id="faction"
-              type="text"
               value={formData.faction || ''}
               onChange={(e) => handleChange('faction', e.target.value)}
               required
-              maxLength={100}
-            />
+            >
+              <option value="">Select faction...</option>
+              {availableFactions.map((faction) => (
+                <option key={faction} value={faction}>
+                  {faction}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-row">
