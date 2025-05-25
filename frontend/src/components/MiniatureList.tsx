@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS } from '../types';
 import MiniatureCard from './MiniatureCard';
 import MiniatureTable from './MiniatureTable';
 
@@ -16,6 +16,7 @@ type SortOrder = 'asc' | 'desc';
 
 interface FilterState {
   faction: string;
+  game_system: string;
   unit_type: string;
   status: string;
 }
@@ -35,6 +36,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
     faction: '',
+    game_system: '',
     unit_type: '',
     status: ''
   });
@@ -42,10 +44,11 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   // Get unique values for filter dropdowns
   const uniqueValues = useMemo(() => {
     const factions = Array.from(new Set(miniatures.map(m => m.faction))).sort();
+    const gameSystems = Array.from(new Set(miniatures.map(m => GAME_SYSTEM_LABELS[m.game_system]))).sort();
     const unitTypes = Array.from(new Set(miniatures.map(m => UNIT_TYPE_LABELS[m.unit_type]))).sort();
     const statuses = Object.keys(STATUS_INFO);
     
-    return { factions, unitTypes, statuses };
+    return { factions, gameSystems, unitTypes, statuses };
   }, [miniatures]);
 
   // Filtered and sorted miniatures
@@ -56,16 +59,18 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
       const matchesSearch = !searchTerm || 
         miniature.name.toLowerCase().includes(searchLower) ||
         miniature.faction.toLowerCase().includes(searchLower) ||
+        GAME_SYSTEM_LABELS[miniature.game_system].toLowerCase().includes(searchLower) ||
         UNIT_TYPE_LABELS[miniature.unit_type].toLowerCase().includes(searchLower) ||
         STATUS_INFO[miniature.status].label.toLowerCase().includes(searchLower) ||
         (miniature.notes && miniature.notes.toLowerCase().includes(searchLower));
 
       // Dropdown filters
       const matchesFaction = !filters.faction || miniature.faction === filters.faction;
+      const matchesGameSystem = !filters.game_system || GAME_SYSTEM_LABELS[miniature.game_system] === filters.game_system;
       const matchesUnitType = !filters.unit_type || UNIT_TYPE_LABELS[miniature.unit_type] === filters.unit_type;
       const matchesStatus = !filters.status || miniature.status === filters.status;
 
-      return matchesSearch && matchesFaction && matchesUnitType && matchesStatus;
+      return matchesSearch && matchesFaction && matchesGameSystem && matchesUnitType && matchesStatus;
     });
 
     // Sort the filtered results
@@ -129,6 +134,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
     setSearchTerm('');
     setFilters({
       faction: '',
+      game_system: '',
       unit_type: '',
       status: ''
     });
@@ -190,6 +196,17 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
             <option value="">All Factions</option>
             {uniqueValues.factions.map(faction => (
               <option key={faction} value={faction}>{faction}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.game_system}
+            onChange={(e) => handleFilterChange('game_system', e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All Game Systems</option>
+            {uniqueValues.gameSystems.map(system => (
+              <option key={system} value={system}>{system}</option>
             ))}
           </select>
 

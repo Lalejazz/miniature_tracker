@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS, BASE_DIMENSION_LABELS } from '../types';
 import EditMiniatureForm from './EditMiniatureForm';
 import StatusHistory from './StatusHistory';
 
@@ -80,9 +80,28 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
           </div>
 
           <div className="info-row">
-            <span className="label">Quantity:</span>
+            <span className="label">Unit Size:</span>
             <span>{miniature.quantity} model{miniature.quantity !== 1 ? 's' : ''}</span>
           </div>
+
+          {miniature.cost && (
+            <div className="info-row">
+              <span className="label">Cost:</span>
+              <span>${miniature.cost}</span>
+            </div>
+          )}
+
+          {miniature.base_dimension && (
+            <div className="info-row">
+              <span className="label">Base Size:</span>
+              <span>
+                {miniature.base_dimension === 'custom' && miniature.custom_base_size 
+                  ? miniature.custom_base_size 
+                  : BASE_DIMENSION_LABELS[miniature.base_dimension]
+                }
+              </span>
+            </div>
+          )}
 
           <div className="status-section">
             <span className="label">Status:</span>

@@ -146,7 +146,7 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="quantity">Quantity</label>
+              <label htmlFor="quantity">Unit Size</label>
               <input
                 type="number"
                 id="quantity"

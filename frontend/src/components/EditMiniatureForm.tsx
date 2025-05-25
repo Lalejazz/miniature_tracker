@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO, UnitType, UNIT_TYPE_LABELS, GameSystem, GAME_SYSTEM_LABELS } from '../types';
+import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO, UnitType, UNIT_TYPE_LABELS, GameSystem, GAME_SYSTEM_LABELS, BaseDimension, BASE_DIMENSION_LABELS } from '../types';
 import { miniatureApi } from '../services/api';
 
 interface EditMiniatureFormProps {
@@ -16,7 +16,10 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
     unit_type: miniature.unit_type,
     quantity: miniature.quantity,
     status: miniature.status,
-    notes: miniature.notes || ''
+    notes: miniature.notes || '',
+    cost: miniature.cost,
+    base_dimension: miniature.base_dimension,
+    custom_base_size: miniature.custom_base_size
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +39,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
     }
   };
 
-  const handleChange = (field: keyof MiniatureUpdate, value: string | number | GameSystem | UnitType) => {
+  const handleChange = (field: keyof MiniatureUpdate, value: string | number | GameSystem | UnitType | BaseDimension | string | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -111,7 +114,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
           </div>
 
           <div className="form-row">
-            <label htmlFor="quantity">Quantity</label>
+            <label htmlFor="quantity">Unit Size</label>
             <input
               type="number"
               id="quantity"
@@ -121,6 +124,49 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
               max="100"
             />
           </div>
+
+          <div className="form-row">
+            <label htmlFor="cost">Cost (optional)</label>
+            <input
+              type="number"
+              id="cost"
+              step="0.01"
+              min="0"
+              value={formData.cost || ''}
+              onChange={(e) => handleChange('cost', parseFloat(e.target.value) || undefined)}
+              placeholder="Amount paid for this unit"
+            />
+          </div>
+
+          <div className="form-row">
+            <label htmlFor="base_dimension">Base Size</label>
+            <select
+              id="base_dimension"
+              value={formData.base_dimension || ''}
+              onChange={(e) => handleChange('base_dimension', e.target.value as BaseDimension)}
+            >
+              <option value="">Select base size...</option>
+              {Object.entries(BASE_DIMENSION_LABELS).map(([dimension, label]) => (
+                <option key={dimension} value={dimension}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {formData.base_dimension === BaseDimension.CUSTOM && (
+            <div className="form-row">
+              <label htmlFor="custom_base_size">Custom Base Size</label>
+              <input
+                type="text"
+                id="custom_base_size"
+                value={formData.custom_base_size || ''}
+                onChange={(e) => handleChange('custom_base_size', e.target.value)}
+                placeholder="e.g., 28mm round, 30x40mm oval"
+                maxLength={50}
+              />
+            </div>
+          )}
 
           <div className="form-row">
             <label htmlFor="status">Status</label>

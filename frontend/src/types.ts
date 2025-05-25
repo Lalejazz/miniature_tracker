@@ -14,7 +14,29 @@ export enum PaintingStatus {
 export enum GameSystem {
   WARHAMMER_40K = "warhammer_40k",
   AGE_OF_SIGMAR = "age_of_sigmar",
+  KILL_TEAM = "kill_team",
+  WARCRY = "warcry",
+  NECROMUNDA = "necromunda",
+  BLOOD_BOWL = "blood_bowl",
+  MIDDLE_EARTH = "middle_earth",
+  BOLT_ACTION = "bolt_action",
+  FLAMES_OF_WAR = "flames_of_war",
+  SAGA = "saga",
+  KINGS_OF_WAR = "kings_of_war",
+  INFINITY = "infinity",
+  MALIFAUX = "malifaux",
+  WARMACHINE_HORDES = "warmachine_hordes",
+  X_WING = "x_wing",
+  STAR_WARS_LEGION = "star_wars_legion",
+  BATTLETECH = "battletech",
+  DROPZONE_COMMANDER = "dropzone_commander",
+  GUILD_BALL = "guild_ball",
   DUNGEONS_AND_DRAGONS = "dungeons_and_dragons",
+  PATHFINDER = "pathfinder",
+  FROSTGRAVE = "frostgrave",
+  MORDHEIM = "mordheim",
+  GASLANDS = "gaslands",
+  ZOMBICIDE = "zombicide",
   OTHER = "other"
 }
 
@@ -74,10 +96,107 @@ export const GAME_SYSTEM_FACTIONS = {
     "Soulblight Gravelords", "Gloomspite Gitz", "Ironjawz", "Bonesplitterz",
     "Sons of Behemat", "Ogor Mawtribes", "Other"
   ],
+  [GameSystem.KILL_TEAM]: [
+    "Space Marines", "Imperial Guard", "Adeptus Mechanicus", "Sisters of Battle",
+    "Chaos Space Marines", "Death Guard", "Thousand Sons",
+    "Aeldari", "Drukhari", "Harlequins",
+    "Orks", "Tyranids", "Genestealer Cults", "Necrons", "T'au Empire",
+    "Other"
+  ],
+  [GameSystem.WARCRY]: [
+    "Stormcast Eternals", "Nighthaunt", "Gloomspite Gitz", "Ironjawz",
+    "Slaves to Darkness", "Skaven", "Beasts of Chaos", "Flesh-eater Courts",
+    "Daughters of Khaine", "Fyreslayers", "Kharadron Overlords", "Sylvaneth",
+    "Other"
+  ],
+  [GameSystem.NECROMUNDA]: [
+    "House Escher", "House Goliath", "House Van Saar", "House Orlock",
+    "House Delaque", "House Cawdor", "Enforcers", "Corpse Grinder Cult",
+    "Chaos Cult", "Genestealer Cult", "Other"
+  ],
+  [GameSystem.BLOOD_BOWL]: [
+    "Human", "Orc", "Dwarf", "Elf", "Skaven", "Chaos", "Undead", "Halfling",
+    "Amazon", "Lizardmen", "Norse", "Vampire", "Nurgle", "Khorne", "Other"
+  ],
+  [GameSystem.MIDDLE_EARTH]: [
+    "Gondor", "Rohan", "The Shire", "Rivendell", "Lothlórien", "The White Council",
+    "Mordor", "Isengard", "Haradrim", "Easterlings", "Corsairs of Umbar",
+    "The Misty Mountains", "Moria", "Angmar", "Other"
+  ],
+  [GameSystem.BOLT_ACTION]: [
+    "US Army", "British Army", "Soviet Army", "German Army", "Japanese Army",
+    "Italian Army", "French Army", "Partisans", "Resistance", "Other"
+  ],
+  [GameSystem.FLAMES_OF_WAR]: [
+    "US Forces", "British Forces", "Soviet Forces", "German Forces",
+    "Italian Forces", "Finnish Forces", "Romanian Forces", "Hungarian Forces",
+    "Other"
+  ],
+  [GameSystem.SAGA]: [
+    "Vikings", "Anglo-Danes", "Welsh", "Irish", "Scots", "Normans",
+    "Anglo-Saxons", "Byzantines", "Moors", "Crusaders", "Other"
+  ],
+  [GameSystem.KINGS_OF_WAR]: [
+    "Kingdoms of Men", "Elves", "Dwarfs", "Orcs", "Goblins", "Undead",
+    "Abyssal Dwarfs", "Ogres", "Basileans", "Nightstalkers", "Other"
+  ],
+  [GameSystem.INFINITY]: [
+    "PanOceania", "Yu Jing", "Ariadna", "Haqqislam", "Nomads", "Combined Army",
+    "ALEPH", "Tohaa", "O-12", "Starco", "Other"
+  ],
+  [GameSystem.MALIFAUX]: [
+    "Guild", "Resurrectionists", "Arcanists", "Neverborn", "Outcasts",
+    "Ten Thunders", "Gremlins", "Other"
+  ],
+  [GameSystem.WARMACHINE_HORDES]: [
+    "Cygnar", "Khador", "Protectorate of Menoth", "Cryx", "Retribution of Scyrah",
+    "Convergence of Cyriss", "Crucible Guard", "Trollbloods", "Circle Orboros",
+    "Legion of Everblight", "Skorne", "Grymkin", "Minions", "Other"
+  ],
+  [GameSystem.X_WING]: [
+    "Rebel Alliance", "Galactic Empire", "Scum and Villainy", "Resistance",
+    "First Order", "Galactic Republic", "Separatist Alliance", "Other"
+  ],
+  [GameSystem.STAR_WARS_LEGION]: [
+    "Rebel Alliance", "Galactic Empire", "Galactic Republic", "Separatist Alliance",
+    "Other"
+  ],
+  [GameSystem.BATTLETECH]: [
+    "Inner Sphere", "Clan", "ComStar", "Word of Blake", "Mercenary", "Other"
+  ],
+  [GameSystem.DROPZONE_COMMANDER]: [
+    "United Colonies of Mankind", "Post-Human Republic", "Shaltari Tribes",
+    "Scourge", "Resistance", "Other"
+  ],
+  [GameSystem.GUILD_BALL]: [
+    "Alchemists", "Blacksmiths", "Brewers", "Butchers", "Cooks", "Engineers",
+    "Farmers", "Fishermen", "Hunters", "Masons", "Morticians", "Navigators",
+    "Order", "Ratcatchers", "Smiths", "Union", "Other"
+  ],
   [GameSystem.DUNGEONS_AND_DRAGONS]: [
     "Player Characters", "NPCs", "Undead", "Fiends", "Celestials", "Elementals",
     "Fey", "Giants", "Humanoids", "Monstrosities", "Oozes", "Plants",
     "Beasts", "Dragons", "Constructs", "Aberrations", "Other"
+  ],
+  [GameSystem.PATHFINDER]: [
+    "Player Characters", "NPCs", "Undead", "Fiends", "Celestials", "Elementals",
+    "Fey", "Giants", "Humanoids", "Monstrosities", "Oozes", "Plants",
+    "Beasts", "Dragons", "Constructs", "Aberrations", "Other"
+  ],
+  [GameSystem.FROSTGRAVE]: [
+    "Wizard Warband", "Cultists", "Undead", "Demons", "Constructs", "Animals",
+    "Soldiers", "Other"
+  ],
+  [GameSystem.MORDHEIM]: [
+    "Human Mercenaries", "Reiklanders", "Middenheimers", "Marienburgers",
+    "Witch Hunters", "Sisters of Sigmar", "Undead", "Skaven", "Orcs & Goblins",
+    "Possessed", "Cult of the Possessed", "Other"
+  ],
+  [GameSystem.GASLANDS]: [
+    "Mishkin", "Rutherford", "Miyazaki", "Verney", "Idris", "Warden", "Other"
+  ],
+  [GameSystem.ZOMBICIDE]: [
+    "Survivors", "Zombies", "Abominations", "Other"
   ],
   [GameSystem.OTHER]: ["Custom"]
 };
@@ -245,7 +364,29 @@ export const STATUS_INFO = {
 export const GAME_SYSTEM_LABELS = {
   [GameSystem.WARHAMMER_40K]: "Warhammer 40,000",
   [GameSystem.AGE_OF_SIGMAR]: "Age of Sigmar",
+  [GameSystem.KILL_TEAM]: "Kill Team",
+  [GameSystem.WARCRY]: "Warcry",
+  [GameSystem.NECROMUNDA]: "Necromunda",
+  [GameSystem.BLOOD_BOWL]: "Blood Bowl",
+  [GameSystem.MIDDLE_EARTH]: "Middle-earth SBG",
+  [GameSystem.BOLT_ACTION]: "Bolt Action",
+  [GameSystem.FLAMES_OF_WAR]: "Flames of War",
+  [GameSystem.SAGA]: "SAGA",
+  [GameSystem.KINGS_OF_WAR]: "Kings of War",
+  [GameSystem.INFINITY]: "Infinity",
+  [GameSystem.MALIFAUX]: "Malifaux",
+  [GameSystem.WARMACHINE_HORDES]: "Warmachine/Hordes",
+  [GameSystem.X_WING]: "X-Wing",
+  [GameSystem.STAR_WARS_LEGION]: "Star Wars: Legion",
+  [GameSystem.BATTLETECH]: "BattleTech",
+  [GameSystem.DROPZONE_COMMANDER]: "Dropzone Commander",
+  [GameSystem.GUILD_BALL]: "Guild Ball",
   [GameSystem.DUNGEONS_AND_DRAGONS]: "D&D / RPG",
+  [GameSystem.PATHFINDER]: "Pathfinder",
+  [GameSystem.FROSTGRAVE]: "Frostgrave",
+  [GameSystem.MORDHEIM]: "Mordheim",
+  [GameSystem.GASLANDS]: "Gaslands",
+  [GameSystem.ZOMBICIDE]: "Zombicide",
   [GameSystem.OTHER]: "Other Game System"
 };
 
