@@ -243,6 +243,10 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("UPDATE miniatures SET unit_type = 'other' WHERE unit_type IS NULL")
             await self._pool.execute("UPDATE miniatures SET quantity = 1 WHERE quantity IS NULL")
             
+            # Migrate old unit type values to new enum values
+            await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'HQ'")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'HQ'")
+            
             # Now make required columns NOT NULL
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN faction SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN model_type SET NOT NULL")
