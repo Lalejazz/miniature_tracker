@@ -88,4 +88,4 @@ class TokenData(BaseModel):
     """Token data model for JWT payload."""
     
     user_id: UUID
-    username: Optional[str] = None 
+    username: Optional[str] = None

@@ -302,7 +302,7 @@ class UserPreferences(BaseModel):
     latitude: Optional[float] = Field(None, description="Calculated latitude from location")
     longitude: Optional[float] = Field(None, description="Calculated longitude from location")
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now) 
 
 
 class PlayerSearchRequest(BaseModel):

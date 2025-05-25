@@ -296,7 +296,7 @@ export interface ChangelogEntry {
   description: string;
   type: 'feature' | 'improvement' | 'bugfix' | 'security';
   items: string[];
-}
+} 
 
 // Player Discovery Types
 

@@ -96,7 +96,7 @@ class UserDB:
         """Get all users (admin function)."""
         await self._ensure_db_initialized()
         return await self.db.get_all_users()
-
+    
     # Password Reset Token Methods
     
     def create_password_reset_token(self, user_id: UUID) -> PasswordResetToken:
