@@ -11,6 +11,7 @@ import {
   UNIT_TYPE_LABELS
 } from '../types';
 import { miniatureApi } from '../services/api';
+import ImportExport from './ImportExport';
 
 interface StatisticsProps {
   onError: (error: string) => void;
@@ -21,7 +22,8 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
   const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'trends'>('overview');
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'import-export'>('overview');
   
   // Trend analysis filters
   const [trendFilters, setTrendFilters] = useState<TrendRequest>({
@@ -53,6 +55,14 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
       setTrendLoading(false);
     }
   }, [trendFilters, onError]);
+
+  const handleImportComplete = useCallback(() => {
+    // Refresh statistics and trends after import
+    loadStatistics();
+    if (activeTab === 'trends') {
+      loadTrendAnalysis();
+    }
+  }, [activeTab, loadStatistics, loadTrendAnalysis]);
 
   useEffect(() => {
     loadStatistics();
@@ -170,6 +180,12 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
             onClick={() => setActiveTab('trends')}
           >
             📊 Trends
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'import-export' ? 'active' : ''}`}
+            onClick={() => setActiveTab('import-export')}
+          >
+            Import/Export
           </button>
         </div>
         <button onClick={loadStatistics} className="refresh-button">
@@ -543,6 +559,12 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
             </>
           )}
         </>
+      )}
+
+      {activeTab === 'import-export' && (
+        <div className="tab-content">
+          <ImportExport onImportComplete={handleImportComplete} />
+        </div>
       )}
     </div>
   );

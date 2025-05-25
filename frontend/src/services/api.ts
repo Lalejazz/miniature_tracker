@@ -183,10 +183,20 @@ export const miniatureApi = {
    * Get trend analysis for current user
    */
   async getTrendAnalysis(trendRequest: TrendRequest): Promise<TrendAnalysis> {
-    return apiRequest<TrendAnalysis>('/miniatures/trends', {
+    const response = await fetch('/api/miniatures/trends', {
       method: 'POST',
-      body: JSON.stringify(trendRequest),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenManager.getToken()}`
+      },
+      body: JSON.stringify(trendRequest)
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to get trend analysis');
+    }
+
+    return response.json();
   },
 
   /**
@@ -252,6 +262,69 @@ export const miniatureApi = {
     return apiRequest<Miniature>(`/miniatures/${id}/status-logs/${logId}`, {
       method: 'DELETE',
     });
+  },
+
+  exportCollection: async (format: 'json' | 'csv'): Promise<void> => {
+    const response = await fetch(`/api/miniatures/export/${format}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${tokenManager.getToken()}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to export collection as ${format.toUpperCase()}`);
+    }
+
+    // Get filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `miniature_collection.${format}`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    // Create blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  importCollection: async (
+    format: 'json' | 'csv', 
+    file: File, 
+    replaceExisting: boolean = false
+  ): Promise<{
+    message: string;
+    imported_count: number;
+    total_in_file: number;
+    replaced_existing: boolean;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`/api/miniatures/import/${format}?replace_existing=${replaceExisting}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tokenManager.getToken()}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Import failed' }));
+      throw new Error(errorData.detail || `Failed to import collection from ${format.toUpperCase()}`);
+    }
+
+    return response.json();
   }
 };
 
