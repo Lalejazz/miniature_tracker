@@ -247,13 +247,33 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'HQ'")
             await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'HQ'")
             
+            # Handle other legacy unit types
+            await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'Legendary Hero'")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'Legendary Hero'")
+            await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'Hero'")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'Hero'")
+            await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'Lord'")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'Lord'")
+            await self._pool.execute("UPDATE miniatures SET model_type = 'character' WHERE model_type = 'Champion'")
+            await self._pool.execute("UPDATE miniatures SET unit_type = 'character' WHERE unit_type = 'Champion'")
+            
+            # Map any remaining unknown values to 'other'
+            await self._pool.execute("""
+                UPDATE miniatures SET model_type = 'other' 
+                WHERE model_type NOT IN ('infantry', 'cavalry', 'vehicle', 'monster', 'character', 'terrain', 'other')
+            """)
+            await self._pool.execute("""
+                UPDATE miniatures SET unit_type = 'other' 
+                WHERE unit_type NOT IN ('infantry', 'cavalry', 'vehicle', 'monster', 'character', 'terrain', 'other')
+            """)
+            
             # Now make required columns NOT NULL
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN faction SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN model_type SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN game_system SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN unit_type SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN quantity SET NOT NULL")
-            
+        
         except Exception as e:
             print(f"Migration warning: {e}")  # Log but don't fail
         
