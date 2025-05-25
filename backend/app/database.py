@@ -86,6 +86,16 @@ class DatabaseInterface(ABC):
         """Add a status log entry to a miniature."""
         pass
 
+    @abstractmethod
+    async def delete_status_log_entry(self, miniature_id: UUID, log_id: UUID, user_id: UUID) -> Optional[Miniature]:
+        """Delete a status log entry."""
+        pass
+
+    @abstractmethod
+    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
+        """Get collection statistics for a user."""
+        pass
+
     # Game management methods
     @abstractmethod
     async def get_all_games(self) -> List[Game]:
@@ -114,8 +124,8 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
-        """Search for players based on criteria."""
+    async def search_players(self, request: PlayerSearchRequest, user_id: UUID) -> List[PlayerSearchResult]:
+        """Search for players based on location and game preferences."""
         pass
 
 
@@ -832,84 +842,130 @@ class PostgreSQLDatabase(DatabaseInterface):
                 return UserPreferences(**dict(row))
         return None
     
-    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
-        """Search for players based on criteria."""
+    async def search_players(self, request: PlayerSearchRequest, user_id: UUID) -> List[PlayerSearchResult]:
+        """Search for players based on location and game preferences."""
         if self._pool is None:
             raise RuntimeError("Database not initialized")
         
-        # Get searcher's location for distance calculation
-        async with self._pool.acquire() as conn:
-            searcher_row = await conn.fetchrow(
-                "SELECT latitude, longitude FROM user_preferences WHERE user_id = $1",
-                searcher_user_id
+        # Get user's location for distance calculation
+        user_prefs = await self.get_user_preferences(user_id)
+        if not user_prefs or not user_prefs.latitude or not user_prefs.longitude:
+            return []
+        
+        # Build query based on search criteria
+        query_conditions = ["up.latitude IS NOT NULL", "up.longitude IS NOT NULL", "up.user_id != $1"]
+        query_params = [user_id]
+        param_index = 2
+        
+        # Filter by games if specified
+        if request.games:
+            game_conditions = []
+            for game in request.games:
+                game_conditions.append(f"up.games ? ${param_index}")
+                query_params.append(game)
+                param_index += 1
+            query_conditions.append(f"({' OR '.join(game_conditions)})")
+        
+        # Calculate distance using Haversine formula
+        distance_formula = f"""
+            6371 * acos(
+                cos(radians({user_prefs.latitude})) * 
+                cos(radians(up.latitude)) * 
+                cos(radians(up.longitude) - radians({user_prefs.longitude})) + 
+                sin(radians({user_prefs.latitude})) * 
+                sin(radians(up.latitude))
             )
-            if not searcher_row or not searcher_row['latitude'] or not searcher_row['longitude']:
-                return []  # Searcher has no location set
+        """
+        
+        # Add distance filter
+        query_conditions.append(f"({distance_formula}) <= ${param_index}")
+        query_params.append(request.max_distance_km)
+        param_index += 1
+        
+        query = f"""
+            SELECT 
+                u.id, u.email, u.created_at,
+                up.display_name, up.bio, up.city, up.country, up.games,
+                ({distance_formula}) as distance
+            FROM users u
+            JOIN user_preferences up ON u.id = up.user_id
+            WHERE {' AND '.join(query_conditions)}
+            ORDER BY distance
+            LIMIT 50
+        """
+        
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(query, *query_params)
             
-            searcher_lat = float(searcher_row['latitude'])
-            searcher_lon = float(searcher_row['longitude'])
-            
-            # Build search query with filters
-            where_clauses = ["up.user_id != $1", "up.latitude IS NOT NULL", "up.longitude IS NOT NULL"]
-            params = [searcher_user_id]
-            param_count = 1
-            
-            # Filter by games if specified
-            if search_request.games:
-                param_count += 1
-                where_clauses.append(f"up.games && ${param_count}")
-                params.append([str(g) for g in search_request.games])
-            
-            # Filter by game types if specified
-            if search_request.game_type:
-                param_count += 1
-                where_clauses.append(f"up.game_type = ${param_count}")
-                params.append(search_request.game_type.value)
-            
-            # Distance calculation using Haversine formula
-            distance_formula = f"""
-                (6371 * acos(
-                    cos(radians({searcher_lat})) * cos(radians(up.latitude)) *
-                    cos(radians(up.longitude) - radians({searcher_lon})) +
-                    sin(radians({searcher_lat})) * sin(radians(up.latitude))
-                ))
-            """
-            
-            query = f"""
-                SELECT u.id as user_id, u.username, u.email, up.games, up.game_type, up.bio, up.show_email, up.location,
-                       {distance_formula} as distance_km
-                FROM user_preferences up
-                JOIN users u ON up.user_id = u.id
-                WHERE {' AND '.join(where_clauses)}
-                  AND {distance_formula} <= {search_request.max_distance_km}
-                ORDER BY distance_km
-                LIMIT 50
-            """
-            
-            rows = await conn.fetch(query, *params)
-            
-            # Convert to results
             results = []
             for row in rows:
-                # Get game details
-                game_rows = await conn.fetch(
-                    "SELECT id, name, description, is_active FROM games WHERE id = ANY($1)",
-                    row['games'] if row['games'] else []
-                )
-                games = [Game(**dict(game_row)) for game_row in game_rows]
-                
-                results.append(PlayerSearchResult(
-                    user_id=row['user_id'],
-                    username=row['username'],
-                    email=row['email'] if row['show_email'] else None,
-                    games=games,
-                    game_type=GameType(row['game_type']) if row['game_type'] else GameType.COMPETITIVE,
+                result = PlayerSearchResult(
+                    user_id=row['id'],
+                    display_name=row['display_name'],
                     bio=row['bio'],
-                    distance_km=round(float(row['distance_km']), 2),
-                    location=row['location'][:10] + "***" if len(row['location']) > 10 else row['location']  # Partial location for privacy
-                ))
+                    city=row['city'],
+                    country=row['country'],
+                    distance_km=round(row['distance'], 1),
+                    games=row['games'] or [],
+                    member_since=row['created_at']
+                )
+                results.append(result)
             
             return results
+
+    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
+        """Get collection statistics for a user."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Get all miniatures for the user
+            miniatures = await self.get_all_miniatures(user_id)
+            
+            if not miniatures:
+                return CollectionStatistics()
+            
+            # Calculate statistics
+            total_units = len(miniatures)
+            total_models = sum(m.quantity for m in miniatures)
+            total_cost = sum(m.cost for m in miniatures if m.cost is not None)
+            
+            # Status breakdown
+            from app.models import PaintingStatus, GameSystem, UnitType
+            status_breakdown = {}
+            for status in PaintingStatus:
+                status_breakdown[status] = sum(1 for m in miniatures if m.status == status)
+            
+            # Game system breakdown
+            game_system_breakdown = {}
+            for system in GameSystem:
+                game_system_breakdown[system] = sum(1 for m in miniatures if m.game_system == system)
+            
+            # Faction breakdown
+            faction_breakdown = {}
+            for miniature in miniatures:
+                faction = miniature.faction
+                faction_breakdown[faction] = faction_breakdown.get(faction, 0) + 1
+            
+            # Unit type breakdown
+            unit_type_breakdown = {}
+            for unit_type in UnitType:
+                unit_type_breakdown[unit_type] = sum(1 for m in miniatures if m.unit_type == unit_type)
+            
+            # Completion percentage (game_ready + parade_ready)
+            completed_units = sum(1 for m in miniatures if m.status in [PaintingStatus.GAME_READY, PaintingStatus.PARADE_READY])
+            completion_percentage = (completed_units / total_units * 100) if total_units > 0 else 0.0
+            
+            return CollectionStatistics(
+                total_units=total_units,
+                total_models=total_models,
+                total_cost=total_cost if total_cost > 0 else None,
+                status_breakdown=status_breakdown,
+                game_system_breakdown=game_system_breakdown,
+                faction_breakdown=faction_breakdown,
+                unit_type_breakdown=unit_type_breakdown,
+                completion_percentage=round(completion_percentage, 1)
+            )
 
     async def _populate_default_games(self) -> None:
         """Populate the games table with default popular wargames."""
@@ -1317,10 +1373,10 @@ class FileDatabase(DatabaseInterface):
                 return UserPreferences(**preference)
         return None
     
-    async def search_players(self, searcher_user_id: UUID, search_request: PlayerSearchRequest) -> List[PlayerSearchResult]:
-        """Search for players based on criteria."""
+    async def search_players(self, request: PlayerSearchRequest, user_id: UUID) -> List[PlayerSearchResult]:
+        """Search for players based on location and game preferences."""
         # Get searcher's preferences to find their location
-        searcher_prefs = await self.get_user_preferences(searcher_user_id)
+        searcher_prefs = await self.get_user_preferences(user_id)
         if not searcher_prefs or not searcher_prefs.latitude or not searcher_prefs.longitude:
             return []  # Searcher has no location set
         
@@ -1340,7 +1396,7 @@ class FileDatabase(DatabaseInterface):
         
         for pref in preferences:
             # Skip searcher themselves
-            if pref.get('user_id') == str(searcher_user_id):
+            if pref.get('user_id') == str(user_id):
                 continue
                 
             # Skip if no coordinates
@@ -1370,18 +1426,18 @@ class FileDatabase(DatabaseInterface):
             distance_km = haversine_distance(searcher_lat, searcher_lon, pref_lat, pref_lon)
             
             # Filter by distance
-            if distance_km > search_request.max_distance_km:
+            if distance_km > request.max_distance_km:
                 continue
             
             # Filter by games if specified
-            if search_request.games:
+            if request.games:
                 pref_games = set(pref.get('games', []))
-                search_games = set(str(g) for g in search_request.games)
+                search_games = set(str(g) for g in request.games)
                 if not pref_games.intersection(search_games):
                     continue
             
             # Filter by game type if specified
-            if search_request.game_type and pref.get('game_type') != search_request.game_type.value:
+            if request.game_type and pref.get('game_type') != request.game_type.value:
                 continue
             
             # Get user details

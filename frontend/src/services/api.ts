@@ -12,7 +12,8 @@ import {
   UserPreferencesCreate,
   UserPreferencesUpdate,
   PlayerSearchRequest,
-  PlayerSearchResult
+  PlayerSearchResult,
+  CollectionStatistics
 } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -167,6 +168,13 @@ export const miniatureApi = {
    */
   async getAll(): Promise<Miniature[]> {
     return apiRequest<Miniature[]>('/miniatures');
+  },
+
+  /**
+   * Get collection statistics for current user
+   */
+  async getStatistics(): Promise<CollectionStatistics> {
+    return apiRequest<CollectionStatistics>('/miniatures/statistics');
   },
 
   /**

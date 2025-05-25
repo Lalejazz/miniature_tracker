@@ -9,7 +9,7 @@ from uuid import UUID
 from app.models import (
     Miniature, MiniatureCreate, MiniatureUpdate, 
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
-    PasswordResetToken
+    PasswordResetToken, CollectionStatistics
 )
 from app.database import get_database
 
@@ -149,4 +149,9 @@ class MiniatureDB:
         ]
         
         if len(active_tokens) < len(tokens):
-            self._save_reset_tokens(active_tokens) 
+            self._save_reset_tokens(active_tokens)
+    
+    async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
+        """Get collection statistics for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.get_collection_statistics(user_id) 

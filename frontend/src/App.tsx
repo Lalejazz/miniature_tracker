@@ -4,6 +4,7 @@ import { Miniature, MiniatureCreate, UserCreate, LoginRequest, UserPreferences }
 import { miniatureApi, authApi, tokenManager, playerApi } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import UnitForm from './components/UnitForm';
+import Statistics from './components/Statistics';
 import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
 import ForgotPasswordForm from './components/ForgotPasswordForm';
@@ -416,8 +417,7 @@ function App() {
         )}
 
         {currentTab === 'statistics' && (
-          // Implementation of statistics tab
-          <div>Statistics tab content</div>
+          <Statistics onError={setMiniaturesError} />
         )}
 
         {currentTab === 'preferences' && (

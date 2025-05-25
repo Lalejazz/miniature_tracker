@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from app.crud import MiniatureDB
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
@@ -52,6 +52,15 @@ async def get_all_miniatures(
 ) -> List[Miniature]:
     """Get all miniatures for the authenticated user."""
     return await db.get_all_miniatures(current_user_id)
+
+
+@app.get("/miniatures/statistics", response_model=CollectionStatistics)
+async def get_collection_statistics(
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> CollectionStatistics:
+    """Get collection statistics for the authenticated user."""
+    return await db.get_collection_statistics(current_user_id)
 
 
 @app.get("/miniatures/{miniature_id}", response_model=Miniature)
