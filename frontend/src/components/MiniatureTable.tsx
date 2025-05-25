@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS } from '../types';
 import StatusHistory from './StatusHistory';
 
 interface MiniatureTableProps {
@@ -35,18 +35,16 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
 
   const startEdit = (miniature: Miniature, field: string) => {
     setEditingField({ id: miniature.id, field });
-    setEditValue(String(miniature[field as keyof Miniature] || ''));
+    setEditValue(miniature[field as keyof Miniature] as string || '');
   };
 
   const saveEdit = (id: string, field: string) => {
     onUpdate(id, { [field]: editValue });
     setEditingField(null);
-    setEditValue('');
   };
 
   const cancelEdit = () => {
     setEditingField(null);
-    setEditValue('');
   };
 
   const getSortIcon = (field: string) => {
@@ -111,10 +109,10 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
               Faction {getSortIcon('faction')}
             </th>
             <th 
-              onClick={() => onSort('model_type')}
-              className={`sortable ${sortField === 'model_type' ? 'active' : ''}`}
+              onClick={() => onSort('unit_type')}
+              className={`sortable ${sortField === 'unit_type' ? 'active' : ''}`}
             >
-              Type {getSortIcon('model_type')}
+              Type {getSortIcon('unit_type')}
             </th>
             <th 
               onClick={() => onSort('status')}
@@ -153,7 +151,9 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                     {renderEditableCell(miniature, 'faction', 100)}
                   </td>
                   <td>
-                    {renderEditableCell(miniature, 'model_type', 100)}
+                    <div className="unit-type-cell">
+                      {UNIT_TYPE_LABELS[miniature.unit_type]}
+                    </div>
                   </td>
                   <td>
                     <div className="status-cell">
@@ -222,7 +222,7 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                     <button 
                       onClick={() => onDelete(miniature.id)}
                       className="delete-button-table"
-                      title="Delete miniature"
+                      title="Delete unit"
                     >
                       🗑️
                     </button>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS } from '../types';
 import EditMiniatureForm from './EditMiniatureForm';
 import StatusHistory from './StatusHistory';
 
@@ -49,14 +49,14 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
             <button 
               className="edit-button"
               onClick={() => setIsEditing(true)}
-              title="Edit miniature"
+              title="Edit unit"
             >
               ✏️
             </button>
             <button 
               className="delete-button"
               onClick={() => onDelete(miniature.id)}
-              title="Delete miniature"
+              title="Delete unit"
             >
               🗑️
             </button>
@@ -65,13 +65,23 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
 
         <div className="card-content">
           <div className="info-row">
+            <span className="label">Game System:</span>
+            <span>{GAME_SYSTEM_LABELS[miniature.game_system]}</span>
+          </div>
+
+          <div className="info-row">
             <span className="label">Faction:</span>
             <span>{miniature.faction}</span>
           </div>
           
           <div className="info-row">
             <span className="label">Type:</span>
-            <span>{miniature.model_type}</span>
+            <span>{UNIT_TYPE_LABELS[miniature.unit_type]}</span>
+          </div>
+
+          <div className="info-row">
+            <span className="label">Quantity:</span>
+            <span>{miniature.quantity} model{miniature.quantity !== 1 ? 's' : ''}</span>
           </div>
 
           <div className="status-section">
@@ -104,7 +114,7 @@ const MiniatureCard: React.FC<MiniatureCardProps> = ({
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Add notes about this miniature..."
+                  placeholder="Add notes about this unit..."
                   rows={3}
                 />
                 <div className="notes-buttons">

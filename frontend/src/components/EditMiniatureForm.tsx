@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO } from '../types';
+import { Miniature, MiniatureUpdate, PaintingStatus, STATUS_INFO, UnitType, UNIT_TYPE_LABELS, GameSystem, GAME_SYSTEM_LABELS } from '../types';
 import { miniatureApi } from '../services/api';
 
 interface EditMiniatureFormProps {
@@ -11,8 +11,10 @@ interface EditMiniatureFormProps {
 const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave, onCancel }) => {
   const [formData, setFormData] = useState<MiniatureUpdate>({
     name: miniature.name,
+    game_system: miniature.game_system,
     faction: miniature.faction,
-    model_type: miniature.model_type,
+    unit_type: miniature.unit_type,
+    quantity: miniature.quantity,
     status: miniature.status,
     notes: miniature.notes || ''
   });
@@ -34,7 +36,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
     }
   };
 
-  const handleChange = (field: keyof MiniatureUpdate, value: string) => {
+  const handleChange = (field: keyof MiniatureUpdate, value: string | number | GameSystem | UnitType) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -45,7 +47,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
     <div className="edit-form-overlay">
       <div className="edit-form">
         <div className="edit-form-header">
-          <h3>Edit Miniature</h3>
+          <h3>Edit Unit</h3>
           <button type="button" onClick={onCancel} className="close-button">×</button>
         </div>
 
@@ -65,6 +67,22 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
           </div>
 
           <div className="form-row">
+            <label htmlFor="game_system">Game System *</label>
+            <select
+              id="game_system"
+              value={formData.game_system || GameSystem.WARHAMMER_40K}
+              onChange={(e) => handleChange('game_system', e.target.value as GameSystem)}
+              required
+            >
+              {Object.entries(GAME_SYSTEM_LABELS).map(([system, label]) => (
+                <option key={system} value={system}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-row">
             <label htmlFor="faction">Faction *</label>
             <input
               id="faction"
@@ -77,14 +95,30 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
           </div>
 
           <div className="form-row">
-            <label htmlFor="model_type">Model Type *</label>
-            <input
-              id="model_type"
-              type="text"
-              value={formData.model_type || ''}
-              onChange={(e) => handleChange('model_type', e.target.value)}
+            <label htmlFor="unit_type">Unit Type *</label>
+            <select
+              id="unit_type"
+              value={formData.unit_type || UnitType.INFANTRY}
+              onChange={(e) => handleChange('unit_type', e.target.value as UnitType)}
               required
-              maxLength={100}
+            >
+              {Object.entries(UNIT_TYPE_LABELS).map(([type, label]) => (
+                <option key={type} value={type}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-row">
+            <label htmlFor="quantity">Quantity</label>
+            <input
+              type="number"
+              id="quantity"
+              value={formData.quantity || 1}
+              onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
+              min="1"
+              max="100"
             />
           </div>
 
@@ -93,7 +127,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
             <select
               id="status"
               value={formData.status || PaintingStatus.WANT_TO_BUY}
-              onChange={(e) => handleChange('status', e.target.value)}
+              onChange={(e) => handleChange('status', e.target.value as PaintingStatus)}
             >
               {Object.values(PaintingStatus).map(status => (
                 <option key={status} value={status}>

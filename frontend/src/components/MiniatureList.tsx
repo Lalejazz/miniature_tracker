@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS } from '../types';
 import MiniatureCard from './MiniatureCard';
 import MiniatureTable from './MiniatureTable';
 
@@ -11,12 +11,12 @@ interface MiniatureListProps {
 }
 
 type ViewMode = 'cards' | 'table';
-type SortField = 'name' | 'faction' | 'model_type' | 'status' | 'created_at' | 'updated_at';
+type SortField = 'name' | 'faction' | 'unit_type' | 'status' | 'created_at' | 'updated_at';
 type SortOrder = 'asc' | 'desc';
 
 interface FilterState {
   faction: string;
-  model_type: string;
+  unit_type: string;
   status: string;
 }
 
@@ -35,17 +35,17 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
     faction: '',
-    model_type: '',
+    unit_type: '',
     status: ''
   });
 
   // Get unique values for filter dropdowns
   const uniqueValues = useMemo(() => {
     const factions = Array.from(new Set(miniatures.map(m => m.faction))).sort();
-    const modelTypes = Array.from(new Set(miniatures.map(m => m.model_type))).sort();
+    const unitTypes = Array.from(new Set(miniatures.map(m => UNIT_TYPE_LABELS[m.unit_type]))).sort();
     const statuses = Object.keys(STATUS_INFO);
     
-    return { factions, modelTypes, statuses };
+    return { factions, unitTypes, statuses };
   }, [miniatures]);
 
   // Filtered and sorted miniatures
@@ -56,16 +56,16 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
       const matchesSearch = !searchTerm || 
         miniature.name.toLowerCase().includes(searchLower) ||
         miniature.faction.toLowerCase().includes(searchLower) ||
-        miniature.model_type.toLowerCase().includes(searchLower) ||
+        UNIT_TYPE_LABELS[miniature.unit_type].toLowerCase().includes(searchLower) ||
         STATUS_INFO[miniature.status].label.toLowerCase().includes(searchLower) ||
         (miniature.notes && miniature.notes.toLowerCase().includes(searchLower));
 
       // Dropdown filters
       const matchesFaction = !filters.faction || miniature.faction === filters.faction;
-      const matchesModelType = !filters.model_type || miniature.model_type === filters.model_type;
+      const matchesUnitType = !filters.unit_type || UNIT_TYPE_LABELS[miniature.unit_type] === filters.unit_type;
       const matchesStatus = !filters.status || miniature.status === filters.status;
 
-      return matchesSearch && matchesFaction && matchesModelType && matchesStatus;
+      return matchesSearch && matchesFaction && matchesUnitType && matchesStatus;
     });
 
     // Sort the filtered results
@@ -82,9 +82,9 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           aValue = a.faction.toLowerCase();
           bValue = b.faction.toLowerCase();
           break;
-        case 'model_type':
-          aValue = a.model_type.toLowerCase();
-          bValue = b.model_type.toLowerCase();
+        case 'unit_type':
+          aValue = UNIT_TYPE_LABELS[a.unit_type].toLowerCase();
+          bValue = UNIT_TYPE_LABELS[b.unit_type].toLowerCase();
           break;
         case 'status':
           aValue = STATUS_INFO[a.status].label.toLowerCase();
@@ -129,7 +129,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
     setSearchTerm('');
     setFilters({
       faction: '',
-      model_type: '',
+      unit_type: '',
       status: ''
     });
   };
@@ -137,8 +137,8 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   if (miniatures.length === 0) {
     return (
       <div className="empty-state">
-        <h3>No miniatures yet!</h3>
-        <p>Add your first Warhammer miniature to start tracking your collection.</p>
+        <h3>No units yet!</h3>
+        <p>Add your first unit to start tracking your collection.</p>
       </div>
     );
   }
@@ -174,7 +174,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           <input
             type="text"
             className="search-input"
-            placeholder="🔍 Search miniatures... (name, faction, type, status, notes)"
+            placeholder="🔍 Search units... (name, faction, type, status, notes)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -194,12 +194,12 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           </select>
 
           <select
-            value={filters.model_type}
-            onChange={(e) => handleFilterChange('model_type', e.target.value)}
+            value={filters.unit_type}
+            onChange={(e) => handleFilterChange('unit_type', e.target.value)}
             className="filter-select"
           >
             <option value="">All Types</option>
-            {uniqueValues.modelTypes.map(type => (
+            {uniqueValues.unitTypes.map(type => (
               <option key={type} value={type}>{type}</option>
             ))}
           </select>
@@ -230,7 +230,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
         {viewMode === 'table' && (
           <div className="sort-section">
             <span>Sort by:</span>
-            {(['name', 'faction', 'model_type', 'status', 'created_at', 'updated_at'] as SortField[]).map(field => (
+            {(['name', 'faction', 'unit_type', 'status', 'created_at', 'updated_at'] as SortField[]).map(field => (
               <button
                 key={field}
                 onClick={() => handleSortChange(field)}
@@ -270,7 +270,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
 
       {filteredAndSortedMiniatures.length === 0 && (miniatures.length > 0) && (
         <div className="no-results">
-          <p>No miniatures match your current filters.</p>
+          <p>No units match your current filters.</p>
           <button onClick={clearFilters} className="clear-filters-button">
             Clear filters
           </button>
