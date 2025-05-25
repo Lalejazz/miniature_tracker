@@ -283,16 +283,14 @@ const StatusHistory: React.FC<StatusHistoryProps> = ({ miniature, onUpdate }) =>
                       <div className="log-date">{formatDate(log.date)}</div>
                       {log.notes && <div className="log-notes">{log.notes}</div>}
                     </div>
-                    {log.is_manual && (
-                      <div className="log-actions">
-                        <button type="button" onClick={() => startEdit(log)} disabled={isLoading}>
-                          Edit
-                        </button>
-                        <button type="button" onClick={() => handleDeleteLog(log.id)} disabled={isLoading}>
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="log-actions">
+                      <button type="button" onClick={() => startEdit(log)} disabled={isLoading}>
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => handleDeleteLog(log.id)} disabled={isLoading}>
+                        Delete
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
