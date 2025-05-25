@@ -26,8 +26,11 @@ class GameSystem(str, Enum):
     WARHAMMER_40K = "warhammer_40k"
     AGE_OF_SIGMAR = "age_of_sigmar"
     WARHAMMER_THE_OLD_WORLD = "warhammer_the_old_world"
+    HORUS_HERESY = "horus_heresy"
     KILL_TEAM = "kill_team"
     WARCRY = "warcry"
+    WARHAMMER_UNDERWORLDS = "warhammer_underworlds"
+    ADEPTUS_TITANICUS = "adeptus_titanicus"
     NECROMUNDA = "necromunda"
     BLOOD_BOWL = "blood_bowl"
     MIDDLE_EARTH = "middle_earth"
@@ -118,6 +121,33 @@ GAME_SYSTEM_FACTIONS = {
         "Warriors of Chaos", "Daemons of Chaos", "Beastmen", "Orcs & Goblins",
         "Skaven", "Vampire Counts", "Tomb Kings", "Lizardmen", "Ogre Kingdoms",
         "Chaos Dwarfs", "Other"
+    ],
+    GameSystem.HORUS_HERESY: [
+        "Dark Angels", "Emperor's Children", "Iron Warriors", "White Scars", "Space Wolves",
+        "Imperial Fists", "Night Lords", "Blood Angels", "Iron Hands", "World Eaters",
+        "Ultramarines", "Death Guard", "Thousand Sons", "Sons of Horus", "Word Bearers",
+        "Salamanders", "Raven Guard", "Alpha Legion", "Imperial Army", "Mechanicum",
+        "Custodes", "Sisters of Silence", "Blackshields", "Other"
+    ],
+    GameSystem.WARHAMMER_UNDERWORLDS: [
+        "Steelheart's Champions", "Garrek's Reavers", "Sepulchral Guard", "Ironskull's Boyz",
+        "The Chosen Axes", "Spiteclaw's Swarm", "Magore's Fiends", "The Farstriders",
+        "Stormsire's Cursebreakers", "Thorns of the Briar Queen", "Eyes of the Nine",
+        "Zarbag's Gitz", "Mollog's Mob", "Godsworn Hunt", "Ylthari's Guardians",
+        "Thundrik's Profiteers", "Ironsoul's Condemners", "Lady Harrow's Mournflight",
+        "Grashrak's Despoilers", "Skaeth's Wild Hunt", "Grymwatch", "Rippa's Snarlfangs",
+        "Hrothgorn's Mantrappers", "The Wurmspat", "Morgok's Krushas", "Morgwaeth's Blade-coven",
+        "The Crimson Court", "Hedkrakka's Madmob", "Kainan's Reapers", "Elathain's Soulraid",
+        "Khagra's Ravagers", "The Starblood Stalkers", "Storm of Celestus", "Drepur's Wraithcreepers",
+        "Blackpowder's Buccaneers", "Da Kunnin' Krew", "Hexbane's Hunters", "Tzeentch's Daemons",
+        "Other"
+    ],
+    GameSystem.ADEPTUS_TITANICUS: [
+        "Legio Gryphonicus", "Legio Astorum", "Legio Atarus", "Legio Crucius", "Legio Defensor",
+        "Legio Fureans", "Legio Ignatum", "Legio Metalica", "Legio Mortis", "Legio Tempestus",
+        "Legio Vulpa", "Legio Solaria", "Legio Vulcanum", "Legio Honorum", "Legio Lysanda",
+        "Legio Magna", "Legio Osedax", "Legio Praesagius", "Legio Krytos", "Legio Audax",
+        "Questor Imperialis", "Questor Mechanicus", "Questor Traitoris", "Other"
     ],
     GameSystem.KILL_TEAM: [
         "Space Marines", "Imperial Guard", "Adeptus Mechanicus", "Sisters of Battle",
