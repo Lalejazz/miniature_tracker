@@ -9,26 +9,29 @@ import {
   GAME_SYSTEM_LABELS, 
   UNIT_TYPE_LABELS,
   BASE_DIMENSION_LABELS,
-  GAME_SYSTEM_FACTIONS
+  GAME_SYSTEM_FACTIONS,
+  Miniature
 } from '../types';
 
 interface UnitFormProps {
   onSubmit: (unit: UnitCreate) => void;
   onCancel: () => void;
+  miniature?: Miniature;
+  isEditing?: boolean;
 }
 
-const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel }) => {
+const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEditing = false }) => {
   const [formData, setFormData] = useState<UnitCreate>({
-    name: '',
-    game_system: GameSystem.WARHAMMER_40K,
-    faction: '',
-    unit_type: UnitType.INFANTRY,
-    quantity: 1,
-    base_dimension: undefined,
-    custom_base_size: '',
-    cost: undefined,
-    status: PaintingStatus.WANT_TO_BUY,
-    notes: ''
+    name: miniature?.name || '',
+    game_system: miniature?.game_system || GameSystem.WARHAMMER_40K,
+    faction: miniature?.faction || '',
+    unit_type: miniature?.unit_type || UnitType.INFANTRY,
+    quantity: miniature?.quantity || 1,
+    base_dimension: miniature?.base_dimension || undefined,
+    custom_base_size: miniature?.custom_base_size || '',
+    cost: miniature?.cost || undefined,
+    status: miniature?.status || PaintingStatus.WANT_TO_BUY,
+    notes: miniature?.notes || ''
   });
 
   const [availableFactions, setAvailableFactions] = useState<string[]>([]);
@@ -75,7 +78,7 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel }) => {
   return (
     <div className="miniature-form-overlay">
       <form className="miniature-form unit-form" onSubmit={handleSubmit}>
-        <h3>Add New Unit</h3>
+        <h3>{isEditing ? 'Edit Unit' : 'Add New Unit'}</h3>
         
         {/* Basic Information */}
         <div className="form-section">
@@ -243,7 +246,7 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel }) => {
 
         <div className="form-buttons">
           <button type="submit" className="submit-button">
-            Add Unit
+            {isEditing ? 'Update Unit' : 'Add Unit'}
           </button>
           <button type="button" onClick={onCancel} className="cancel-button">
             Cancel
