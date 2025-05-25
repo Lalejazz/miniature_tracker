@@ -67,7 +67,28 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       
       onSave(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save preferences');
+      console.error('Preferences save error:', err);
+      
+      // Handle different error types
+      let errorMessage = 'Failed to save preferences';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        // Handle object errors (like ApiError or validation errors)
+        if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message;
+        } else if ('detail' in err && typeof err.detail === 'string') {
+          errorMessage = err.detail;
+        } else {
+          // Fallback for complex error objects
+          errorMessage = JSON.stringify(err);
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

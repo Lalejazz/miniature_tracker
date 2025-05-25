@@ -268,12 +268,19 @@ class PostgreSQLDatabase(DatabaseInterface):
                 WHERE location IS NULL AND postcode IS NOT NULL
             """)
             
+            # Make postcode column nullable to avoid constraint violations
+            await self._pool.execute("ALTER TABLE user_preferences ALTER COLUMN postcode DROP NOT NULL")
+            
             # Make location NOT NULL once data is migrated
             rows_with_null_location = await self._pool.fetchval(
                 "SELECT COUNT(*) FROM user_preferences WHERE location IS NULL"
             )
             if rows_with_null_location == 0:
                 await self._pool.execute("ALTER TABLE user_preferences ALTER COLUMN location SET NOT NULL")
+                
+            # Drop the old postcode column after migration (optional, but cleaner)
+            await self._pool.execute("ALTER TABLE user_preferences DROP COLUMN IF EXISTS postcode")
+            
         except Exception as e:
             print(f"Migration warning: {e}")  # Log but don't fail
         
