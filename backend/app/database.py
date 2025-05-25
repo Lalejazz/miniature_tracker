@@ -480,7 +480,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     id=row['id'],
                     name=row['name'],
                     faction=row['faction'],
-                    model_type=row['model_type'],
+                    unit_type=row['model_type'],  # Map model_type from DB to unit_type in model
                     status=row['status'],
                     notes=row['notes'],
                     user_id=row['user_id'],
@@ -489,7 +489,6 @@ class PostgreSQLDatabase(DatabaseInterface):
                     updated_at=row['updated_at'],
                     # New Unit fields
                     game_system=row.get('game_system'),
-                    unit_type=row.get('unit_type'),
                     quantity=row.get('quantity', 1),
                     base_dimension=row.get('base_dimension'),
                     custom_base_size=row.get('custom_base_size'),
@@ -534,7 +533,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 id=row['id'],
                 name=row['name'],
                 faction=row['faction'],
-                model_type=row['model_type'],
+                unit_type=row['model_type'],  # Map model_type from DB to unit_type in model
                 status=row['status'],
                 notes=row['notes'],
                 user_id=row['user_id'],
@@ -543,7 +542,6 @@ class PostgreSQLDatabase(DatabaseInterface):
                 updated_at=row['updated_at'],
                 # New Unit fields
                 game_system=row.get('game_system'),
-                unit_type=row.get('unit_type'),
                 quantity=row.get('quantity', 1),
                 base_dimension=row.get('base_dimension'),
                 custom_base_size=row.get('custom_base_size'),
@@ -560,14 +558,15 @@ class PostgreSQLDatabase(DatabaseInterface):
         
         async with self._pool.acquire() as conn:
             async with conn.transaction():
-                # Insert miniature
+                # Insert miniature - use unit_type for both model_type and unit_type for backward compatibility
                 miniature_row = await conn.fetchrow(
                     """INSERT INTO miniatures (id, name, faction, model_type, status, notes, user_id, 
                        game_system, unit_type, quantity, base_dimension, custom_base_size, cost) 
                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
                        RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
                        game_system, unit_type, quantity, base_dimension, custom_base_size, cost""",
-                    miniature_id, miniature.name, miniature.faction, miniature.model_type, 
+                    miniature_id, miniature.name, miniature.faction, 
+                    miniature.unit_type.value if miniature.unit_type else None,  # Use unit_type for model_type
                     miniature.status.value, miniature.notes, user_id,
                     miniature.game_system.value if miniature.game_system else None,
                     miniature.unit_type.value if miniature.unit_type else None,
@@ -596,7 +595,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     id=miniature_row['id'],
                     name=miniature_row['name'],
                     faction=miniature_row['faction'],
-                    model_type=miniature_row['model_type'],
+                    unit_type=miniature_row['model_type'],  # Map model_type from DB to unit_type in model
                     status=miniature_row['status'],
                     notes=miniature_row['notes'],
                     user_id=miniature_row['user_id'],
@@ -605,7 +604,6 @@ class PostgreSQLDatabase(DatabaseInterface):
                     updated_at=miniature_row['updated_at'],
                     # New Unit fields
                     game_system=miniature_row.get('game_system'),
-                    unit_type=miniature_row.get('unit_type'),
                     quantity=miniature_row.get('quantity', 1),
                     base_dimension=miniature_row.get('base_dimension'),
                     custom_base_size=miniature_row.get('custom_base_size'),
@@ -624,6 +622,20 @@ class PostgreSQLDatabase(DatabaseInterface):
         # Convert enum status to string if present
         if 'status' in update_data and update_data['status'] is not None:
             update_data['status'] = update_data['status'].value
+        
+        # Map unit_type to model_type for database compatibility
+        if 'unit_type' in update_data:
+            if update_data['unit_type'] is not None:
+                update_data['model_type'] = update_data['unit_type'].value
+            else:
+                update_data['model_type'] = None
+            # Remove unit_type from update_data since we're using model_type in the database
+            del update_data['unit_type']
+        
+        # Convert other enum fields to strings
+        for field in ['game_system', 'base_dimension']:
+            if field in update_data and update_data[field] is not None:
+                update_data[field] = update_data[field].value
         
         async with self._pool.acquire() as conn:
             async with conn.transaction():
