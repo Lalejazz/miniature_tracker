@@ -22,7 +22,6 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
   const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'import-export'>('overview');
   
   // Trend analysis filters
