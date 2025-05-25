@@ -267,6 +267,27 @@ class PostgreSQLDatabase(DatabaseInterface):
                 WHERE unit_type NOT IN ('infantry', 'cavalry', 'vehicle', 'monster', 'character', 'terrain', 'other')
             """)
             
+            # Migrate legacy game system values to valid enum values
+            await self._pool.execute("UPDATE miniatures SET game_system = 'dungeons_and_dragons' WHERE game_system = 'DND_RPG'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'dungeons_and_dragons' WHERE game_system = 'dnd_rpg'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'dungeons_and_dragons' WHERE game_system = 'D&D'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'warhammer_40k' WHERE game_system = '40k'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'warhammer_40k' WHERE game_system = 'Warhammer 40k'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'age_of_sigmar' WHERE game_system = 'AoS'")
+            await self._pool.execute("UPDATE miniatures SET game_system = 'age_of_sigmar' WHERE game_system = 'Age of Sigmar'")
+            
+            # Map any remaining unknown game system values to 'other'
+            await self._pool.execute("""
+                UPDATE miniatures SET game_system = 'other' 
+                WHERE game_system NOT IN (
+                    'warhammer_40k', 'age_of_sigmar', 'kill_team', 'warcry', 'necromunda', 'blood_bowl',
+                    'middle_earth', 'bolt_action', 'flames_of_war', 'saga', 'kings_of_war', 'infinity',
+                    'malifaux', 'warmachine_hordes', 'x_wing', 'star_wars_legion', 'battletech',
+                    'dropzone_commander', 'guild_ball', 'dungeons_and_dragons', 'pathfinder',
+                    'frostgrave', 'mordheim', 'gaslands', 'zombicide', 'other'
+                )
+            """)
+            
             # Now make required columns NOT NULL
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN faction SET NOT NULL")
             await self._pool.execute("ALTER TABLE miniatures ALTER COLUMN model_type SET NOT NULL")
