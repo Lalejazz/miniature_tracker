@@ -20,8 +20,18 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
   const loadProjects = useCallback(async () => {
     try {
       const data = await projectApi.getAll();
-      setProjects(data);
+      console.log('Projects API response:', data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else {
+        console.error('Projects API returned non-array:', data);
+        setProjects([]);
+        onError('Invalid response format from projects API');
+      }
     } catch (error: any) {
+      console.error('Failed to load projects:', error);
+      setProjects([]); // Ensure projects is always an array
       onError(error.message || 'Failed to load projects');
     } finally {
       setIsLoading(false);
@@ -188,7 +198,7 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
         </div>
       ) : (
         <div className="projects-grid">
-          {projects.map(project => (
+          {Array.isArray(projects) && projects.map(project => (
             <ProjectCard
               key={project.id}
               project={project}
