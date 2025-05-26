@@ -99,6 +99,11 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
+    async def update_status_log_entry(self, miniature_id: UUID, log_id: UUID, updates: StatusLogEntryUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update a status log entry."""
+        pass
+
+    @abstractmethod
     async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:
         """Get collection statistics for a user."""
         pass
@@ -949,6 +954,66 @@ class PostgreSQLDatabase(DatabaseInterface):
                     "DELETE FROM status_log_entries WHERE id = $1 AND miniature_id = $2 AND is_manual = TRUE",
                     log_id, miniature_id
                 )
+                
+                # Check if any rows were affected
+                if result.split()[-1] == '0':
+                    return None
+                
+                # Return updated miniature
+                return await self.get_miniature(miniature_id, user_id)
+
+    async def update_status_log_entry(self, miniature_id: UUID, log_id: UUID, updates: StatusLogEntryUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update a status log entry."""
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Verify the log entry exists and belongs to the user
+                log_exists = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM status_log_entries sle 
+                        JOIN miniatures m ON sle.miniature_id = m.id 
+                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3 AND sle.is_manual = TRUE
+                    )""",
+                    log_id, miniature_id, user_id
+                )
+                if not log_exists:
+                    return None
+                
+                # Build dynamic update query based on which fields are provided
+                update_fields = []
+                params = []
+                param_count = 1
+                
+                if updates.to_status is not None:
+                    update_fields.append(f"to_status = ${param_count}")
+                    params.append(updates.to_status)
+                    param_count += 1
+                
+                if updates.date is not None:
+                    update_fields.append(f"date = ${param_count}")
+                    params.append(updates.date)
+                    param_count += 1
+                
+                if updates.notes is not None:
+                    update_fields.append(f"notes = ${param_count}")
+                    params.append(updates.notes)
+                    param_count += 1
+                
+                if not update_fields:
+                    # No fields to update
+                    return await self.get_miniature(miniature_id, user_id)
+                
+                # Add updated_at timestamp
+                update_fields.append(f"updated_at = NOW()")
+                
+                # Add WHERE clause parameters
+                params.extend([log_id, miniature_id])
+                
+                # Execute the update
+                query = f"UPDATE status_log_entries SET {', '.join(update_fields)} WHERE id = ${param_count} AND miniature_id = ${param_count + 1}"
+                result = await conn.execute(query, *params)
                 
                 # Check if any rows were affected
                 if result.split()[-1] == '0':
@@ -2159,6 +2224,34 @@ class FileDatabase(DatabaseInterface):
                                 users[i] = user_data
                                 self._save_users(users)
                                 return Miniature(**miniature)
+        return None
+
+    async def update_status_log_entry(self, miniature_id: UUID, log_id: UUID, updates: StatusLogEntryUpdate, user_id: UUID) -> Optional[Miniature]:
+        """Update a status log entry."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                miniature_data = user_data.get("miniatures", [])
+                for j, data in enumerate(miniature_data):
+                    if data.get("id") == str(miniature_id):
+                        status_history = data.get("status_history", [])
+                        for k, log_entry in enumerate(status_history):
+                            if log_entry.get("id") == str(log_id) and log_entry.get("is_manual", False):
+                                # Update the log entry with new values
+                                if updates.to_status is not None:
+                                    log_entry["to_status"] = updates.to_status
+                                if updates.date is not None:
+                                    log_entry["date"] = updates.date.isoformat()
+                                if updates.notes is not None:
+                                    log_entry["notes"] = updates.notes
+                                
+                                # Update timestamps
+                                data["updated_at"] = datetime.utcnow().isoformat()
+                                user_data["updated_at"] = datetime.utcnow().isoformat()
+                                users[i] = user_data
+                                self._save_users(users)
+                                return Miniature(**data)
         return None
 
     async def get_collection_statistics(self, user_id: UUID) -> CollectionStatistics:

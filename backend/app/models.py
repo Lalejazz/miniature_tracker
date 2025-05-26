@@ -291,6 +291,7 @@ class StatusLogEntryCreate(BaseModel):
 class StatusLogEntryUpdate(BaseModel):
     """Model for updating a status log entry."""
     
+    to_status: Optional[PaintingStatus] = None
     date: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=500)
 

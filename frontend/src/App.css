@@ -5853,7 +5853,7 @@ body {
   margin-bottom: 2rem;
 }
 
-.stat-card {
+.projects-stats .stat-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 1.5rem;
@@ -5863,20 +5863,22 @@ body {
   transition: transform 0.2s;
 }
 
-.stat-card:hover {
+.projects-stats .stat-card:hover {
   transform: translateY(-2px);
 }
 
-.stat-card h3 {
+.projects-stats .stat-card h3 {
   margin: 0 0 0.5rem 0;
   font-size: 2rem;
   font-weight: bold;
+  color: white !important;
 }
 
-.stat-card p {
+.projects-stats .stat-card p {
   margin: 0;
   font-size: 0.9rem;
   opacity: 0.9;
+  color: white !important;
 }
 
 /* Projects Grid */

@@ -85,9 +85,8 @@ class MiniatureDB:
     
     async def update_status_log_entry(self, miniature_id: UUID, log_entry_id: UUID, updates: StatusLogEntryUpdate, user_id: UUID) -> Optional[Miniature]:
         """Update a status log entry."""
-        # This method would need to be implemented in the database layer
-        # For now, return None as it's not critical functionality
-        return None
+        await self._ensure_db_initialized()
+        return await self.db.update_status_log_entry(miniature_id, log_entry_id, updates, user_id)
     
     async def delete_status_log_entry(self, miniature_id: UUID, log_entry_id: UUID, user_id: UUID) -> Optional[Miniature]:
         """Delete a status log entry."""
