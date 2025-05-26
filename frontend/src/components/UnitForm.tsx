@@ -94,6 +94,7 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
       notes: formData.notes || undefined
     };
 
+    console.log('UnitForm submitting data:', { isEditing, cleanedData });
     onSubmit(cleanedData);
   };
 

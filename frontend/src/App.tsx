@@ -239,13 +239,17 @@ function App() {
   };
 
   const handleUpdateMiniature = async (id: string, updates: any) => {
+    console.log('handleUpdateMiniature called with:', { id, updates });
     try {
       const updatedMiniature = await miniatureApi.update(id, updates);
+      console.log('API update successful:', updatedMiniature);
       setMiniatures(prev => 
         prev.map(m => m.id === id ? updatedMiniature : m)
       );
       setEditingMiniature(null);
+      console.log('State updated successfully');
     } catch (error: any) {
+      console.error('Update failed:', error);
       setMiniaturesError(error.message || 'Failed to update miniature');
     }
   };
