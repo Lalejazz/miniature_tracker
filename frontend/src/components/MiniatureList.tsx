@@ -8,6 +8,7 @@ interface MiniatureListProps {
   miniatures: Miniature[];
   onEdit: (miniature: Miniature) => void;
   onDelete: (id: string) => void;
+  onRefresh?: () => void;
 }
 
 type ViewMode = 'cards' | 'table';
@@ -24,7 +25,8 @@ interface FilterState {
 const MiniatureList: React.FC<MiniatureListProps> = ({
   miniatures,
   onEdit,
-  onDelete
+  onDelete,
+  onRefresh
 }) => {
   // View and interaction state
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
@@ -32,6 +34,12 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [replaceExisting, setReplaceExisting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -152,6 +160,58 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
     }
   };
 
+  const handleImport = async (format: 'json' | 'csv') => {
+    const fileInput = fileInputRef.current;
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      setImportError('Please select a file to import');
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const expectedExtension = format === 'json' ? '.json' : '.csv';
+    
+    if (!file.name.toLowerCase().endsWith(expectedExtension)) {
+      setImportError(`Please select a ${format.toUpperCase()} file (${expectedExtension})`);
+      return;
+    }
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const result = await miniatureApi.importCollection(format, file, replaceExisting);
+      setImportResult(
+        `${result.message}. Imported ${result.imported_count} out of ${result.total_in_file} miniatures.`
+      );
+      
+      // Clear the file input
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      // Refresh the miniatures list
+      if (onRefresh) {
+        onRefresh();
+      }
+      
+      // Close modal after successful import
+      setTimeout(() => {
+        setShowImportModal(false);
+        setImportResult(null);
+      }, 3000);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Import failed');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const clearImportMessages = () => {
+    setImportError(null);
+    setImportResult(null);
+  };
+
   if (miniatures.length === 0) {
     return (
       <div className="empty-state">
@@ -189,17 +249,25 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
               className="export-button"
               onClick={() => handleExport('csv')}
               disabled={isExporting || miniatures.length === 0}
-              title="Export as CSV"
+              title="Export collection as CSV"
             >
-              {isExporting ? '⏳' : '📄'} CSV
+              📄 CSV
             </button>
             <button 
               className="export-button"
               onClick={() => handleExport('json')}
               disabled={isExporting || miniatures.length === 0}
-              title="Export as JSON"
+              title="Export collection as JSON"
             >
-              {isExporting ? '⏳' : '📋'} JSON
+              📋 JSON
+            </button>
+            <button 
+              className="import-button"
+              onClick={() => setShowImportModal(true)}
+              disabled={isImporting}
+              title="Import collection from file"
+            >
+              📥 Import
             </button>
           </div>
         </div>
@@ -321,6 +389,92 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           <button onClick={clearFilters} className="clear-filters-button">
             Clear filters
           </button>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="import-modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="import-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="import-modal-header">
+              <h3>Import Collection</h3>
+              <button 
+                className="close-button"
+                onClick={() => setShowImportModal(false)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="import-modal-body">
+              <p>Upload a JSON or CSV file to import miniatures into your collection.</p>
+              
+              <div className="import-controls">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,.csv"
+                  onChange={clearImportMessages}
+                  className="file-input"
+                />
+                
+                <div className="import-options">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={replaceExisting}
+                      onChange={(e) => setReplaceExisting(e.target.checked)}
+                    />
+                    <span>Replace existing collection (⚠️ This will delete all current miniatures)</span>
+                  </label>
+                </div>
+                
+                <div className="import-buttons">
+                  <button
+                    onClick={() => handleImport('json')}
+                    disabled={isImporting}
+                    className="import-btn json-btn"
+                  >
+                    {isImporting ? 'Importing...' : 'Import JSON'}
+                  </button>
+                  <button
+                    onClick={() => handleImport('csv')}
+                    disabled={isImporting}
+                    className="import-btn csv-btn"
+                  >
+                    {isImporting ? 'Importing...' : 'Import CSV'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Messages */}
+              {importError && (
+                <div className="message error-message">
+                  <strong>Error:</strong> {importError}
+                </div>
+              )}
+              
+              {importResult && (
+                <div className="message success-message">
+                  <strong>Success:</strong> {importResult}
+                </div>
+              )}
+
+              {/* Format Information */}
+              <div className="format-info">
+                <h4>Format Information</h4>
+                <div className="format-details">
+                  <div className="format-item">
+                    <strong>JSON:</strong> Complete data including status history and metadata. Best for full backups.
+                  </div>
+                  <div className="format-item">
+                    <strong>CSV:</strong> Simplified format for spreadsheet analysis. Status history not included.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

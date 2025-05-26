@@ -428,6 +428,7 @@ function App() {
               miniatures={miniatures}
               onEdit={setEditingMiniature}
               onDelete={handleDeleteMiniature}
+              onRefresh={loadMiniatures}
             />
           </>
         )}
