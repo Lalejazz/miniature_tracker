@@ -710,11 +710,13 @@ export interface ProjectUpdate {
 export interface Project extends ProjectBase {
   id: string;
   user_id: string;
-  miniature_count: number;
-  completion_percentage: number;
-  status_breakdown: Record<PaintingStatus, number>;
   created_at: string;
   updated_at: string;
+  
+  // Computed fields (may not always be present)
+  miniature_count?: number;
+  completion_percentage?: number;
+  status_breakdown?: { [key in PaintingStatus]?: number };
 }
 
 export interface ProjectMiniature {

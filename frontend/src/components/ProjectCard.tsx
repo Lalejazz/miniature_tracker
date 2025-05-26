@@ -64,17 +64,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       <div className="project-progress">
         <div className="progress-header">
           <span className="progress-text">
-            {Math.round(project.completion_percentage)}% Complete
+            {Math.round(project.completion_percentage || 0)}% Complete
           </span>
           <span className="status-text" style={{ color: statusColor }}>
-            {getStatusText(project.completion_percentage)}
+            {getStatusText(project.completion_percentage || 0)}
           </span>
         </div>
         <div className="progress-bar">
           <div 
             className="progress-fill"
             style={{ 
-              width: `${project.completion_percentage}%`,
+              width: `${project.completion_percentage || 0}%`,
               backgroundColor: statusColor
             }}
           />
@@ -83,13 +83,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
       <div className="project-stats">
         <div className="stat">
-          <span className="stat-value">{project.miniature_count}</span>
+          <span className="stat-value">{project.miniature_count || 0}</span>
           <span className="stat-label">Miniatures</span>
         </div>
         
         {/* Status breakdown */}
         <div className="status-breakdown">
-          {Object.entries(project.status_breakdown).map(([status, count]) => {
+          {project.status_breakdown && Object.entries(project.status_breakdown).map(([status, count]) => {
             if (count === 0) return null;
             const statusInfo = STATUS_INFO[status as keyof typeof STATUS_INFO];
             return (
