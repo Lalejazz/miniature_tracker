@@ -70,6 +70,13 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
       setProjects(prev => 
         prev.map(p => p.id === id ? updatedProject : p)
       );
+      
+      // If this is the currently selected project, update it too
+      if (selectedProject?.id === id) {
+        const updatedProjectWithMiniatures = await projectApi.getWithMiniatures(id);
+        setSelectedProject(updatedProjectWithMiniatures);
+      }
+      
       setEditingProject(null);
       loadStatistics(); // Refresh stats
     } catch (error: any) {

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ProjectWithMiniatures, Miniature, ProjectUpdate } from '../types';
+import React, { useState, useEffect } from 'react';
+import { ProjectWithMiniatures, Miniature, ProjectUpdate, ProjectCreate } from '../types';
 import { projectApi } from '../services/api';
 import MiniatureCard from './MiniatureCard';
 import AddMiniaturesToProject from './AddMiniaturesToProject';
+import ProjectForm from './ProjectForm';
 
 interface ProjectDetailsProps {
   project: ProjectWithMiniatures;
@@ -13,14 +14,41 @@ interface ProjectDetailsProps {
 }
 
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({
-  project,
+  project: initialProject,
   onBack,
   onUpdate,
   onDelete,
   onError
 }) => {
   const [showAddMiniatures, setShowAddMiniatures] = useState(false);
-  const [projectMiniatures, setProjectMiniatures] = useState(project.miniatures);
+  const [projectMiniatures, setProjectMiniatures] = useState(initialProject.miniatures);
+  const [currentProject, setCurrentProject] = useState(initialProject);
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // Update local state when the project prop changes
+  useEffect(() => {
+    setCurrentProject(initialProject);
+    setProjectMiniatures(initialProject.miniatures);
+  }, [initialProject]);
+
+  const handleProjectUpdate = async (updates: ProjectUpdate) => {
+    try {
+      // Call the parent's update handler
+      await onUpdate(updates);
+      
+      // Re-fetch the project data to get the latest information
+      const updatedProject = await projectApi.getWithMiniatures(currentProject.id);
+      setCurrentProject(updatedProject);
+      setProjectMiniatures(updatedProject.miniatures);
+      setShowEditForm(false); // Close the edit form
+    } catch (error: any) {
+      onError(error.message || 'Failed to update project');
+    }
+  };
+
+  const handleEditSubmit = async (projectData: ProjectCreate) => {
+    await handleProjectUpdate(projectData);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -41,7 +69,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     }
 
     try {
-      await projectApi.removeMiniature(project.id, miniatureId);
+      await projectApi.removeMiniature(currentProject.id, miniatureId);
       setProjectMiniatures(prev => prev.filter(m => m.id !== miniatureId));
       // Note: We should also update the project stats, but for now just remove from list
     } catch (error: any) {
@@ -54,9 +82,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     setShowAddMiniatures(false);
   };
 
-  const isOverdue = project.target_completion_date && new Date(project.target_completion_date) < new Date();
-  const daysUntilTarget = project.target_completion_date
-    ? Math.ceil((new Date(project.target_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const isOverdue = currentProject.target_completion_date && new Date(currentProject.target_completion_date) < new Date();
+  const daysUntilTarget = currentProject.target_completion_date
+    ? Math.ceil((new Date(currentProject.target_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   return (
@@ -66,13 +94,19 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           ← Back to Projects
         </button>
         <div className="project-title-section">
-          <h2 style={{ color: project.color }}>{project.name}</h2>
+          <h2 style={{ color: currentProject.color }}>{currentProject.name}</h2>
           <div className="project-actions">
             <button 
               onClick={() => setShowAddMiniatures(true)}
               className="add-button"
             >
               + Add Miniatures
+            </button>
+            <button 
+              onClick={() => setShowEditForm(true)}
+              className="edit-button"
+            >
+              Edit Project
             </button>
             <button 
               onClick={onDelete}
@@ -84,26 +118,26 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
         </div>
       </div>
 
-      {project.description && (
+      {currentProject.description && (
         <div className="project-description-section">
-          <p>{project.description}</p>
+          <p>{currentProject.description}</p>
         </div>
       )}
 
       <div className="project-overview">
         <div className="project-progress-large">
           <div className="progress-header">
-            <h3>{Math.round(project.completion_percentage || 0)}% Complete</h3>
+            <h3>{Math.round(currentProject.completion_percentage || 0)}% Complete</h3>
             <span className="status-text">
-              {getStatusText(project.completion_percentage)}
+              {getStatusText(currentProject.completion_percentage)}
             </span>
           </div>
           <div className="progress-bar-large">
             <div 
               className="progress-fill"
               style={{ 
-                width: `${project.completion_percentage || 0}%`,
-                backgroundColor: project.color
+                width: `${currentProject.completion_percentage || 0}%`,
+                backgroundColor: currentProject.color
               }}
             />
           </div>
@@ -115,9 +149,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <p>Total Miniatures</p>
           </div>
           
-          {project.target_completion_date && (
+          {currentProject.target_completion_date && (
             <div className={`info-card ${isOverdue ? 'overdue' : ''}`}>
-              <h4>{formatDate(project.target_completion_date)}</h4>
+              <h4>{formatDate(currentProject.target_completion_date)}</h4>
               <p>Target Date</p>
               {daysUntilTarget !== null && (
                 <small>
@@ -131,16 +165,16 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           )}
 
           <div className="info-card">
-            <h4>{formatDate(project.created_at)}</h4>
+            <h4>{formatDate(currentProject.created_at)}</h4>
             <p>Created</p>
           </div>
         </div>
       </div>
 
-      {project.notes && (
+      {currentProject.notes && (
         <div className="project-notes-section">
           <h3>Notes</h3>
-          <p>{project.notes}</p>
+          <p>{currentProject.notes}</p>
         </div>
       )}
 
@@ -181,11 +215,20 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 
       {showAddMiniatures && (
         <AddMiniaturesToProject
-          projectId={project.id}
+          projectId={currentProject.id}
           existingMiniatureIds={projectMiniatures.map(m => m.id)}
           onClose={() => setShowAddMiniatures(false)}
           onMiniaturesAdded={handleMiniaturesAdded}
           onError={onError}
+        />
+      )}
+
+      {showEditForm && (
+        <ProjectForm
+          project={currentProject}
+          onSubmit={handleEditSubmit}
+          onCancel={() => setShowEditForm(false)}
+          isEditing={true}
         />
       )}
     </div>
