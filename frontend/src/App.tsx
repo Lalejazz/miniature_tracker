@@ -245,6 +245,7 @@ function App() {
       const updatedMiniature = await miniatureApi.update(id, updates);
       console.log('API update successful:', updatedMiniature);
       
+      // Update the miniatures list
       setMiniatures(prev => {
         console.log('Current miniatures before update:', prev.map(m => ({ id: m.id, name: m.name, status: m.status, quantity: m.quantity })));
         const newMiniatures = prev.map(m => m.id === id ? updatedMiniature : m);
@@ -252,9 +253,16 @@ function App() {
         return newMiniatures;
       });
       
-      // Close the edit form after successful update
-      setEditingMiniature(null);
-      console.log('State updated successfully and form closed');
+      // Update the editing miniature state with fresh data from API
+      setEditingMiniature(updatedMiniature);
+      console.log('Updated editingMiniature with fresh API data:', updatedMiniature);
+      
+      // Close the edit form after a brief delay to show the updated values
+      setTimeout(() => {
+        setEditingMiniature(null);
+        console.log('Form closed after showing updated values');
+      }, 100);
+      
     } catch (error: any) {
       console.error('Update failed:', error);
       setMiniaturesError(error.message || 'Failed to update miniature');
