@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS } from '../types';
+import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS } from '../types';
 import StatusHistory from './StatusHistory';
 
 interface MiniatureTableProps {
@@ -113,6 +113,12 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
               Faction {getSortIcon('faction')}
             </th>
             <th 
+              onClick={() => onSort('game_system')}
+              className={`sortable ${sortField === 'game_system' ? 'active' : ''}`}
+            >
+              Game System {getSortIcon('game_system')}
+            </th>
+            <th 
               onClick={() => onSort('unit_type')}
               className={`sortable ${sortField === 'unit_type' ? 'active' : ''}`}
             >
@@ -153,6 +159,11 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                   </td>
                   <td>
                     {renderEditableCell(miniature, 'faction', 100)}
+                  </td>
+                  <td>
+                    <div className="game-system-cell">
+                      {GAME_SYSTEM_LABELS[miniature.game_system]}
+                    </div>
                   </td>
                   <td>
                     <div className="unit-type-cell">
@@ -241,7 +252,7 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                 </tr>
                 {isHistoryExpanded && (
                   <tr className="history-row">
-                    <td colSpan={8} className="history-cell">
+                    <td colSpan={9} className="history-cell">
                       <StatusHistory 
                         miniature={miniature}
                         onUpdate={onEdit}
