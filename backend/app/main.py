@@ -17,6 +17,7 @@ from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
 from app.oauth_routes import router as oauth_router
 from app.user_crud import UserDB
+from app.database import DatabaseInterface, get_database
 
 
 # Create FastAPI app
@@ -660,10 +661,12 @@ async def add_multiple_miniatures_to_project(
 
 @app.post("/admin/migrate-games")
 async def migrate_games_endpoint(
-    db: MiniatureDB = Depends(get_db)
+    db: DatabaseInterface = Depends(get_database)
 ):
     """Admin endpoint to add missing games to the database."""
     try:
+        await db.initialize()
+        
         # All games that should be in the database
         expected_games = [
             ("Warhammer 40,000", "The iconic grimdark sci-fi wargame"),
@@ -696,6 +699,7 @@ async def migrate_games_endpoint(
             ("Gaslands", "Post-apocalyptic vehicular combat"),
             ("Zombicide", "Cooperative zombie survival"),
             ("Trench Crusade", "Grimdark alternate history warfare"),
+            ("Art de la Guerre", "Ancient and medieval historical wargaming"),
             ("Other Game System", "Custom or unlisted game systems")
         ]
         
