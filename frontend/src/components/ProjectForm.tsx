@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Project, ProjectCreate, ProjectUpdate } from '../types';
+import { Project, ProjectCreate } from '../types';
 
 interface ProjectFormProps {
   onSubmit: (project: ProjectCreate) => void;

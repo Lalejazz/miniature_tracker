@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectCreate, ProjectWithMiniatures, ProjectStatistics, ProjectUpdate } from '../types';
 import { projectApi } from '../services/api';
 import ProjectForm from './ProjectForm';
@@ -17,12 +17,7 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
   const [selectedProject, setSelectedProject] = useState<ProjectWithMiniatures | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadProjects();
-    loadStatistics();
-  }, []);
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const data = await projectApi.getAll();
       setProjects(data);
@@ -31,9 +26,9 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [onError]);
 
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     try {
       const stats = await projectApi.getStatistics();
       setStatistics(stats);
@@ -41,7 +36,12 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
       // Statistics are optional, don't show error
       console.warn('Failed to load project statistics:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProjects();
+    loadStatistics();
+  }, [loadProjects, loadStatistics]);
 
   const handleCreateProject = async (projectData: ProjectCreate) => {
     try {

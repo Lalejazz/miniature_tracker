@@ -25,7 +25,7 @@ const AddMiniaturesToProject: React.FC<AddMiniaturesToProjectProps> = ({
 
   useEffect(() => {
     loadMiniatures();
-  }, []);
+  }, [existingMiniatureIds]);
 
   const loadMiniatures = async () => {
     try {
