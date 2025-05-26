@@ -73,7 +73,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         setCurrentTheme(savedTheme);
       }
     }
-  }, []);
+  }, [initialTheme]);
 
   return (
     <ThemeContext.Provider value={{ currentTheme, setTheme, applyTheme }}>

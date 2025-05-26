@@ -53,17 +53,6 @@ function App() {
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
-  // Get initial theme from user preferences or default
-  const getInitialTheme = (): Theme => {
-    return userPreferences?.theme || Theme.BLUE_GRADIENT;
-  };
-
-  // Handle theme updates from user preferences
-  const handleThemeUpdate = (newTheme: Theme) => {
-    // The theme will be updated through user preferences
-    // The ThemeProvider will handle the actual theme switching
-  };
-
   // Handle user preferences save
   const handleUserPreferencesSave = async (preferences: UserPreferences) => {
     setUserPreferences(preferences);
