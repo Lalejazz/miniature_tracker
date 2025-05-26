@@ -760,8 +760,42 @@ class PostgreSQLDatabase(DatabaseInterface):
                         uuid4(), miniature_id, user_id, old_status, new_status, None, False
                     )
                 
-                # Get updated miniature with status history
-                return await self.get_miniature(miniature_id, user_id)
+                # Get status history for the updated miniature
+                status_rows = await conn.fetch(
+                    "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                    miniature_id
+                )
+                
+                status_history = [
+                    StatusLogEntry(
+                        id=status_row['id'],
+                        from_status=status_row['from_status'],
+                        to_status=status_row['to_status'],
+                        notes=status_row['notes'],
+                        is_manual=status_row['is_manual'],
+                        created_at=status_row['created_at']
+                    ) for status_row in status_rows
+                ]
+                
+                # Return the updated miniature directly from the UPDATE query result
+                return Miniature(
+                    id=miniature_row['id'],
+                    name=miniature_row['name'],
+                    faction=miniature_row['faction'],
+                    unit_type=miniature_row['model_type'],  # Map model_type from DB to unit_type in model
+                    status=miniature_row['status'],
+                    notes=miniature_row['notes'],
+                    user_id=miniature_row['user_id'],
+                    status_history=status_history,
+                    created_at=miniature_row['created_at'],
+                    updated_at=miniature_row['updated_at'],
+                    # New Unit fields
+                    game_system=miniature_row.get('game_system'),
+                    quantity=miniature_row.get('quantity', 1),
+                    base_dimension=miniature_row.get('base_dimension'),
+                    custom_base_size=miniature_row.get('custom_base_size'),
+                    cost=miniature_row.get('cost')
+                )
     
     async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:
         """Delete a miniature."""
