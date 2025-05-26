@@ -442,6 +442,32 @@ class PostgreSQLDatabase(DatabaseInterface):
         except Exception as e:
             print(f"Migration warning: {e}")  # Log but don't fail
         
+        # Create projects table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_completion_date DATE,
+                color VARCHAR(7),
+                notes TEXT,
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(name, user_id)
+            )
+        """)
+        
+        # Create project_miniatures junction table
+        await self._pool.execute("""
+            CREATE TABLE IF NOT EXISTS project_miniatures (
+                project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+                miniature_id UUID REFERENCES miniatures(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                PRIMARY KEY (project_id, miniature_id)
+            )
+        """)
+        
         # Create indexes
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
@@ -449,6 +475,10 @@ class PostgreSQLDatabase(DatabaseInterface):
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_miniatures_name ON miniatures(name)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)")
         await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_user_preferences_location ON user_preferences(latitude, longitude)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_project_miniatures_project_id ON project_miniatures(project_id)")
+        await self._pool.execute("CREATE INDEX IF NOT EXISTS idx_project_miniatures_miniature_id ON project_miniatures(miniature_id)")
         
         self._initialized = True
     
@@ -1403,45 +1433,370 @@ class PostgreSQLDatabase(DatabaseInterface):
     # Project management methods - PostgreSQL implementation
     async def get_all_projects(self, user_id: UUID) -> List[Project]:
         """Get all projects for a user."""
-        # For now, return empty list since PostgreSQL tables don't exist yet
-        return []
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT id, name, description, target_completion_date, color, notes, user_id, created_at, updated_at 
+                   FROM projects WHERE user_id = $1 ORDER BY created_at DESC""",
+                user_id
+            )
+            
+            projects = []
+            for row in rows:
+                try:
+                    projects.append(Project(
+                        id=row['id'],
+                        name=row['name'],
+                        description=row['description'],
+                        target_completion_date=row['target_completion_date'],
+                        color=row['color'],
+                        notes=row['notes'],
+                        user_id=row['user_id'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at']
+                    ))
+                except Exception as e:
+                    print(f"Error loading project {row.get('id', 'unknown')}: {e}")
+                    continue
+            
+            return projects
+
     async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
         """Get project statistics for a user."""
-        # For now, return empty statistics
-        return ProjectStatistics()
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Get project count
+            project_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM projects WHERE user_id = $1",
+                user_id
+            )
+            
+            # Get miniatures in projects count
+            miniatures_in_projects = await conn.fetchval(
+                """SELECT COUNT(DISTINCT pm.miniature_id) 
+                   FROM project_miniatures pm 
+                   JOIN projects p ON pm.project_id = p.id 
+                   WHERE p.user_id = $1""",
+                user_id
+            )
+            
+            # Get completion stats (projects with target dates)
+            completed_projects = await conn.fetchval(
+                """SELECT COUNT(*) FROM projects 
+                   WHERE user_id = $1 AND target_completion_date < NOW()""",
+                user_id
+            )
+            
+            return ProjectStatistics(
+                total_projects=project_count or 0,
+                total_miniatures_in_projects=miniatures_in_projects or 0,
+                completed_projects=completed_projects or 0,
+                average_completion_rate=0.0  # Can be calculated later if needed
+            )
+
     async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
         """Get a specific project by ID for a user."""
-        return None
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """SELECT id, name, description, target_completion_date, color, notes, user_id, created_at, updated_at 
+                   FROM projects WHERE id = $1 AND user_id = $2""",
+                project_id, user_id
+            )
+            
+            if row:
+                return Project(
+                    id=row['id'],
+                    name=row['name'],
+                    description=row['description'],
+                    target_completion_date=row['target_completion_date'],
+                    color=row['color'],
+                    notes=row['notes'],
+                    user_id=row['user_id'],
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at']
+                )
+            return None
+
     async def get_project_with_miniatures(self, project_id: UUID, user_id: UUID) -> Optional[ProjectWithMiniatures]:
         """Get a project with its associated miniatures."""
-        return None
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        project = await self.get_project(project_id, user_id)
+        if not project:
+            return None
+        
+        async with self._pool.acquire() as conn:
+            # Get miniatures in this project
+            miniature_rows = await conn.fetch(
+                """SELECT m.id, m.name, m.faction, m.model_type, m.status, m.notes, m.user_id, 
+                          m.created_at, m.updated_at, m.game_system, m.quantity, m.base_dimension, 
+                          m.custom_base_size, m.cost
+                   FROM miniatures m
+                   JOIN project_miniatures pm ON m.id = pm.miniature_id
+                   WHERE pm.project_id = $1 AND m.user_id = $2
+                   ORDER BY m.created_at""",
+                project_id, user_id
+            )
+            
+            miniatures = []
+            for row in miniature_rows:
+                try:
+                    # Get status history for each miniature
+                    status_rows = await conn.fetch(
+                        "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                        row['id']
+                    )
+                    
+                    status_history = [
+                        StatusLogEntry(
+                            id=status_row['id'],
+                            from_status=status_row['from_status'],
+                            to_status=status_row['to_status'],
+                            notes=status_row['notes'],
+                            is_manual=status_row['is_manual'],
+                            created_at=status_row['created_at']
+                        ) for status_row in status_rows
+                    ]
+                    
+                    miniature = Miniature(
+                        id=row['id'],
+                        name=row['name'],
+                        faction=row['faction'],
+                        unit_type=row['model_type'],
+                        status=row['status'],
+                        notes=row['notes'],
+                        user_id=row['user_id'],
+                        status_history=status_history,
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at'],
+                        game_system=row.get('game_system'),
+                        quantity=row.get('quantity', 1),
+                        base_dimension=row.get('base_dimension'),
+                        custom_base_size=row.get('custom_base_size'),
+                        cost=row.get('cost')
+                    )
+                    miniatures.append(miniature)
+                except Exception as e:
+                    print(f"Error loading miniature {row.get('id', 'unknown')}: {e}")
+                    continue
+            
+            return ProjectWithMiniatures(
+                **project.model_dump(),
+                miniatures=miniatures
+            )
+
     async def create_project(self, project: ProjectCreate, user_id: UUID) -> Project:
         """Create a new project."""
-        raise NotImplementedError("PostgreSQL project support not yet implemented")
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Check for duplicate names
+            existing = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM projects WHERE name = $1 AND user_id = $2)",
+                project.name, user_id
+            )
+            if existing:
+                raise ValueError("Project with this name already exists")
+            
+            # Create new project
+            project_id = uuid4()
+            row = await conn.fetchrow(
+                """INSERT INTO projects (id, name, description, target_completion_date, color, notes, user_id)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)
+                   RETURNING id, name, description, target_completion_date, color, notes, user_id, created_at, updated_at""",
+                project_id, project.name, project.description, project.target_completion_date,
+                project.color, project.notes, user_id
+            )
+            
+            return Project(
+                id=row['id'],
+                name=row['name'],
+                description=row['description'],
+                target_completion_date=row['target_completion_date'],
+                color=row['color'],
+                notes=row['notes'],
+                user_id=row['user_id'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+
     async def update_project(self, project_id: UUID, updates: ProjectUpdate, user_id: UUID) -> Optional[Project]:
         """Update an existing project."""
-        return None
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        update_data = updates.model_dump(exclude_unset=True)
+        if not update_data:
+            return await self.get_project(project_id, user_id)
+        
+        async with self._pool.acquire() as conn:
+            # Check for duplicate names if name is being updated
+            if "name" in update_data:
+                existing = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM projects WHERE name = $1 AND user_id = $2 AND id != $3)",
+                    update_data["name"], user_id, project_id
+                )
+                if existing:
+                    raise ValueError("Project with this name already exists")
+            
+            # Build dynamic update query
+            set_clauses = []
+            values = []
+            param_count = 1
+            
+            for field, value in update_data.items():
+                set_clauses.append(f"{field} = ${param_count}")
+                values.append(value)
+                param_count += 1
+            
+            set_clauses.append(f"updated_at = NOW()")
+            
+            query = f"""UPDATE projects SET {', '.join(set_clauses)}
+                       WHERE id = ${param_count} AND user_id = ${param_count + 1}
+                       RETURNING id, name, description, target_completion_date, color, notes, user_id, created_at, updated_at"""
+            
+            values.extend([project_id, user_id])
+            
+            row = await conn.fetchrow(query, *values)
+            if row:
+                return Project(
+                    id=row['id'],
+                    name=row['name'],
+                    description=row['description'],
+                    target_completion_date=row['target_completion_date'],
+                    color=row['color'],
+                    notes=row['notes'],
+                    user_id=row['user_id'],
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at']
+                )
+            return None
+
     async def delete_project(self, project_id: UUID, user_id: UUID) -> bool:
         """Delete a project."""
-        return False
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Delete project_miniature associations first
+                await conn.execute(
+                    """DELETE FROM project_miniatures 
+                       WHERE project_id = $1 AND project_id IN (
+                           SELECT id FROM projects WHERE user_id = $2
+                       )""",
+                    project_id, user_id
+                )
+                
+                # Delete the project
+                result = await conn.execute(
+                    "DELETE FROM projects WHERE id = $1 AND user_id = $2",
+                    project_id, user_id
+                )
+                return result.split()[-1] != '0'
+
     async def add_miniature_to_project(self, project_miniature: ProjectMiniatureCreate, user_id: UUID) -> bool:
         """Add a miniature to a project."""
-        return False
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            # Verify project and miniature belong to user
+            project_exists = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1 AND user_id = $2)",
+                project_miniature.project_id, user_id
+            )
+            miniature_exists = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM miniatures WHERE id = $1 AND user_id = $2)",
+                project_miniature.miniature_id, user_id
+            )
+            
+            if not project_exists or not miniature_exists:
+                return False
+            
+            # Check if already exists
+            existing = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM project_miniatures WHERE project_id = $1 AND miniature_id = $2)",
+                project_miniature.project_id, project_miniature.miniature_id
+            )
+            if existing:
+                raise ValueError("Miniature already exists in project")
+            
+            # Add the association
+            await conn.execute(
+                "INSERT INTO project_miniatures (project_id, miniature_id) VALUES ($1, $2)",
+                project_miniature.project_id, project_miniature.miniature_id
+            )
+            return True
+
     async def remove_miniature_from_project(self, project_id: UUID, miniature_id: UUID, user_id: UUID) -> bool:
         """Remove a miniature from a project."""
-        return False
-    
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """DELETE FROM project_miniatures 
+                   WHERE project_id = $1 AND miniature_id = $2 
+                   AND project_id IN (SELECT id FROM projects WHERE user_id = $3)""",
+                project_id, miniature_id, user_id
+            )
+            return result.split()[-1] != '0'
+
     async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
         """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
-        return 0
+        if self._pool is None:
+            raise RuntimeError("Database not initialized")
+        
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Verify project belongs to user
+                project_exists = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1 AND user_id = $2)",
+                    project_id, user_id
+                )
+                if not project_exists:
+                    return 0
+                
+                added_count = 0
+                for miniature_id in miniature_ids:
+                    # Check if miniature belongs to user
+                    miniature_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM miniatures WHERE id = $1 AND user_id = $2)",
+                        miniature_id, user_id
+                    )
+                    if not miniature_exists:
+                        continue
+                    
+                    # Check if already in project
+                    already_exists = await conn.fetchval(
+                        "SELECT EXISTS(SELECT 1 FROM project_miniatures WHERE project_id = $1 AND miniature_id = $2)",
+                        project_id, miniature_id
+                    )
+                    if already_exists:
+                        continue
+                    
+                    # Add the association
+                    try:
+                        await conn.execute(
+                            "INSERT INTO project_miniatures (project_id, miniature_id) VALUES ($1, $2)",
+                            project_id, miniature_id
+                        )
+                        added_count += 1
+                    except Exception:
+                        # Skip if there's an error (e.g., constraint violation)
+                        continue
+                
+                return added_count
 
 
 class FileDatabase(DatabaseInterface):
