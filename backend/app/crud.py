@@ -90,9 +90,8 @@ class MiniatureDB:
     
     async def delete_status_log_entry(self, miniature_id: UUID, log_entry_id: UUID, user_id: UUID) -> Optional[Miniature]:
         """Delete a status log entry."""
-        # This method would need to be implemented in the database layer
-        # For now, return None as it's not critical functionality
-        return None
+        await self._ensure_db_initialized()
+        return await self.db.delete_status_log_entry(miniature_id, log_entry_id, user_id)
     
     # Password Reset Token Methods (kept as file storage for now)
     
