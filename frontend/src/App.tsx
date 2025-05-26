@@ -247,9 +247,9 @@ function App() {
       setMiniatures(prev => 
         prev.map(m => m.id === id ? updatedMiniature : m)
       );
-      // Update the editing miniature state with fresh data so form shows updated values
-      setEditingMiniature(updatedMiniature);
-      console.log('State updated successfully');
+      // Close the edit form after successful update
+      setEditingMiniature(null);
+      console.log('State updated successfully and form closed');
     } catch (error: any) {
       console.error('Update failed:', error);
       setMiniaturesError(error.message || 'Failed to update miniature');
