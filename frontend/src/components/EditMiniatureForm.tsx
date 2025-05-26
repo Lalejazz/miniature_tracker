@@ -21,6 +21,7 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
     base_dimension: miniature.base_dimension,
     custom_base_size: miniature.custom_base_size
   });
+  const [quantityInput, setQuantityInput] = useState<string>(miniature.quantity.toString());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableFactions, setAvailableFactions] = useState<string[]>([]);
@@ -58,6 +59,37 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
       ...prev,
       [field]: value
     }));
+    
+    // Keep quantityInput in sync when quantity is updated
+    if (field === 'quantity' && typeof value === 'number') {
+      setQuantityInput(value.toString());
+    }
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuantityInput(value);
+    
+    // Only update formData if it's a valid number
+    const numValue = parseInt(value);
+    if (!isNaN(numValue) && numValue > 0) {
+      setFormData(prev => ({ ...prev, quantity: numValue }));
+    }
+  };
+
+  const handleQuantityBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const numValue = parseInt(value);
+    
+    if (isNaN(numValue) || numValue < 1) {
+      // Reset to 1 if invalid
+      setQuantityInput('1');
+      setFormData(prev => ({ ...prev, quantity: 1 }));
+    } else {
+      // Ensure formData is updated with valid value
+      setQuantityInput(numValue.toString());
+      setFormData(prev => ({ ...prev, quantity: numValue }));
+    }
   };
 
   return (
@@ -135,12 +167,12 @@ const EditMiniatureForm: React.FC<EditMiniatureFormProps> = ({ miniature, onSave
           <div className="form-row">
             <label htmlFor="quantity">Unit Size</label>
             <input
-              type="number"
+              type="text"
               id="quantity"
-              value={formData.quantity || 1}
-              onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
-              min="1"
-              max="100"
+              value={quantityInput}
+              onChange={handleQuantityChange}
+              onBlur={handleQuantityBlur}
+              placeholder="Enter quantity"
             />
           </div>
 
