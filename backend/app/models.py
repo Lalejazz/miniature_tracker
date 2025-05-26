@@ -600,6 +600,14 @@ class Project(ProjectBase):
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
+class ProjectWithStats(Project):
+    """Project model with computed statistics for frontend display."""
+    
+    miniature_count: int = 0
+    completion_percentage: float = 0.0
+    status_breakdown: dict[PaintingStatus, int] = Field(default_factory=dict)
+
+
 class ProjectMiniatureCreate(BaseModel):
     """Model for adding a miniature to a project."""
     

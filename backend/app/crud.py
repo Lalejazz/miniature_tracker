@@ -10,7 +10,7 @@ from app.models import (
     Miniature, MiniatureCreate, MiniatureUpdate, 
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
     PasswordResetToken, CollectionStatistics, TrendAnalysis,
-    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics
+    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats
 )
 from app.database import get_database
 
@@ -164,7 +164,7 @@ class MiniatureDB:
 
     # Project Management Methods
     
-    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+    async def get_all_projects(self, user_id: UUID) -> List[ProjectWithStats]:
         """Get all projects for a user."""
         await self._ensure_db_initialized()
         return await self.db.get_all_projects(user_id)

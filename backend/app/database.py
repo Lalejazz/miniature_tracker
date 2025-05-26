@@ -20,7 +20,7 @@ from app.models import (
     Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
     PlayerSearchRequest, PlayerSearchResult, GameType, CollectionStatistics, TrendAnalysis,
     TrendDataPoint, StatusTrendData, TrendRequest,
-    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniature, ProjectMiniatureCreate, ProjectStatistics
+    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniature, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats
 )
 from app.geocoding import GeocodingService
 
@@ -142,7 +142,7 @@ class DatabaseInterface(ABC):
 
     # Project management methods
     @abstractmethod
-    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+    async def get_all_projects(self, user_id: UUID) -> List[ProjectWithStats]:
         """Get all projects for a user."""
         pass
 
@@ -1431,7 +1431,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 )
 
     # Project management methods - PostgreSQL implementation
-    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+    async def get_all_projects(self, user_id: UUID) -> List[ProjectWithStats]:
         """Get all projects for a user."""
         if self._pool is None:
             raise RuntimeError("Database not initialized")
@@ -1446,7 +1446,35 @@ class PostgreSQLDatabase(DatabaseInterface):
             projects = []
             for row in rows:
                 try:
-                    projects.append(Project(
+                    # Get miniatures count and status breakdown for this project
+                    miniature_rows = await conn.fetch(
+                        """SELECT m.status, COUNT(*) as count
+                           FROM miniatures m
+                           JOIN project_miniatures pm ON m.id = pm.miniature_id
+                           WHERE pm.project_id = $1 AND m.user_id = $2
+                           GROUP BY m.status""",
+                        row['id'], user_id
+                    )
+                    
+                    # Calculate stats
+                    miniature_count = 0
+                    status_breakdown = {}
+                    completed_count = 0
+                    
+                    for mini_row in miniature_rows:
+                        status = mini_row['status']
+                        count = mini_row['count']
+                        miniature_count += count
+                        status_breakdown[status] = count
+                        
+                        # Count completed miniatures (game_ready or parade_ready)
+                        if status in ['game_ready', 'parade_ready']:
+                            completed_count += count
+                    
+                    # Calculate completion percentage
+                    completion_percentage = (completed_count / miniature_count * 100) if miniature_count > 0 else 0.0
+                    
+                    projects.append(ProjectWithStats(
                         id=row['id'],
                         name=row['name'],
                         description=row['description'],
@@ -1455,7 +1483,10 @@ class PostgreSQLDatabase(DatabaseInterface):
                         notes=row['notes'],
                         user_id=row['user_id'],
                         created_at=row['created_at'],
-                        updated_at=row['updated_at']
+                        updated_at=row['updated_at'],
+                        miniature_count=miniature_count,
+                        completion_percentage=round(completion_percentage, 1),
+                        status_breakdown=status_breakdown
                     ))
                 except Exception as e:
                     print(f"Error loading project {row.get('id', 'unknown')}: {e}")
@@ -2530,7 +2561,7 @@ class FileDatabase(DatabaseInterface):
         )
 
     # Project management methods
-    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+    async def get_all_projects(self, user_id: UUID) -> List[ProjectWithStats]:
         """Get all projects for a user."""
         users = self._load_users()
         
@@ -2540,7 +2571,31 @@ class FileDatabase(DatabaseInterface):
                 projects = []
                 for data in projects_data:
                     try:
-                        project = Project(**data)
+                        # Get miniatures for this project to calculate stats
+                        project_miniatures = await self._get_project_miniatures(UUID(data["id"]), user_id)
+                        
+                        # Calculate stats
+                        miniature_count = len(project_miniatures)
+                        status_breakdown = {}
+                        completed_count = 0
+                        
+                        for miniature in project_miniatures:
+                            status = miniature.status.value
+                            status_breakdown[status] = status_breakdown.get(status, 0) + 1
+                            
+                            # Count completed miniatures (game_ready or parade_ready)
+                            if status in ['game_ready', 'parade_ready']:
+                                completed_count += 1
+                        
+                        # Calculate completion percentage
+                        completion_percentage = (completed_count / miniature_count * 100) if miniature_count > 0 else 0.0
+                        
+                        project = ProjectWithStats(
+                            **data,
+                            miniature_count=miniature_count,
+                            completion_percentage=round(completion_percentage, 1),
+                            status_breakdown=status_breakdown
+                        )
                         projects.append(project)
                     except Exception as e:
                         print(f"Error loading project {data.get('id', 'unknown')}: {e}")

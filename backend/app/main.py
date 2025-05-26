@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.crud import MiniatureDB
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats, User
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
@@ -468,11 +468,11 @@ async def delete_status_log(
 
 # Project Management Endpoints
 
-@app.get("/projects", response_model=List[Project])
-async def get_all_projects(
+@app.get("/projects", response_model=List[ProjectWithStats])
+async def get_projects(
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
-) -> List[Project]:
+) -> List[ProjectWithStats]:
     """Get all projects for the authenticated user."""
     return await db.get_all_projects(current_user_id)
 
