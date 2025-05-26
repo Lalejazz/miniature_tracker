@@ -585,6 +585,30 @@ class PlayerSearchResult(BaseModel):
     bio: Optional[str]
     distance_km: float = Field(description="Distance from searcher in kilometers")
     location: str = Field(description="Player's location (for privacy, might be partial)")
+    availability: Optional[List[AvailabilitySlot]] = Field(None, description="When the player is available to play")
+    hosting: Optional[HostingDetails] = Field(None, description="Player's hosting preferences and capabilities")
+    
+    @field_validator('availability', mode='before')
+    @classmethod
+    def parse_availability(cls, v):
+        if isinstance(v, str):
+            try:
+                data = json.loads(v)
+                return [AvailabilitySlot(**slot) for slot in data] if data else None
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+    
+    @field_validator('hosting', mode='before')
+    @classmethod
+    def parse_hosting(cls, v):
+        if isinstance(v, str):
+            try:
+                data = json.loads(v)
+                return HostingDetails(**data) if data else None
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
 
 
 # Collection Statistics Models

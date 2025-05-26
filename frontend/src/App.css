@@ -5296,9 +5296,9 @@ body {
   margin-top: 0.5rem;
 }
 
-.day-checkbox,
-.time-checkbox,
-.hosting-checkbox {
+.availability-day-checkbox,
+.availability-time-checkbox,
+.hosting-preference-checkbox {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -5310,42 +5310,42 @@ body {
   background: #f8fafc;
 }
 
-.day-checkbox:hover,
-.time-checkbox:hover,
-.hosting-checkbox:hover {
+.availability-day-checkbox:hover,
+.availability-time-checkbox:hover,
+.hosting-preference-checkbox:hover {
   border-color: #3b82f6;
   background: #f0f9ff;
   transform: translateY(-1px);
 }
 
-.day-checkbox input[type="checkbox"],
-.time-checkbox input[type="checkbox"],
-.hosting-checkbox input[type="checkbox"] {
+.availability-day-checkbox input[type="checkbox"],
+.availability-time-checkbox input[type="checkbox"],
+.hosting-preference-checkbox input[type="checkbox"] {
   margin: 0;
   width: 16px;
   height: 16px;
   cursor: pointer;
 }
 
-.day-checkbox:has(input[type="checkbox"]:checked),
-.time-checkbox:has(input[type="checkbox"]:checked),
-.hosting-checkbox:has(input[type="checkbox"]:checked) {
+.availability-day-checkbox:has(input[type="checkbox"]:checked),
+.availability-time-checkbox:has(input[type="checkbox"]:checked),
+.hosting-preference-checkbox:has(input[type="checkbox"]:checked) {
   border-color: #3b82f6;
   background: #dbeafe;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-.day-checkbox span,
-.time-checkbox span,
-.hosting-checkbox span {
+.availability-day-checkbox span,
+.availability-time-checkbox span,
+.hosting-preference-checkbox span {
   flex: 1;
   font-size: 0.9rem;
   color: #374151;
 }
 
-.day-checkbox input[type="checkbox"]:checked + span,
-.time-checkbox input[type="checkbox"]:checked + span,
-.hosting-checkbox input[type="checkbox"]:checked + span {
+.availability-day-checkbox input[type="checkbox"]:checked + span,
+.availability-time-checkbox input[type="checkbox"]:checked + span,
+.hosting-preference-checkbox input[type="checkbox"]:checked + span {
   color: #1e40af;
   font-weight: 500;
 }
@@ -5359,15 +5359,15 @@ body {
     gap: 0.4rem;
   }
   
-  .day-checkbox,
-  .time-checkbox,
-  .hosting-checkbox {
+  .availability-day-checkbox,
+  .availability-time-checkbox,
+  .hosting-preference-checkbox {
     padding: 0.4rem;
   }
   
-  .day-checkbox span,
-  .time-checkbox span,
-  .hosting-checkbox span {
+  .availability-day-checkbox span,
+  .availability-time-checkbox span,
+  .hosting-preference-checkbox span {
     font-size: 0.8rem;
   }
 }
@@ -5380,15 +5380,15 @@ body {
     gap: 0.3rem;
   }
   
-  .day-checkbox,
-  .time-checkbox,
-  .hosting-checkbox {
+  .availability-day-checkbox,
+  .availability-time-checkbox,
+  .hosting-preference-checkbox {
     padding: 0.3rem;
   }
   
-  .day-checkbox span,
-  .time-checkbox span,
-  .hosting-checkbox span {
+  .availability-day-checkbox span,
+  .availability-time-checkbox span,
+  .hosting-preference-checkbox span {
     font-size: 0.75rem;
   }
 }
@@ -5451,9 +5451,9 @@ body {
 }
 
 .hosting-detail {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  color: #92400e;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.8rem;

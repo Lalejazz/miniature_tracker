@@ -1434,6 +1434,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             SELECT 
                 u.id, u.username, u.email, u.created_at,
                 up.bio, up.location, up.game_type, up.games, up.show_email, up.theme,
+                up.availability, up.hosting,
                 ({distance_formula}) as distance
             FROM users u
             JOIN user_preferences up ON u.id = up.user_id
@@ -1469,7 +1470,9 @@ class PostgreSQLDatabase(DatabaseInterface):
                     game_type=GameType(row['game_type']),
                     bio=row['bio'],
                     distance_km=round(row['distance'], 1),
-                    location=row['location']
+                    location=row['location'],
+                    availability=row['availability'],
+                    hosting=row['hosting']
                 )
                 results.append(result)
             
@@ -2530,7 +2533,9 @@ class FileDatabase(DatabaseInterface):
                 game_type=GameType(pref.get('game_type', 'competitive')),
                 bio=pref.get('bio'),
                 distance_km=round(distance_km, 2),
-                location=pref['location'][:10] + "***" if len(pref['location']) > 10 else pref['location']
+                location=pref['location'][:10] + "***" if len(pref['location']) > 10 else pref['location'],
+                availability=pref.get('availability'),
+                hosting=pref.get('hosting')
             )
             results.append(result)
         
