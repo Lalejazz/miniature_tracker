@@ -93,7 +93,25 @@ async function apiRequest<T>(
       let errorMessage = `HTTP ${response.status}`;
       try {
         const errorData = await response.json();
-        errorMessage = errorData.detail || errorData.message || errorMessage;
+        console.error('API Error Response:', errorData); // Debug logging
+        
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            // Handle Pydantic validation errors
+            errorMessage = errorData.detail.map((err: any) => {
+              if (typeof err === 'object' && err.msg && err.loc) {
+                return `${err.loc.join('.')}: ${err.msg}`;
+              }
+              return typeof err === 'string' ? err : JSON.stringify(err);
+            }).join(', ');
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
       } catch {
         // If error response isn't JSON, use status text
         errorMessage = response.statusText || errorMessage;

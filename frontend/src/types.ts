@@ -556,7 +556,7 @@ export type GameType = "competitive" | "narrative";
 // Availability and Hosting Types
 export enum DayOfWeek {
   MONDAY = "monday",
-  TUESDAY = "tuesday", 
+  TUESDAY = "tuesday",
   WEDNESDAY = "wednesday",
   THURSDAY = "thursday",
   FRIDAY = "friday",
@@ -603,9 +603,9 @@ export interface UserPreferencesCreate {
   game_type: GameType;
   bio?: string;
   show_email?: boolean;
+  theme?: Theme;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
-  theme?: Theme;
 }
 
 export interface UserPreferencesUpdate {
@@ -614,9 +614,9 @@ export interface UserPreferencesUpdate {
   game_type?: GameType;
   bio?: string;
   show_email?: boolean;
+  theme?: Theme;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
-  theme?: Theme;
 }
 
 export interface UserPreferences {
@@ -627,11 +627,11 @@ export interface UserPreferences {
   game_type: GameType;
   bio?: string;
   show_email: boolean;
-  latitude?: number;
-  longitude?: number;
+  theme?: Theme;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
-  theme?: Theme;
+  latitude?: number;
+  longitude?: number;
   created_at: string;
   updated_at: string;
 }

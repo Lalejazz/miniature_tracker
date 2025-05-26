@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  GameSystem,
-  GAME_SYSTEM_LABELS,
-  GameType, 
   PlayerSearchRequest, 
-  PlayerSearchResult,
+  PlayerSearchResult, 
+  GameType,
+  GameSystem,
   GAME_TYPE_LABELS,
+  GAME_SYSTEM_LABELS,
+  Game,
   DayOfWeek,
   TimeOfDay,
   HostingPreference,
@@ -19,44 +20,36 @@ interface PlayerSearchProps {
   userHasPreferences: boolean;
 }
 
-// Create a list of games based on the GameSystem enum
-const AVAILABLE_GAMES = Object.entries(GameSystem).map(([key, value]) => ({
-  id: value,
-  name: GAME_SYSTEM_LABELS[value],
-  description: getGameDescription(value),
-  is_active: true
-}));
-
 function getGameDescription(gameSystem: GameSystem): string {
   const descriptions: Record<GameSystem, string> = {
-    [GameSystem.WARHAMMER_40K]: "The iconic grimdark sci-fi wargame",
+    [GameSystem.WARHAMMER_40K]: "Grimdark sci-fi warfare in the 41st millennium",
     [GameSystem.AGE_OF_SIGMAR]: "Fantasy battles in the Mortal Realms",
-    [GameSystem.WARHAMMER_THE_OLD_WORLD]: "Classic fantasy battles in the Old World",
-    [GameSystem.HORUS_HERESY]: "The galaxy-spanning civil war in the 31st millennium",
-    [GameSystem.KILL_TEAM]: "Small-scale skirmish battles in the 40K universe",
-    [GameSystem.WARCRY]: "Fast-paced skirmish combat in Age of Sigmar",
-    [GameSystem.WARHAMMER_UNDERWORLDS]: "Competitive deck-based skirmish game",
+    [GameSystem.WARHAMMER_THE_OLD_WORLD]: "Classic fantasy warfare returns",
+    [GameSystem.HORUS_HERESY]: "The galaxy-spanning civil war of the 31st millennium",
+    [GameSystem.KILL_TEAM]: "Small-scale skirmish combat",
+    [GameSystem.WARCRY]: "Fast-paced Chaos warband battles",
+    [GameSystem.WARHAMMER_UNDERWORLDS]: "Competitive deck-based skirmish",
     [GameSystem.ADEPTUS_TITANICUS]: "Epic-scale Titan warfare",
     [GameSystem.NECROMUNDA]: "Gang warfare in the underhive",
     [GameSystem.BLOOD_BOWL]: "Fantasy football with violence",
-    [GameSystem.MIDDLE_EARTH]: "Battle in Tolkien's world",
-    [GameSystem.BOLT_ACTION]: "World War II historical wargaming",
-    [GameSystem.FLAMES_OF_WAR]: "World War II tank combat",
-    [GameSystem.SAGA]: "Dark Age skirmish gaming",
+    [GameSystem.MIDDLE_EARTH]: "Battles in Tolkien's world",
+    [GameSystem.BOLT_ACTION]: "World War II miniature wargaming",
+    [GameSystem.FLAMES_OF_WAR]: "World War II tank battles",
+    [GameSystem.SAGA]: "Dark Age skirmish warfare",
     [GameSystem.KINGS_OF_WAR]: "Mass fantasy battles",
     [GameSystem.INFINITY]: "Sci-fi skirmish with anime aesthetics",
-    [GameSystem.MALIFAUX]: "Gothic horror skirmish game",
-    [GameSystem.WARMACHINE_HORDES]: "Steampunk fantasy battles",
-    [GameSystem.X_WING]: "Star Wars space combat",
-    [GameSystem.STAR_WARS_LEGION]: "Ground battles in the Star Wars universe",
-    [GameSystem.BATTLETECH]: "Giant robot combat",
-    [GameSystem.DROPZONE_COMMANDER]: "10mm sci-fi warfare",
-    [GameSystem.GUILD_BALL]: "Fantasy sports meets skirmish gaming",
-    [GameSystem.DUNGEONS_AND_DRAGONS]: "Dungeons & Dragons and RPG miniatures",
-    [GameSystem.PATHFINDER]: "Fantasy RPG miniatures",
+    [GameSystem.MALIFAUX]: "Victorian horror skirmish",
+    [GameSystem.WARMACHINE_HORDES]: "Steampunk mecha warfare",
+    [GameSystem.X_WING]: "Star Wars starfighter combat",
+    [GameSystem.STAR_WARS_LEGION]: "Star Wars ground battles",
+    [GameSystem.BATTLETECH]: "Giant robot warfare",
+    [GameSystem.DROPZONE_COMMANDER]: "10mm sci-fi combined arms",
+    [GameSystem.GUILD_BALL]: "Fantasy sports with miniatures",
+    [GameSystem.DUNGEONS_AND_DRAGONS]: "Classic tabletop RPG",
+    [GameSystem.PATHFINDER]: "Fantasy RPG adventures",
     [GameSystem.FROSTGRAVE]: "Wizard warband skirmish",
-    [GameSystem.MORDHEIM]: "Skirmish in the City of the Damned",
-    [GameSystem.GASLANDS]: "Post-apocalyptic vehicular combat",
+    [GameSystem.MORDHEIM]: "Gritty urban skirmish",
+    [GameSystem.GASLANDS]: "Post-apocalyptic car combat",
     [GameSystem.ZOMBICIDE]: "Cooperative zombie survival",
     [GameSystem.TRENCH_CRUSADE]: "Grimdark alternate history warfare",
     [GameSystem.ART_DE_LA_GUERRE]: "Ancient and medieval historical wargaming",
@@ -66,6 +59,8 @@ function getGameDescription(gameSystem: GameSystem): string {
 }
 
 const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
+  const [availableGames, setAvailableGames] = useState<Game[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
   const [searchRequest, setSearchRequest] = useState<PlayerSearchRequest>({
     games: [],
     game_type: undefined,
@@ -78,6 +73,24 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Load available games from backend
+  useEffect(() => {
+    const loadGames = async () => {
+      try {
+        setGamesLoading(true);
+        const games = await playerApi.getGames();
+        setAvailableGames(games);
+      } catch (err) {
+        console.error('Failed to load games:', err);
+        setError('Failed to load available games');
+      } finally {
+        setGamesLoading(false);
+      }
+    };
+
+    loadGames();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,18 +189,22 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
 
           <div className="form-group">
             <label>Filter by Games (optional)</label>
-            <div className="games-filter">
-              {AVAILABLE_GAMES.map(game => (
-                <label key={game.id} className="game-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={searchRequest.games?.includes(game.id) || false}
-                    onChange={() => handleGameToggle(game.id)}
-                  />
-                  <span>{game.name}</span>
-                </label>
-              ))}
-            </div>
+            {gamesLoading ? (
+              <div className="loading-message">Loading available games...</div>
+            ) : (
+              <div className="games-filter">
+                {availableGames.map(game => (
+                  <label key={game.id} className="game-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={searchRequest.games?.includes(game.id) || false}
+                      onChange={() => handleGameToggle(game.id)}
+                    />
+                    <span>{game.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -211,7 +228,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                   checked={searchRequest.game_type === undefined}
                   onChange={() => setSearchRequest(prev => ({ ...prev, game_type: undefined }))}
                 />
-                <span>Any Preference</span>
+                <span>Any</span>
               </label>
             </div>
           </div>
@@ -219,8 +236,8 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
           <div className="form-group">
             <label>Filter by Availability Days (optional)</label>
             <div className="availability-days-filter">
-              {Object.values(DayOfWeek).map(day => (
-                <label key={day} className="day-checkbox">
+              {(Object.keys(DAY_OF_WEEK_LABELS) as DayOfWeek[]).map(day => (
+                <label key={day} className="availability-day-checkbox">
                   <input
                     type="checkbox"
                     checked={searchRequest.availability_days?.includes(day) || false}
@@ -236,8 +253,8 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
           <div className="form-group">
             <label>Filter by Availability Times (optional)</label>
             <div className="availability-times-filter">
-              {Object.values(TimeOfDay).map(time => (
-                <label key={time} className="time-checkbox">
+              {(Object.keys(TIME_OF_DAY_LABELS) as TimeOfDay[]).map(time => (
+                <label key={time} className="availability-time-checkbox">
                   <input
                     type="checkbox"
                     checked={searchRequest.availability_times?.includes(time) || false}
@@ -247,14 +264,14 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                 </label>
               ))}
             </div>
-            <small>Find players available during these times</small>
+            <small>Find players available at these times</small>
           </div>
 
           <div className="form-group">
             <label>Filter by Hosting Preferences (optional)</label>
             <div className="hosting-preferences-filter">
-              {Object.values(HostingPreference).map(preference => (
-                <label key={preference} className="hosting-checkbox">
+              {(Object.keys(HOSTING_PREFERENCE_LABELS) as HostingPreference[]).map(preference => (
+                <label key={preference} className="hosting-preference-checkbox">
                   <input
                     type="checkbox"
                     checked={searchRequest.hosting_preferences?.includes(preference) || false}
@@ -289,69 +306,29 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
           <div className="players-list">
             {searchResults.map(player => (
               <div key={player.user_id} className="player-card">
-                <div className="player-header">
+                <div className="player-info">
                   <h4>{player.username}</h4>
-                  <span className="distance">{player.distance_km} km away</span>
-                </div>
-                
-                <div className="player-details">
-                  <div className="games">
+                  <p className="distance">{player.distance_km.toFixed(1)} km away</p>
+                  <p className="location">{player.location}</p>
+                  <p className="game-type">Prefers: {GAME_TYPE_LABELS[player.game_type]}</p>
+                  
+                  <div className="player-games">
                     <strong>Games:</strong>
-                    <div className="game-tags">
-                      {Array.isArray(player.games) ? (
-                        player.games.map((game, index) => {
-                          // Handle both string game IDs and game objects
-                          const gameId = typeof game === 'string' ? game : game.id;
-                          const gameName = GAME_SYSTEM_LABELS[gameId as GameSystem] || 
-                                         (typeof game === 'object' ? game.name : gameId) || 
-                                         'Unknown Game';
-                          
-                          return (
-                            <span key={gameId || index} className="game-tag">
-                              {gameName}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="game-tag">No games listed</span>
-                      )}
+                    <div className="games-list">
+                      {player.games.map(game => (
+                        <span key={game.id} className="game-tag">{game.name}</span>
+                      ))}
                     </div>
-                  </div>
-                  <div className="game-type">
-                    <strong>Game Type:</strong>
-                    <span className={`game-type-tag ${player.game_type}`}>
-                      {GAME_TYPE_LABELS[player.game_type] || player.game_type}
-                    </span>
-                  </div>
-                  {player.email && (
-                    <div className="contact">
-                      <strong>Contact:</strong>
-                      <a href={`mailto:${player.email}`} className="email-link">
-                        {player.email}
-                      </a>
-                    </div>
-                  )}
-                  {player.bio && (
-                    <div className="bio">
-                      <strong>Bio:</strong>
-                      <p>{player.bio}</p>
-                    </div>
-                  )}
-                  <div className="player-location">
-                    <strong>Area:</strong> {player.location}
                   </div>
                   
                   {player.availability && player.availability.length > 0 && (
                     <div className="player-availability">
                       <strong>Available:</strong>
                       <div className="availability-summary">
-                        {player.availability.map((slot, index) => (
-                          <div key={index} className="availability-slot">
-                            <span className="day">{DAY_OF_WEEK_LABELS[slot.day]}</span>
-                            <span className="times">
-                              {slot.times.map(time => TIME_OF_DAY_LABELS[time]).join(', ')}
-                            </span>
-                          </div>
+                        {player.availability.map(slot => (
+                          <span key={slot.day} className="availability-slot">
+                            {DAY_OF_WEEK_LABELS[slot.day]}: {slot.times.map(time => TIME_OF_DAY_LABELS[time]).join(', ')}
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -362,19 +339,28 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                       <strong>Hosting:</strong>
                       <div className="hosting-summary">
                         {player.hosting.preferences.map(pref => (
-                          <span key={pref} className="hosting-tag">
-                            {HOSTING_PREFERENCE_LABELS[pref]}
-                          </span>
+                          <span key={pref} className="hosting-tag">{HOSTING_PREFERENCE_LABELS[pref]}</span>
                         ))}
                         {player.hosting.preferences.includes(HostingPreference.CAN_HOST) && (
                           <div className="hosting-details">
-                            {player.hosting.has_gaming_space && <span className="hosting-detail">🏠 Gaming space</span>}
-                            {player.hosting.has_boards_scenery && <span className="hosting-detail">🎲 Boards & scenery</span>}
-                            {player.hosting.max_players && <span className="hosting-detail">👥 Up to {player.hosting.max_players} players</span>}
+                            {player.hosting.has_gaming_space && <span className="hosting-detail">Gaming space</span>}
+                            {player.hosting.has_boards_scenery && <span className="hosting-detail">Boards & scenery</span>}
+                            {player.hosting.max_players && <span className="hosting-detail">Max {player.hosting.max_players} players</span>}
                           </div>
                         )}
                       </div>
                     </div>
+                  )}
+                  
+                  {player.bio && (
+                    <p className="bio">{player.bio}</p>
+                  )}
+                  
+                  {player.email && (
+                    <p className="contact">
+                      <strong>Contact:</strong> 
+                      <a href={`mailto:${player.email}`}>{player.email}</a>
+                    </p>
                   )}
                 </div>
               </div>

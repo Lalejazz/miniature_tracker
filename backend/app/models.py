@@ -2,11 +2,12 @@
 
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
 from decimal import Decimal
+import json
 
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
 
 class PaintingStatus(str, Enum):
@@ -410,6 +411,47 @@ class GameType(str, Enum):
     NARRATIVE = "narrative"
 
 
+class DayOfWeek(str, Enum):
+    """Days of the week for availability."""
+    MONDAY = "monday"
+    TUESDAY = "tuesday"
+    WEDNESDAY = "wednesday"
+    THURSDAY = "thursday"
+    FRIDAY = "friday"
+    SATURDAY = "saturday"
+    SUNDAY = "sunday"
+
+
+class TimeOfDay(str, Enum):
+    """Times of day for availability."""
+    MORNING = "morning"      # 6:00 AM - 12:00 PM
+    AFTERNOON = "afternoon"  # 12:00 PM - 6:00 PM
+    EVENING = "evening"      # 6:00 PM - 11:00 PM
+
+
+class HostingPreference(str, Enum):
+    """Hosting preferences for games."""
+    CAN_HOST = "can_host"           # Can host at home with boards/scenery
+    PREFER_STORE = "prefer_store"   # Prefer to play in game stores
+    VISIT_OTHERS = "visit_others"   # Happy to play at other players' homes
+    STORE_ONLY = "store_only"       # Only play in stores (no home games)
+
+
+class AvailabilitySlot(BaseModel):
+    """Model for availability time slots."""
+    day: DayOfWeek
+    times: List[TimeOfDay]
+
+
+class HostingDetails(BaseModel):
+    """Model for hosting details."""
+    preferences: List[HostingPreference]
+    has_gaming_space: Optional[bool] = None
+    has_boards_scenery: Optional[bool] = None
+    max_players: Optional[int] = None
+    notes: Optional[str] = None
+
+
 class Theme(str, Enum):
     """Available UI themes."""
     BLUE_GRADIENT = "blue_gradient"
@@ -441,6 +483,8 @@ class UserPreferencesCreate(BaseModel):
     bio: Optional[str] = Field(None, max_length=160, description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
     theme: Theme = Field(default=Theme.BLUE_GRADIENT, description="UI theme preference")
+    availability: Optional[List[AvailabilitySlot]] = Field(None, description="When the user is available to play")
+    hosting: Optional[HostingDetails] = Field(None, description="User's hosting preferences and capabilities")
 
 
 class UserPreferencesUpdate(BaseModel):
@@ -452,6 +496,8 @@ class UserPreferencesUpdate(BaseModel):
     bio: Optional[str] = Field(None, max_length=160)
     show_email: Optional[bool] = None
     theme: Optional[Theme] = None
+    availability: Optional[List[AvailabilitySlot]] = None
+    hosting: Optional[HostingDetails] = None
 
 
 class UserPreferences(BaseModel):
@@ -472,10 +518,34 @@ class UserPreferences(BaseModel):
     bio: Optional[str] = Field(description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
     theme: Theme = Field(default=Theme.BLUE_GRADIENT, description="UI theme preference")
+    availability: Optional[List[AvailabilitySlot]] = Field(None, description="When the user is available to play")
+    hosting: Optional[HostingDetails] = Field(None, description="User's hosting preferences and capabilities")
     latitude: Optional[float] = Field(None, description="Calculated latitude from location")
     longitude: Optional[float] = Field(None, description="Calculated longitude from location")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    
+    @field_validator('availability', mode='before')
+    @classmethod
+    def parse_availability(cls, v):
+        if isinstance(v, str):
+            try:
+                data = json.loads(v)
+                return [AvailabilitySlot(**slot) for slot in data] if data else None
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+    
+    @field_validator('hosting', mode='before')
+    @classmethod
+    def parse_hosting(cls, v):
+        if isinstance(v, str):
+            try:
+                data = json.loads(v)
+                return HostingDetails(**data) if data else None
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
 
 
 class PlayerSearchRequest(BaseModel):

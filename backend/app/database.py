@@ -421,6 +421,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                 bio TEXT CHECK (length(bio) <= 160),
                 show_email BOOLEAN DEFAULT FALSE,
                 theme VARCHAR(20) DEFAULT 'blue_gradient',
+                availability JSONB,
+                hosting JSONB,
                 latitude DECIMAL(10, 8),
                 longitude DECIMAL(11, 8),
                 created_at TIMESTAMP DEFAULT NOW(),
@@ -435,6 +437,10 @@ class PostgreSQLDatabase(DatabaseInterface):
             
             # Add theme column if it doesn't exist
             await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'blue_gradient'")
+            
+            # Add availability and hosting columns if they don't exist
+            await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS availability JSONB")
+            await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS hosting JSONB")
             
             # Copy existing postcode data to location if location is null
             await self._pool.execute("""
@@ -1273,7 +1279,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
+                "SELECT id, user_id, games, location, game_type, bio, show_email, theme, availability, hosting, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
                 user_id
             )
             if row:
@@ -1299,15 +1305,21 @@ class PostgreSQLDatabase(DatabaseInterface):
             latitude = None
             longitude = None
         
+        # Serialize availability and hosting to JSON
+        import json
+        availability_json = json.dumps([slot.model_dump() for slot in preferences_create.availability]) if preferences_create.availability else None
+        hosting_json = json.dumps(preferences_create.hosting.model_dump()) if preferences_create.hosting else None
+        
         async with self._pool.acquire() as conn:
             try:
                 row = await conn.fetchrow(
-                    """INSERT INTO user_preferences (id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude) 
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-                       RETURNING id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at""",
+                    """INSERT INTO user_preferences (id, user_id, games, location, game_type, bio, show_email, theme, availability, hosting, latitude, longitude) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+                       RETURNING id, user_id, games, location, game_type, bio, show_email, theme, availability, hosting, latitude, longitude, created_at, updated_at""",
                     preferences_id, user_id, [str(g) for g in preferences_create.games], preferences_create.location, 
                     preferences_create.game_type, preferences_create.bio, preferences_create.show_email,
-                    preferences_create.theme, latitude, longitude
+                    preferences_create.theme, availability_json, hosting_json,
+                    latitude, longitude
                 )
                 print(f"💾 Database saved: lat={row['latitude']}, lon={row['longitude']}")
                 return UserPreferences(**dict(row))
@@ -1331,6 +1343,13 @@ class PostgreSQLDatabase(DatabaseInterface):
             update_data['games'] = [str(g) for g in update_data['games']]
         if 'game_type' in update_data and update_data['game_type'] is not None:
             update_data['game_type'] = update_data['game_type']
+        
+        # Serialize availability and hosting to JSON
+        import json
+        if 'availability' in update_data and update_data['availability'] is not None:
+            update_data['availability'] = json.dumps([slot.model_dump() for slot in update_data['availability']])
+        if 'hosting' in update_data and update_data['hosting'] is not None:
+            update_data['hosting'] = json.dumps(update_data['hosting'].model_dump())
         
         # Geocode location if it changed
         if 'location' in update_data and update_data['location'] is not None:
@@ -1357,7 +1376,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 UPDATE user_preferences 
                 SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
                 WHERE user_id = ${len(values)}
-                RETURNING id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at
+                RETURNING id, user_id, games, location, game_type, bio, show_email, theme, availability, hosting, latitude, longitude, created_at, updated_at
             """
             
             row = await conn.fetchrow(query, *values)
