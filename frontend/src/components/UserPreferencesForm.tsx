@@ -64,6 +64,7 @@ function getGameDescription(gameSystem: GameSystem): string {
     [GameSystem.GASLANDS]: "Post-apocalyptic vehicular combat",
     [GameSystem.ZOMBICIDE]: "Cooperative zombie survival",
     [GameSystem.TRENCH_CRUSADE]: "Grimdark alternate history warfare",
+    [GameSystem.ART_DE_LA_GUERRE]: "Ancient and medieval historical wargaming",
     [GameSystem.OTHER]: "Custom or unlisted game systems"
   };
   return descriptions[gameSystem] || "";
