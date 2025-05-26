@@ -1518,6 +1518,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 ("Gaslands", "Post-apocalyptic vehicular combat"),
                 ("Zombicide", "Cooperative zombie survival"),
                 ("Trench Crusade", "Grimdark alternate history warfare"),
+                ("Art de la Guerre", "Ancient and medieval historical wargaming"),
                 ("Other Game System", "Custom or unlisted game systems")
             ]
             
@@ -1970,6 +1971,7 @@ class FileDatabase(DatabaseInterface):
                 {"id": str(uuid4()), "name": "Gaslands", "description": "Post-apocalyptic vehicular combat", "is_active": True},
                 {"id": str(uuid4()), "name": "Zombicide", "description": "Cooperative zombie survival", "is_active": True},
                 {"id": str(uuid4()), "name": "Trench Crusade", "description": "Grimdark alternate history warfare", "is_active": True},
+                {"id": str(uuid4()), "name": "Art de la Guerre", "description": "Ancient and medieval historical wargaming", "is_active": True},
                 {"id": str(uuid4()), "name": "Other Game System", "description": "Custom or unlisted game systems", "is_active": True}
             ]
             with open(self.games_file, 'w') as f:

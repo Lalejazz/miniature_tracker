@@ -54,6 +54,7 @@ class GameSystem(str, Enum):
     GASLANDS = "gaslands"
     ZOMBICIDE = "zombicide"
     TRENCH_CRUSADE = "trench_crusade"
+    ART_DE_LA_GUERRE = "art_de_la_guerre"
     OTHER = "other"
 
 
@@ -255,6 +256,16 @@ GAME_SYSTEM_FACTIONS = {
     GameSystem.TRENCH_CRUSADE: [
         "Iron Sultanate", "Heretic Legions", "Court of the Seven-Headed Serpent",
         "New Antioch", "Trench Pilgrims", "Mercenaries", "Other"
+    ],
+    GameSystem.ART_DE_LA_GUERRE: [
+        "Early Imperial Roman", "Late Imperial Roman", "Early Byzantine", "Late Byzantine",
+        "Gallic", "Germanic", "Hun", "Sassanid Persian", "Arab Conquest", "Abbasid",
+        "Fatimid Egyptian", "Ayyubid Egyptian", "Mamluk Egyptian", "Ottoman Turkish",
+        "Feudal French", "Medieval English", "Medieval German", "Italian Condotta",
+        "Swiss", "Burgundian Ordonnance", "Later Polish", "Lithuanian", "Teutonic Orders",
+        "Medieval Russian", "Mongol Conquest", "Yuan Chinese", "Ming Chinese",
+        "Samurai", "Korean", "Khmer", "Burmese", "Thai", "Vietnamese", "Timurid",
+        "Safavid Persian", "Mughal Indian", "Rajput Indian", "Vijayanagar", "Other"
     ],
     GameSystem.OTHER: ["Custom"]
 }
