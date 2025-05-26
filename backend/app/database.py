@@ -966,7 +966,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 
                 # Delete the status log entry
                 result = await conn.execute(
-                    "DELETE FROM status_log_entries WHERE id = $1 AND miniature_id = $2 AND is_manual = TRUE",
+                    "DELETE FROM status_log_entries WHERE id = $1 AND miniature_id = $2",
                     log_id, miniature_id
                 )
                 
@@ -2237,7 +2237,7 @@ class FileDatabase(DatabaseInterface):
                     if miniature.get("id") == str(miniature_id):
                         status_history = miniature.get("status_history", [])
                         for j, log_entry in enumerate(status_history):
-                            if log_entry.get("id") == str(log_id) and log_entry.get("is_manual", False):
+                            if log_entry.get("id") == str(log_id):
                                 del status_history[j]
                                 miniature["status_history"] = status_history
                                 miniature["updated_at"] = datetime.utcnow().isoformat()
