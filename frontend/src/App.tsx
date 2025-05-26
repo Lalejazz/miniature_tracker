@@ -63,7 +63,7 @@ function App() {
       // which watches for changes in the initialTheme prop
     }
     
-    setActiveTab('units');
+    // Don't redirect to units tab - let user stay on preferences to see their updates
   };
 
   // Check for existing token on app load

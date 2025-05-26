@@ -50,6 +50,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Load available games from backend
   useEffect(() => {
@@ -73,6 +74,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       let result: UserPreferences;
@@ -90,9 +92,11 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       if (existingPreferences) {
         // Update existing preferences
         result = await playerApi.updatePreferences(backendData);
+        setSuccessMessage('Your preferences have been updated successfully!');
       } else {
         // Create new preferences
         result = await playerApi.createPreferences(backendData);
+        setSuccessMessage('Your preferences have been saved successfully!');
       }
       
       onSave(result);
@@ -201,6 +205,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       <h2>{existingPreferences ? 'Update' : 'Set'} Your Gaming Preferences</h2>
       
       {error && <div className="error-message">{error}</div>}
+      {successMessage && <div className="success-message">{successMessage}</div>}
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
