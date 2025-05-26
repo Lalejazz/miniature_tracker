@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Miniature } from '../types';
 import { miniatureApi, projectApi } from '../services/api';
 
@@ -23,11 +23,7 @@ const AddMiniaturesToProject: React.FC<AddMiniaturesToProjectProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadMiniatures();
-  }, [existingMiniatureIds]);
-
-  const loadMiniatures = async () => {
+  const loadMiniatures = useCallback(async () => {
     try {
       const miniatures = await miniatureApi.getAll();
       // Filter out miniatures already in the project
@@ -38,7 +34,11 @@ const AddMiniaturesToProject: React.FC<AddMiniaturesToProjectProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [existingMiniatureIds, onError]);
+
+  useEffect(() => {
+    loadMiniatures();
+  }, [loadMiniatures]);
 
   const handleToggleMiniature = (miniatureId: string) => {
     setSelectedMiniatureIds(prev => 
