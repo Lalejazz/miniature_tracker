@@ -3,7 +3,7 @@ import { ChangelogEntry } from '../types';
 export const changelogData: ChangelogEntry[] = [
   {
     id: 'v1.5.0',
-    date: '2025-01-26',
+    date: '2025-05-26',
     version: '1.5.0',
     title: 'Complete Application Overhaul - Units, Statistics & Enhanced UX',
     description: 'Major transformation from miniature tracking to comprehensive unit management with statistics, import/export, and dramatically improved user experience',
@@ -31,7 +31,7 @@ export const changelogData: ChangelogEntry[] = [
   },
   {
     id: 'v1.4.0',
-    date: '2025-01-15',
+    date: '2025-05-25',
     version: '1.4.0',
     title: 'Player Discovery System',
     description: 'Find and connect with other wargamers in your area',
