@@ -692,7 +692,7 @@ export const HOSTING_PREFERENCE_DESCRIPTIONS = {
 export interface ProjectBase {
   name: string;
   description?: string;
-  target_date?: string; // YYYY-MM-DD format
+  target_completion_date?: string; // YYYY-MM-DD format
   notes?: string;
   color?: string; // Hex color for visual organization
 }
@@ -702,7 +702,7 @@ export interface ProjectCreate extends ProjectBase {}
 export interface ProjectUpdate {
   name?: string;
   description?: string;
-  target_date?: string;
+  target_completion_date?: string;
   notes?: string;
   color?: string;
 }

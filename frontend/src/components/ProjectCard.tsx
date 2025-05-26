@@ -28,9 +28,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     return 'Completed';
   };
 
-  const isOverdue = project.target_date && new Date(project.target_date) < new Date();
-  const daysUntilTarget = project.target_date 
-    ? Math.ceil((new Date(project.target_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const isOverdue = project.target_completion_date && new Date(project.target_completion_date) < new Date();
+  const daysUntilTarget = project.target_completion_date
+    ? Math.ceil((new Date(project.target_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   return (
@@ -105,10 +105,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       </div>
 
-      {project.target_date && (
+      {project.target_completion_date && (
         <div className={`project-target ${isOverdue ? 'overdue' : ''}`}>
           <span className="target-label">Target:</span>
-          <span className="target-date">{formatDate(project.target_date)}</span>
+          <span className="target-date">{formatDate(project.target_completion_date)}</span>
           {daysUntilTarget !== null && (
             <span className="days-remaining">
               {isOverdue 

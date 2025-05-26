@@ -564,7 +564,7 @@ class ProjectBase(BaseModel):
     
     name: str = Field(..., min_length=1, max_length=200, description="Project name")
     description: Optional[str] = Field(None, max_length=1000, description="Project description")
-    target_date: Optional[datetime] = Field(None, description="Target completion date")
+    target_completion_date: Optional[datetime] = Field(None, description="Target completion date")
     color: str = Field(default="#6366f1", description="Project color for UI theming")
     notes: Optional[str] = Field(None, max_length=2000, description="Additional project notes")
 
@@ -579,7 +579,7 @@ class ProjectUpdate(BaseModel):
     
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    target_date: Optional[datetime] = None
+    target_completion_date: Optional[datetime] = None
     color: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=2000)
 

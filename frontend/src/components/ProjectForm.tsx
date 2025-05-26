@@ -12,9 +12,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, onCancel, project, 
   const [formData, setFormData] = useState({
     name: project?.name || '',
     description: project?.description || '',
-    target_date: project?.target_date || '',
-    notes: project?.notes || '',
-    color: project?.color || '#2196f3'
+    target_completion_date: project?.target_completion_date || '',
+    color: project?.color || '#6366f1',
+    notes: project?.notes || ''
   });
 
   // Update form data when project prop changes
@@ -23,9 +23,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, onCancel, project, 
       setFormData({
         name: project.name || '',
         description: project.description || '',
-        target_date: project.target_date || '',
-        notes: project.notes || '',
-        color: project.color || '#2196f3'
+        target_completion_date: project.target_completion_date || '',
+        color: project.color || '#6366f1',
+        notes: project.notes || ''
       });
     }
   }, [project]);
@@ -42,7 +42,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, onCancel, project, 
     const cleanedData: ProjectCreate = {
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
-      target_date: formData.target_date || undefined,
+      target_completion_date: formData.target_completion_date || undefined,
       notes: formData.notes.trim() || undefined,
       color: formData.color
     };
@@ -103,12 +103,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, onCancel, project, 
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="target_date">Target Completion Date</label>
+              <label htmlFor="target_completion_date">Target Completion Date</label>
               <input
                 type="date"
-                id="target_date"
-                value={formData.target_date}
-                onChange={(e) => handleChange('target_date', e.target.value)}
+                id="target_completion_date"
+                value={formData.target_completion_date}
+                onChange={(e) => handleChange('target_completion_date', e.target.value)}
               />
             </div>
 
