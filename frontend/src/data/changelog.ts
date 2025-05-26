@@ -2,6 +2,34 @@ import { ChangelogEntry } from '../types';
 
 export const changelogData: ChangelogEntry[] = [
   {
+    id: 'v1.5.0',
+    date: '2025-01-26',
+    version: '1.5.0',
+    title: 'Complete Application Overhaul - Units, Statistics & Enhanced UX',
+    description: 'Major transformation from miniature tracking to comprehensive unit management with statistics, import/export, and dramatically improved user experience',
+    type: 'feature',
+    items: [
+      '🎯 **Complete Model Transformation**: Migrated from Miniatures to comprehensive Unit tracking system',
+      '🎮 **Game System Integration**: Full support for Warhammer 40K, Age of Sigmar, D&D, and other game systems',
+      '📊 **Advanced Statistics Dashboard**: Collection analytics with status, faction, and game system breakdowns',
+      '📈 **Trend Analysis**: Comprehensive trend tracking with purchase patterns and spending analysis',
+      '📁 **Import/Export System**: Full CSV/JSON import/export with modal interface and validation',
+      '🔍 **Enhanced Unit Management**: Quantity tracking, base dimensions, cost tracking, and faction autocomplete',
+      '🎨 **Complete UI Redesign**: Modern glassmorphism design with improved mobile responsiveness',
+      '🔧 **Player Search Fixes**: Resolved display issues and synchronized game systems across components',
+      '📧 **Email System Improvements**: Enhanced verification UX and comprehensive feedback forms',
+      '🛠️ **Admin Tools**: User deletion functionality and database migration endpoints',
+      '🎯 **Navigation Overhaul**: Streamlined interface with better contrast and user feedback integration',
+      '📱 **Mobile Optimization**: Improved responsive design for import/export controls and navigation',
+      '🔐 **Authentication Enhancements**: OAuth improvements and simplified login experience',
+      '🌍 **International Support**: Worldwide geocoding replacing UK-only postcodes',
+      '🧪 **Comprehensive Testing**: Updated test coverage for all new features and authentication',
+      '⚡ **Performance Improvements**: Optimized database queries and frontend rendering',
+      '🎨 **Status Management**: Enhanced status history with editable dates and timeline exports',
+      '🔧 **Developer Experience**: Improved error handling, debugging tools, and code organization'
+    ]
+  },
+  {
     id: 'v1.4.0',
     date: '2025-01-15',
     version: '1.4.0',
