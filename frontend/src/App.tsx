@@ -356,6 +356,11 @@ function App() {
   // Main authenticated app
   return (
     <div className="app">
+      <header className="App-header">
+        <h1>🎨 Miniature Tracker</h1>
+        <p>Track your miniature painting progress and connect with fellow hobbyists</p>
+      </header>
+
       <UserHeader 
         user={authState.user} 
         onLogout={handleLogout}
@@ -406,7 +411,7 @@ function App() {
         </button>
       </nav>
 
-      <main className="main-content">
+      <main className="App-main">
         {activeTab === 'units' && (
           <>
             {miniaturesError && (
@@ -473,6 +478,29 @@ function App() {
           <Changelog />
         )}
       </main>
+
+      <footer className="App-footer">
+        <div className="footer-content">
+          <div className="footer-info">
+            <p>&copy; 2024 Miniature Tracker. Built for hobbyists, by hobbyists.</p>
+            <p>Track your progress, connect with players, and level up your painting game!</p>
+          </div>
+          <div className="footer-links">
+            <button 
+              className="footer-link"
+              onClick={() => setActiveTab('changelog')}
+            >
+              What's New
+            </button>
+            <button 
+              className="footer-link"
+              onClick={() => setShowFeedbackModal(true)}
+            >
+              Send Feedback
+            </button>
+          </div>
+        </div>
+      </footer>
 
       {/* Feedback Modal */}
       {showFeedbackModal && (

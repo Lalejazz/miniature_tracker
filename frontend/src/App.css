@@ -44,7 +44,8 @@ body {
 }
 
 /* Main Content */
-.App-main {
+.App-main,
+.main-content {
   flex: 1;
   padding: 2rem;
   max-width: 1200px;
@@ -3907,6 +3908,7 @@ body {
     flex-shrink: 0;
   }
   
+  .App-main,
   .main-content {
     padding: 0 1rem 1rem 1rem;
   }
@@ -3933,28 +3935,31 @@ body {
 }
 
 /* Page Content Styling */
+.App-main h2,
 .main-content h2 {
-  color: white;
+  color: #1e293b;
   margin: 0 0 1.5rem 0;
   font-size: 2rem;
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
 }
 
+.App-main h3,
 .main-content h3 {
-  color: white;
+  color: #374151;
   margin: 0 0 1rem 0;
   font-size: 1.5rem;
   font-weight: 600;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
 }
 
+.App-main h4,
 .main-content h4 {
-  color: white;
+  color: #4b5563;
   margin: 0 0 0.75rem 0;
   font-size: 1.2rem;
   font-weight: 500;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
 }
 
 /* Content Sections */
@@ -3970,9 +3975,59 @@ body {
 
 .content-section h2,
 .content-section h3,
-.content-section h4 {
+.content-section h4,
+.content-section p,
+.content-section span,
+.content-section div {
   color: #1e293b;
   text-shadow: none;
+}
+
+/* Units Header - ensure proper contrast */
+.units-header h2 {
+  color: #1e293b;
+  text-shadow: none;
+}
+
+/* Ensure all white background components have dark text */
+.preferences-form,
+.player-search,
+.search-form,
+.search-results,
+.statistics-container,
+.import-export-container,
+.changelog-container {
+  color: #1e293b;
+}
+
+.preferences-form h2,
+.player-search h2,
+.search-form h2,
+.search-results h2,
+.statistics-container h2,
+.import-export-container h2,
+.changelog-container h2 {
+  color: #1e293b;
+}
+
+.preferences-form h3,
+.player-search h3,
+.search-form h3,
+.search-results h3,
+.statistics-container h3,
+.import-export-container h3,
+.changelog-container h3 {
+  color: #374151;
+}
+
+.preferences-form h4,
+.player-search h4,
+.search-form h4,
+.search-results h4,
+.statistics-container h4,
+.import-export-container h4,
+.changelog-container h4 {
+  color: #4b5563;
 }
 
 /* Feedback Form Styles */
