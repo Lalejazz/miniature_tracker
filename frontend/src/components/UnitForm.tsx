@@ -35,6 +35,8 @@ interface UnitFormData {
 }
 
 const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEditing = false }) => {
+  console.log('UnitForm initialized with:', { miniature, isEditing });
+  
   const [formData, setFormData] = useState<UnitFormData>({
     name: miniature?.name || '',
     game_system: miniature?.game_system || GameSystem.WARHAMMER_40K,
