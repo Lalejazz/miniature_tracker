@@ -518,15 +518,22 @@ async def get_project_with_miniatures(
     return project
 
 
-@app.post("/projects", response_model=Project, status_code=status.HTTP_201_CREATED)
+@app.post("/projects", response_model=ProjectWithStats, status_code=status.HTTP_201_CREATED)
 async def create_project(
     project: ProjectCreate,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
-) -> Project:
+) -> ProjectWithStats:
     """Create a new project for the authenticated user."""
     try:
-        return await db.create_project(project, current_user_id)
+        created_project = await db.create_project(project, current_user_id)
+        # Convert to ProjectWithStats with initial empty stats
+        return ProjectWithStats(
+            **created_project.model_dump(),
+            miniature_count=0,
+            completion_percentage=0.0,
+            status_breakdown={}
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -534,13 +541,13 @@ async def create_project(
         )
 
 
-@app.put("/projects/{project_id}", response_model=Project)
+@app.put("/projects/{project_id}", response_model=ProjectWithStats)
 async def update_project(
     project_id: UUID,
     project_update: ProjectUpdate,
     db: MiniatureDB = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id)
-) -> Project:
+) -> ProjectWithStats:
     """Update an existing project."""
     try:
         project = await db.update_project(project_id, project_update, current_user_id)
@@ -549,7 +556,19 @@ async def update_project(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project not found"
             )
-        return project
+        # Get the project with stats to return consistent data
+        projects = await db.get_all_projects(current_user_id)
+        updated_project = next((p for p in projects if p.id == project_id), None)
+        if updated_project:
+            return updated_project
+        else:
+            # Fallback: convert basic project to ProjectWithStats
+            return ProjectWithStats(
+                **project.model_dump(),
+                miniature_count=0,
+                completion_percentage=0.0,
+                status_breakdown={}
+            )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
