@@ -3,9 +3,7 @@ import {
   PlayerSearchRequest, 
   PlayerSearchResult, 
   GameType,
-  GameSystem,
   GAME_TYPE_LABELS,
-  GAME_SYSTEM_LABELS,
   Game,
   DayOfWeek,
   TimeOfDay,
@@ -18,44 +16,6 @@ import { playerApi } from '../services/api';
 
 interface PlayerSearchProps {
   userHasPreferences: boolean;
-}
-
-function getGameDescription(gameSystem: GameSystem): string {
-  const descriptions: Record<GameSystem, string> = {
-    [GameSystem.WARHAMMER_40K]: "Grimdark sci-fi warfare in the 41st millennium",
-    [GameSystem.AGE_OF_SIGMAR]: "Fantasy battles in the Mortal Realms",
-    [GameSystem.WARHAMMER_THE_OLD_WORLD]: "Classic fantasy warfare returns",
-    [GameSystem.HORUS_HERESY]: "The galaxy-spanning civil war of the 31st millennium",
-    [GameSystem.KILL_TEAM]: "Small-scale skirmish combat",
-    [GameSystem.WARCRY]: "Fast-paced Chaos warband battles",
-    [GameSystem.WARHAMMER_UNDERWORLDS]: "Competitive deck-based skirmish",
-    [GameSystem.ADEPTUS_TITANICUS]: "Epic-scale Titan warfare",
-    [GameSystem.NECROMUNDA]: "Gang warfare in the underhive",
-    [GameSystem.BLOOD_BOWL]: "Fantasy football with violence",
-    [GameSystem.MIDDLE_EARTH]: "Battles in Tolkien's world",
-    [GameSystem.BOLT_ACTION]: "World War II miniature wargaming",
-    [GameSystem.FLAMES_OF_WAR]: "World War II tank battles",
-    [GameSystem.SAGA]: "Dark Age skirmish warfare",
-    [GameSystem.KINGS_OF_WAR]: "Mass fantasy battles",
-    [GameSystem.INFINITY]: "Sci-fi skirmish with anime aesthetics",
-    [GameSystem.MALIFAUX]: "Victorian horror skirmish",
-    [GameSystem.WARMACHINE_HORDES]: "Steampunk mecha warfare",
-    [GameSystem.X_WING]: "Star Wars starfighter combat",
-    [GameSystem.STAR_WARS_LEGION]: "Star Wars ground battles",
-    [GameSystem.BATTLETECH]: "Giant robot warfare",
-    [GameSystem.DROPZONE_COMMANDER]: "10mm sci-fi combined arms",
-    [GameSystem.GUILD_BALL]: "Fantasy sports with miniatures",
-    [GameSystem.DUNGEONS_AND_DRAGONS]: "Classic tabletop RPG",
-    [GameSystem.PATHFINDER]: "Fantasy RPG adventures",
-    [GameSystem.FROSTGRAVE]: "Wizard warband skirmish",
-    [GameSystem.MORDHEIM]: "Gritty urban skirmish",
-    [GameSystem.GASLANDS]: "Post-apocalyptic car combat",
-    [GameSystem.ZOMBICIDE]: "Cooperative zombie survival",
-    [GameSystem.TRENCH_CRUSADE]: "Grimdark alternate history warfare",
-    [GameSystem.ART_DE_LA_GUERRE]: "Ancient and medieval historical wargaming",
-    [GameSystem.OTHER]: "Custom or unlisted game systems"
-  };
-  return descriptions[gameSystem] || "";
 }
 
 const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
