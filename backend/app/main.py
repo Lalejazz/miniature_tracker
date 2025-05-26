@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.crud import MiniatureDB
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats, User
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
