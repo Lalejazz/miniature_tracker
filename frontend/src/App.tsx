@@ -15,6 +15,7 @@ import Changelog from './components/Changelog';
 import UserPreferencesForm from './components/UserPreferencesForm';
 import PlayerSearch from './components/PlayerSearch';
 import ImportExport from './components/ImportExport';
+import { FeedbackForm } from './components/FeedbackForm';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
 type Tab = 'units' | 'statistics' | 'changelog' | 'preferences' | 'players' | 'import-export';
@@ -48,6 +49,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('units');
   const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Check for existing token on app load
   useEffect(() => {
@@ -364,13 +366,13 @@ function App() {
           className={activeTab === 'units' ? 'active' : ''}
           onClick={() => setActiveTab('units')}
         >
-          My Units
+          🎨 My Units
         </button>
         <button 
           className={activeTab === 'statistics' ? 'active' : ''}
           onClick={() => setActiveTab('statistics')}
         >
-          Statistics
+          📊 Statistics
         </button>
         <button 
           className={activeTab === 'players' ? 'active' : ''}
@@ -388,13 +390,19 @@ function App() {
           className={activeTab === 'import-export' ? 'active' : ''}
           onClick={() => setActiveTab('import-export')}
         >
-          Import/Export
+          📁 Import/Export
         </button>
         <button 
           className={activeTab === 'changelog' ? 'active' : ''}
           onClick={() => setActiveTab('changelog')}
         >
-          Changelog
+          📋 Changelog
+        </button>
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'white' }}
+        >
+          💬 Feedback
         </button>
       </nav>
 
@@ -465,6 +473,24 @@ function App() {
           <Changelog />
         )}
       </main>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+            <FeedbackForm onClose={() => setShowFeedbackModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Feedback Button */}
+      <button
+        className="feedback-button"
+        onClick={() => setShowFeedbackModal(true)}
+        title="Send Feedback"
+      >
+        💬 Feedback
+      </button>
     </div>
   );
 }
