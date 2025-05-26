@@ -942,7 +942,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     """SELECT EXISTS(
                         SELECT 1 FROM status_log_entries sle 
                         JOIN miniatures m ON sle.miniature_id = m.id 
-                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3 AND sle.is_manual = TRUE
+                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3
                     )""",
                     log_id, miniature_id, user_id
                 )
@@ -974,7 +974,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     """SELECT EXISTS(
                         SELECT 1 FROM status_log_entries sle 
                         JOIN miniatures m ON sle.miniature_id = m.id 
-                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3 AND sle.is_manual = TRUE
+                        WHERE sle.id = $1 AND sle.miniature_id = $2 AND m.user_id = $3
                     )""",
                     log_id, miniature_id, user_id
                 )
@@ -2237,7 +2237,7 @@ class FileDatabase(DatabaseInterface):
                     if data.get("id") == str(miniature_id):
                         status_history = data.get("status_history", [])
                         for k, log_entry in enumerate(status_history):
-                            if log_entry.get("id") == str(log_id) and log_entry.get("is_manual", False):
+                            if log_entry.get("id") == str(log_id):
                                 # Update the log entry with new values
                                 if updates.to_status is not None:
                                     log_entry["to_status"] = updates.to_status
