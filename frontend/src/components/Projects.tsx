@@ -103,11 +103,12 @@ const Projects: React.FC<ProjectsProps> = ({ onError }) => {
     }
   };
 
-  const getProjectStatusColor = (completionPercentage: number) => {
-    if (completionPercentage === 0) return '#e0e0e0'; // Not started
-    if (completionPercentage < 25) return '#ff9800'; // Just started
-    if (completionPercentage < 75) return '#2196f3'; // In progress
-    if (completionPercentage < 100) return '#ff5722'; // Nearly complete
+  const getProjectStatusColor = (completionPercentage: number | undefined) => {
+    const percentage = completionPercentage || 0;
+    if (percentage === 0) return '#e0e0e0'; // Not started
+    if (percentage < 25) return '#ff9800'; // Just started
+    if (percentage < 75) return '#2196f3'; // In progress
+    if (percentage < 100) return '#ff5722'; // Nearly complete
     return '#4caf50'; // Completed
   };
 

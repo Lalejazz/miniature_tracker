@@ -77,10 +77,11 @@ const Statistics: React.FC<StatisticsProps> = ({ onError }) => {
     }).format(amount);
   };
 
-  const getProgressBarColor = (percentage: number) => {
-    if (percentage >= 80) return '#10b981'; // Green
-    if (percentage >= 60) return '#f59e0b'; // Yellow
-    if (percentage >= 40) return '#f97316'; // Orange
+  const getProgressBarColor = (percentage: number | undefined) => {
+    const pct = percentage || 0;
+    if (pct >= 80) return '#10b981'; // Green
+    if (pct >= 60) return '#f59e0b'; // Yellow
+    if (pct >= 40) return '#f97316'; // Orange
     return '#ef4444'; // Red
   };
 
