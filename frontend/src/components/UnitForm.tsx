@@ -20,8 +20,22 @@ interface UnitFormProps {
   isEditing?: boolean;
 }
 
+// Form state type that allows quantity to be string during editing
+interface UnitFormData {
+  name: string;
+  game_system: GameSystem;
+  faction: string;
+  unit_type: UnitType;
+  quantity: number | string;
+  base_dimension?: BaseDimension;
+  custom_base_size?: string;
+  cost?: number;
+  status: PaintingStatus;
+  notes?: string;
+}
+
 const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEditing = false }) => {
-  const [formData, setFormData] = useState<UnitCreate>({
+  const [formData, setFormData] = useState<UnitFormData>({
     name: miniature?.name || '',
     game_system: miniature?.game_system || GameSystem.WARHAMMER_40K,
     faction: miniature?.faction || '',
@@ -56,19 +70,34 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
       return;
     }
 
-    // Clean up undefined/empty optional fields
+    // Ensure quantity is a valid number
+    const quantity = typeof formData.quantity === 'string' ? 
+      parseInt(formData.quantity) || 1 : 
+      formData.quantity;
+
+    if (quantity < 1) {
+      alert('Unit size must be at least 1');
+      return;
+    }
+
+    // Clean up undefined/empty optional fields and convert to UnitCreate
     const cleanedData: UnitCreate = {
-      ...formData,
+      name: formData.name,
+      game_system: formData.game_system,
+      faction: formData.faction,
+      unit_type: formData.unit_type,
+      quantity: quantity,
       base_dimension: formData.base_dimension || undefined,
       custom_base_size: formData.custom_base_size || undefined,
       cost: formData.cost && formData.cost > 0 ? formData.cost : undefined,
+      status: formData.status,
       notes: formData.notes || undefined
     };
 
     onSubmit(cleanedData);
   };
 
-  const handleChange = (field: keyof UnitCreate, value: any) => {
+  const handleChange = (field: keyof UnitFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -153,10 +182,28 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
               <input
                 type="number"
                 id="quantity"
-                value={formData.quantity}
-                onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
-                min="1"
+                value={formData.quantity || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    // Allow empty field temporarily
+                    handleChange('quantity', '');
+                  } else {
+                    const numValue = parseInt(value);
+                    if (!isNaN(numValue) && numValue > 0) {
+                      handleChange('quantity', numValue);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  // Ensure we have a valid value when user leaves the field
+                  const value = e.target.value;
+                  if (value === '' || parseInt(value) < 1) {
+                    handleChange('quantity', 1);
+                  }
+                }}
                 max="100"
+                placeholder="1"
               />
               <small>Number of models in this unit</small>
             </div>
