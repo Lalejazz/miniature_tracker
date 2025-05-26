@@ -381,11 +381,18 @@ class PostgreSQLDatabase(DatabaseInterface):
                 user_id UUID NOT NULL,
                 from_status VARCHAR(255),
                 to_status VARCHAR(255) NOT NULL,
+                date TIMESTAMP DEFAULT NOW(),
                 notes TEXT,
                 is_manual BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        
+        # Add date column if it doesn't exist (for existing databases)
+        try:
+            await self._pool.execute("ALTER TABLE status_log_entries ADD COLUMN IF NOT EXISTS date TIMESTAMP DEFAULT NOW()")
+        except Exception as e:
+            print(f"Migration warning: {e}")  # Log but don't fail
         
         # Create games table
         await self._pool.execute("""
@@ -627,7 +634,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             for row in miniature_rows:
                 # Get status history for this miniature
                 status_rows = await conn.fetch(
-                    "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                    "SELECT id, from_status, to_status, date, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
                     row['id']
                 )
                 
@@ -636,6 +643,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                         id=status_row['id'],
                         from_status=status_row['from_status'],
                         to_status=status_row['to_status'],
+                        date=status_row['date'],
                         notes=status_row['notes'],
                         is_manual=status_row['is_manual'],
                         created_at=status_row['created_at']
@@ -680,7 +688,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
             # Get status history
             status_rows = await conn.fetch(
-                "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                "SELECT id, from_status, to_status, date, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
                 miniature_id
             )
             
@@ -689,6 +697,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     id=status_row['id'],
                     from_status=status_row['from_status'],
                     to_status=status_row['to_status'],
+                    date=status_row['date'],
                     notes=status_row['notes'],
                     is_manual=status_row['is_manual'],
                     created_at=status_row['created_at']
@@ -744,7 +753,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 
                 # Add initial status log entry
                 status_entry = await conn.fetchrow(
-                    "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, from_status, to_status, notes, is_manual, created_at",
+                    "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, date, notes, is_manual) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7) RETURNING id, from_status, to_status, date, notes, is_manual, created_at",
                     uuid4(), miniature_id, user_id, None, miniature.status.value, None, False
                 )
                 
@@ -752,6 +761,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     id=status_entry['id'],
                     from_status=status_entry['from_status'],
                     to_status=status_entry['to_status'],
+                    date=status_entry['date'],
                     notes=status_entry['notes'],
                     is_manual=status_entry['is_manual'],
                     created_at=status_entry['created_at']
@@ -853,7 +863,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 
                 # Get status history for the updated miniature
                 status_rows = await conn.fetch(
-                    "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                    "SELECT id, from_status, to_status, date, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
                     miniature_id
                 )
                 
@@ -862,6 +872,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                         id=status_row['id'],
                         from_status=status_row['from_status'],
                         to_status=status_row['to_status'],
+                        date=status_row['date'],
                         notes=status_row['notes'],
                         is_manual=status_row['is_manual'],
                         created_at=status_row['created_at']
@@ -907,27 +918,19 @@ class PostgreSQLDatabase(DatabaseInterface):
         
         async with self._pool.acquire() as conn:
             async with conn.transaction():
-                # Verify miniature exists
-                exists = await conn.fetchval(
-                    "SELECT EXISTS(SELECT 1 FROM miniatures WHERE id = $1 AND user_id = $2)",
-                    miniature_id, user_id
-                )
-                if not exists:
-                    return None
+                # Insert the status log entry with current timestamp as date
+                await conn.execute("""
+                    INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, date, notes, is_manual, created_at)
+                    VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, NOW())
+                """, uuid4(), miniature_id, user_id, from_status, to_status, notes, False)
                 
-                # Add status log entry
-                await conn.execute(
-                    "INSERT INTO status_log_entries (id, miniature_id, user_id, from_status, to_status, notes, is_manual) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-                    uuid4(), miniature_id, user_id, from_status, to_status, notes, True
-                )
+                # Update the miniature's status
+                await conn.execute("""
+                    UPDATE miniatures SET status = $1, updated_at = NOW()
+                    WHERE id = $2 AND user_id = $3
+                """, to_status, miniature_id, user_id)
                 
-                # Update miniature status
-                await conn.execute(
-                    "UPDATE miniatures SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
-                    to_status, miniature_id, user_id
-                )
-                
-                # Return updated miniature
+                # Return the updated miniature
                 return await self.get_miniature(miniature_id, user_id)
 
     async def delete_status_log_entry(self, miniature_id: UUID, log_id: UUID, user_id: UUID) -> Optional[Miniature]:
@@ -1651,7 +1654,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 try:
                     # Get status history for each miniature
                     status_rows = await conn.fetch(
-                        "SELECT id, from_status, to_status, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
+                        "SELECT id, from_status, to_status, date, notes, is_manual, created_at FROM status_log_entries WHERE miniature_id = $1 ORDER BY created_at",
                         row['id']
                     )
                     
@@ -1660,6 +1663,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                             id=status_row['id'],
                             from_status=status_row['from_status'],
                             to_status=status_row['to_status'],
+                            date=status_row['date'],
                             notes=status_row['notes'],
                             is_manual=status_row['is_manual'],
                             created_at=status_row['created_at']
@@ -1869,15 +1873,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 
                 added_count = 0
                 for miniature_id in miniature_ids:
-                    # Check if miniature belongs to user
-                    miniature_exists = await conn.fetchval(
-                        "SELECT EXISTS(SELECT 1 FROM miniatures WHERE id = $1 AND user_id = $2)",
-                        miniature_id, user_id
-                    )
-                    if not miniature_exists:
-                        continue
-                    
-                    # Check if already in project
+                    # Check if already exists
                     already_exists = await conn.fetchval(
                         "SELECT EXISTS(SELECT 1 FROM project_miniatures WHERE project_id = $1 AND miniature_id = $2)",
                         project_id, miniature_id
