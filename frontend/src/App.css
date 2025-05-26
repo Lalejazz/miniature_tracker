@@ -6865,3 +6865,18 @@ body {
     font-size: 0.8rem;
   }
 }
+
+/* Text visibility fixes - add backgrounds to make text readable on blue gradient */
+.page-title,
+.miniature-card h3,
+.project-card h3,
+.stat-number,
+.table th,
+.table td,
+.form-label {
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 4px !important;
+  color: #333 !important;
+  margin: 0.1rem !important;
+}
