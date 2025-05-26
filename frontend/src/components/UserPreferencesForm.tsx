@@ -8,7 +8,6 @@ import {
   DayOfWeek,
   TimeOfDay,
   HostingPreference,
-  AvailabilitySlot,
   HostingDetails,
   DAY_OF_WEEK_LABELS,
   TIME_OF_DAY_LABELS,
