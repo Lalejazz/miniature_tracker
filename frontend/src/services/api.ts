@@ -15,7 +15,13 @@ import {
   PlayerSearchResult,
   CollectionStatistics,
   TrendAnalysis,
-  TrendRequest
+  TrendRequest,
+  Project,
+  ProjectCreate,
+  ProjectUpdate,
+  ProjectWithMiniatures,
+  ProjectMiniatureCreate,
+  ProjectStatistics
 } from '../types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -411,6 +417,94 @@ export const playerApi = {
     return apiRequest<PlayerSearchResult[]>('/player/search', {
       method: 'POST',
       body: JSON.stringify(searchRequest),
+    });
+  },
+};
+
+export const projectApi = {
+  /**
+   * Get all projects for current user
+   */
+  async getAll(): Promise<Project[]> {
+    return apiRequest<Project[]>('/projects');
+  },
+
+  /**
+   * Get project statistics
+   */
+  async getStatistics(): Promise<ProjectStatistics> {
+    return apiRequest<ProjectStatistics>('/projects/statistics');
+  },
+
+  /**
+   * Get a single project by ID
+   */
+  async getById(id: string): Promise<Project> {
+    return apiRequest<Project>(`/projects/${id}`);
+  },
+
+  /**
+   * Get a project with its miniatures
+   */
+  async getWithMiniatures(id: string): Promise<ProjectWithMiniatures> {
+    return apiRequest<ProjectWithMiniatures>(`/projects/${id}/miniatures`);
+  },
+
+  /**
+   * Create a new project
+   */
+  async create(project: ProjectCreate): Promise<Project> {
+    return apiRequest<Project>('/projects', {
+      method: 'POST',
+      body: JSON.stringify(project),
+    });
+  },
+
+  /**
+   * Update an existing project
+   */
+  async update(id: string, updates: ProjectUpdate): Promise<Project> {
+    return apiRequest<Project>(`/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a project
+   */
+  async delete(id: string): Promise<void> {
+    return apiRequest<void>(`/projects/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Add a miniature to a project
+   */
+  async addMiniature(projectMiniature: ProjectMiniatureCreate): Promise<void> {
+    return apiRequest<void>('/projects/miniatures', {
+      method: 'POST',
+      body: JSON.stringify(projectMiniature),
+    });
+  },
+
+  /**
+   * Remove a miniature from a project
+   */
+  async removeMiniature(projectId: string, miniatureId: string): Promise<void> {
+    return apiRequest<void>(`/projects/${projectId}/miniatures/${miniatureId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Add multiple miniatures to a project
+   */
+  async addMultipleMiniatures(projectId: string, miniatureIds: string[]): Promise<void> {
+    return apiRequest<void>(`/projects/${projectId}/miniatures/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ miniature_ids: miniatureIds }),
     });
   },
 };

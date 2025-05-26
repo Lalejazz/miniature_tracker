@@ -15,9 +15,10 @@ import UserPreferencesForm from './components/UserPreferencesForm';
 import { FeedbackForm } from './components/FeedbackForm';
 import PlayerSearch from './components/PlayerSearch';
 import Changelog from './components/Changelog';
+import Projects from './components/Projects';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
-type Tab = 'units' | 'statistics' | 'preferences' | 'players' | 'changelog';
+type Tab = 'units' | 'statistics' | 'projects' | 'preferences' | 'players' | 'changelog';
 
 interface AuthState {
   user: any;
@@ -246,7 +247,8 @@ function App() {
       setMiniatures(prev => 
         prev.map(m => m.id === id ? updatedMiniature : m)
       );
-      setEditingMiniature(null);
+      // Update the editing miniature state with fresh data so form shows updated values
+      setEditingMiniature(updatedMiniature);
       console.log('State updated successfully');
     } catch (error: any) {
       console.error('Update failed:', error);
@@ -379,6 +381,12 @@ function App() {
           📊 Statistics
         </button>
         <button 
+          className={activeTab === 'projects' ? 'active' : ''}
+          onClick={() => setActiveTab('projects')}
+        >
+          📅 Projects
+        </button>
+        <button 
           className={activeTab === 'players' ? 'active' : ''}
           onClick={() => setActiveTab('players')}
         >
@@ -439,6 +447,10 @@ function App() {
 
         {activeTab === 'statistics' && (
           <Statistics onError={setMiniaturesError} />
+        )}
+
+        {activeTab === 'projects' && (
+          <Projects onError={setMiniaturesError} />
         )}
 
         {activeTab === 'preferences' && (

@@ -686,4 +686,65 @@ export const HOSTING_PREFERENCE_DESCRIPTIONS = {
   [HostingPreference.PREFER_STORE]: "I prefer playing in game stores but am flexible",
   [HostingPreference.VISIT_OTHERS]: "I'm happy to play at other players' homes",
   [HostingPreference.STORE_ONLY]: "I only play in public game stores, no home games"
-} as const; 
+} as const;
+
+// Project/List Management Types
+export interface ProjectBase {
+  name: string;
+  description?: string;
+  target_date?: string; // YYYY-MM-DD format
+  notes?: string;
+  color?: string; // Hex color for visual organization
+}
+
+export interface ProjectCreate extends ProjectBase {}
+
+export interface ProjectUpdate {
+  name?: string;
+  description?: string;
+  target_date?: string;
+  notes?: string;
+  color?: string;
+}
+
+export interface Project extends ProjectBase {
+  id: string;
+  user_id: string;
+  miniature_count: number;
+  completion_percentage: number;
+  status_breakdown: Record<PaintingStatus, number>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMiniature {
+  id: string;
+  project_id: string;
+  miniature_id: string;
+  added_at: string;
+  notes?: string; // Project-specific notes for this miniature
+}
+
+export interface ProjectMiniatureCreate {
+  project_id: string;
+  miniature_id: string;
+  notes?: string;
+}
+
+export interface ProjectWithMiniatures extends Project {
+  miniatures: Miniature[];
+}
+
+export interface ProjectStatistics {
+  total_projects: number;
+  active_projects: number;
+  completed_projects: number;
+  total_miniatures_in_projects: number;
+  average_completion_rate: number;
+  projects_by_status: {
+    not_started: number;
+    in_progress: number;
+    nearly_complete: number;
+    completed: number;
+  };
+} 

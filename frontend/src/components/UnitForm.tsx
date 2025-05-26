@@ -52,6 +52,24 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
 
   const [availableFactions, setAvailableFactions] = useState<string[]>([]);
 
+  // Update form data when miniature prop changes (for real-time updates after edit)
+  useEffect(() => {
+    if (miniature) {
+      setFormData({
+        name: miniature.name || '',
+        game_system: miniature.game_system || GameSystem.WARHAMMER_40K,
+        faction: miniature.faction || '',
+        unit_type: miniature.unit_type || UnitType.INFANTRY,
+        quantity: miniature.quantity || 1,
+        base_dimension: miniature.base_dimension || undefined,
+        custom_base_size: miniature.custom_base_size || '',
+        cost: miniature.cost || undefined,
+        status: miniature.status || PaintingStatus.WANT_TO_BUY,
+        notes: miniature.notes || ''
+      });
+    }
+  }, [miniature]);
+
   // Update available factions when game system changes
   useEffect(() => {
     const factions = GAME_SYSTEM_FACTIONS[formData.game_system] || ['Other'];
