@@ -77,6 +77,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
 
     try {
       const results = await playerApi.searchPlayers(searchRequest);
+      console.log('Player search results:', results);
       setSearchResults(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search players');
@@ -209,15 +210,29 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                   <div className="games">
                     <strong>Games:</strong>
                     <div className="game-tags">
-                      {player.games.map(game => (
-                        <span key={game.id} className="game-tag">{game.name}</span>
-                      ))}
+                      {Array.isArray(player.games) ? (
+                        player.games.map((game, index) => {
+                          // Handle both string game IDs and game objects
+                          const gameId = typeof game === 'string' ? game : game.id;
+                          const gameName = GAME_SYSTEM_LABELS[gameId as GameSystem] || 
+                                         (typeof game === 'object' ? game.name : gameId) || 
+                                         'Unknown Game';
+                          
+                          return (
+                            <span key={gameId || index} className="game-tag">
+                              {gameName}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="game-tag">No games listed</span>
+                      )}
                     </div>
                   </div>
                   <div className="game-type">
                     <strong>Game Type:</strong>
                     <span className={`game-type-tag ${player.game_type}`}>
-                      {GAME_TYPE_LABELS[player.game_type]}
+                      {GAME_TYPE_LABELS[player.game_type] || player.game_type}
                     </span>
                   </div>
                   {player.email && (
