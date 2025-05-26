@@ -361,4 +361,53 @@ td {
 .no-transition,
 .no-transition * {
   transition: none !important;
+}
+
+/* Status History specific button fixes */
+.log-actions button,
+.status-history-actions button,
+.add-log-button,
+.expand-button {
+  background: var(--bg-button) !important;
+  color: var(--text-button) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.log-actions button:hover,
+.status-history-actions button:hover,
+.add-log-button:hover,
+.expand-button:hover {
+  background: var(--bg-button-hover) !important;
+  color: var(--text-button) !important;
+}
+
+/* Edit and Delete buttons in status history */
+.log-actions .edit-btn,
+.edit-button-small,
+.edit-button-table {
+  background: var(--bg-button) !important;
+  color: var(--text-button) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.log-actions .edit-btn:hover,
+.edit-button-small:hover,
+.edit-button-table:hover {
+  background: var(--bg-button-hover) !important;
+  color: var(--text-button) !important;
+}
+
+.log-actions .delete-btn,
+.delete-button-small,
+.delete-button-table {
+  background: var(--accent-error) !important;
+  color: var(--text-white) !important;
+  border: 1px solid var(--accent-error) !important;
+}
+
+.log-actions .delete-btn:hover,
+.delete-button-small:hover,
+.delete-button-table:hover {
+  background: #b91c1c !important;
+  color: var(--text-white) !important;
 } 
