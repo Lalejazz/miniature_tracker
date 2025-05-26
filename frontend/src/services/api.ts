@@ -181,6 +181,17 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(request),
     });
+  },
+
+  /**
+   * Delete current user's account and all associated data
+   */
+  async deleteAccount(): Promise<void> {
+    await apiRequest<void>('/auth/account', {
+      method: 'DELETE',
+    });
+    // Clear token after successful deletion
+    tokenManager.clearToken();
   }
 };
 

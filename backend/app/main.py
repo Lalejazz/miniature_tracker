@@ -572,6 +572,28 @@ async def delete_user(
         raise HTTPException(status_code=500, detail="Failed to delete user")
 
 
+@app.delete("/auth/account", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_account(
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> None:
+    """Delete the current user's account and all associated data."""
+    user_db = UserDB()
+    
+    # Check if user exists
+    user = await user_db.get_user_by_id(current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete the user and all their data
+    success = await user_db.delete_user(current_user_id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete account")
+    
+    # Note: The user's JWT token will still be valid until it expires,
+    # but since the user no longer exists, subsequent API calls will fail
+
+
 # Add CORS middleware for frontend integration
 from fastapi.middleware.cors import CORSMiddleware
 

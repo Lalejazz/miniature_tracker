@@ -7,11 +7,13 @@ import {
   UserPreferencesCreate
 } from '../types';
 import { playerApi } from '../services/api';
+import AccountDeletion from './AccountDeletion';
 
 interface UserPreferencesFormProps {
   existingPreferences?: UserPreferences | null;
   onSave: (preferences: UserPreferences) => void;
   onCancel?: () => void;
+  onAccountDeleted?: () => void;
 }
 
 // Create a list of games based on the GameSystem enum
@@ -62,7 +64,8 @@ function getGameDescription(gameSystem: GameSystem): string {
 const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ 
   existingPreferences, 
   onSave,
-  onCancel 
+  onCancel,
+  onAccountDeleted
 }) => {
   const [formData, setFormData] = useState<UserPreferencesCreate>({
     games: existingPreferences?.games || [],
@@ -225,6 +228,10 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
           )}
         </div>
       </form>
+
+      {onAccountDeleted && (
+        <AccountDeletion onAccountDeleted={onAccountDeleted} />
+      )}
     </div>
   );
 };

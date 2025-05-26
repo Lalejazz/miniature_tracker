@@ -441,6 +441,7 @@ function App() {
           <UserPreferencesForm
             existingPreferences={userPreferences}
             onSave={loadUserPreferences}
+            onAccountDeleted={handleLogout}
           />
         )}
 
