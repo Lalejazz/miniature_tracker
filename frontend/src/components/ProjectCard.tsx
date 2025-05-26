@@ -20,11 +20,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getStatusText = (completionPercentage: number) => {
-    if (completionPercentage === 0) return 'Not Started';
-    if (completionPercentage < 25) return 'Just Started';
-    if (completionPercentage < 75) return 'In Progress';
-    if (completionPercentage < 100) return 'Nearly Complete';
+  const getStatusText = (completionPercentage: number | undefined) => {
+    const percentage = completionPercentage || 0;
+    if (percentage === 0) return 'Not Started';
+    if (percentage < 25) return 'Just Started';
+    if (percentage < 75) return 'In Progress';
+    if (percentage < 100) return 'Nearly Complete';
     return 'Completed';
   };
 
@@ -67,7 +68,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             {Math.round(project.completion_percentage || 0)}% Complete
           </span>
           <span className="status-text" style={{ color: statusColor }}>
-            {getStatusText(project.completion_percentage || 0)}
+            {getStatusText(project.completion_percentage)}
           </span>
         </div>
         <div className="progress-bar">

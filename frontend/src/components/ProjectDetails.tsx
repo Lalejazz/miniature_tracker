@@ -26,11 +26,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getStatusText = (completionPercentage: number) => {
-    if (completionPercentage === 0) return 'Not Started';
-    if (completionPercentage < 25) return 'Just Started';
-    if (completionPercentage < 75) return 'In Progress';
-    if (completionPercentage < 100) return 'Nearly Complete';
+  const getStatusText = (completionPercentage: number | undefined) => {
+    const percentage = completionPercentage || 0;
+    if (percentage === 0) return 'Not Started';
+    if (percentage < 25) return 'Just Started';
+    if (percentage < 75) return 'In Progress';
+    if (percentage < 100) return 'Nearly Complete';
     return 'Completed';
   };
 
@@ -92,7 +93,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
       <div className="project-overview">
         <div className="project-progress-large">
           <div className="progress-header">
-            <h3>{Math.round(project.completion_percentage)}% Complete</h3>
+            <h3>{Math.round(project.completion_percentage || 0)}% Complete</h3>
             <span className="status-text">
               {getStatusText(project.completion_percentage)}
             </span>
@@ -101,7 +102,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <div 
               className="progress-fill"
               style={{ 
-                width: `${project.completion_percentage}%`,
+                width: `${project.completion_percentage || 0}%`,
                 backgroundColor: project.color
               }}
             />

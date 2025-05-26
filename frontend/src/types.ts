@@ -749,4 +749,10 @@ export interface ProjectStatistics {
     nearly_complete: number;
     completed: number;
   };
+}
+
+export interface ProjectWithStats extends Project {
+  miniature_count: number;
+  completion_percentage: number;
+  status_breakdown: { [key in PaintingStatus]?: number };
 } 
