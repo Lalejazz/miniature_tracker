@@ -3874,16 +3874,24 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .units-header h2 {
-  color: white;
+  color: #1e293b !important;
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: none !important;
+  background: linear-gradient(135deg, #1e293b, #374151);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Responsive Design for Main Navigation */

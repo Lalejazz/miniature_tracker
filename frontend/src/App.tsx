@@ -11,14 +11,11 @@ import ForgotPasswordForm from './components/ForgotPasswordForm';
 import ResetPasswordForm from './components/ResetPasswordForm';
 import { EmailVerification } from './components/EmailVerification';
 import { UserHeader } from './components/UserHeader';
-import Changelog from './components/Changelog';
 import UserPreferencesForm from './components/UserPreferencesForm';
-import PlayerSearch from './components/PlayerSearch';
-import ImportExport from './components/ImportExport';
 import { FeedbackForm } from './components/FeedbackForm';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
-type Tab = 'units' | 'statistics' | 'changelog' | 'preferences' | 'players' | 'import-export';
+type Tab = 'units' | 'statistics' | 'preferences';
 
 interface AuthState {
   user: any;
@@ -260,10 +257,6 @@ function App() {
     }
   };
 
-  const handleImportComplete = () => {
-    loadMiniatures(); // Reload miniatures after import
-  };
-
   // Show loading spinner during initial auth check
   if (authState.isLoading && !authState.isAuthenticated) {
     return (
@@ -380,28 +373,10 @@ function App() {
           📊 Statistics
         </button>
         <button 
-          className={activeTab === 'players' ? 'active' : ''}
-          onClick={() => setActiveTab('players')}
-        >
-          Player Search
-        </button>
-        <button 
           className={activeTab === 'preferences' ? 'active' : ''}
           onClick={() => setActiveTab('preferences')}
         >
-          User Preferences
-        </button>
-        <button 
-          className={activeTab === 'import-export' ? 'active' : ''}
-          onClick={() => setActiveTab('import-export')}
-        >
-          📁 Import/Export
-        </button>
-        <button 
-          className={activeTab === 'changelog' ? 'active' : ''}
-          onClick={() => setActiveTab('changelog')}
-        >
-          📋 Changelog
+          ⚙️ User Preferences
         </button>
         <button
           onClick={() => setShowFeedbackModal(true)}
@@ -459,23 +434,11 @@ function App() {
           <Statistics onError={setMiniaturesError} />
         )}
 
-        {activeTab === 'players' && (
-          <PlayerSearch userHasPreferences={userPreferences !== null} />
-        )}
-
         {activeTab === 'preferences' && (
           <UserPreferencesForm
             existingPreferences={userPreferences}
             onSave={loadUserPreferences}
           />
-        )}
-
-        {activeTab === 'import-export' && (
-          <ImportExport onImportComplete={handleImportComplete} />
-        )}
-
-        {activeTab === 'changelog' && (
-          <Changelog />
         )}
       </main>
 
@@ -486,12 +449,6 @@ function App() {
             <p>Track your progress, connect with players, and level up your painting game!</p>
           </div>
           <div className="footer-links">
-            <button 
-              className="footer-link"
-              onClick={() => setActiveTab('changelog')}
-            >
-              What's New
-            </button>
             <button 
               className="footer-link"
               onClick={() => setShowFeedbackModal(true)}
@@ -510,15 +467,6 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* Floating Feedback Button */}
-      <button
-        className="feedback-button"
-        onClick={() => setShowFeedbackModal(true)}
-        title="Send Feedback"
-      >
-        💬 Feedback
-      </button>
     </div>
   );
 }
