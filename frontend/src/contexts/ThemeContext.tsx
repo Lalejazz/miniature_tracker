@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Theme } from '../types';
 
 interface ThemeContextType {
@@ -27,6 +27,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   initialTheme = Theme.BLUE_GRADIENT 
 }) => {
   const [currentTheme, setCurrentTheme] = useState<Theme>(initialTheme);
+  const hasLoadedFromStorage = useRef(false);
 
   const applyTheme = (theme: Theme) => {
     // Remove existing theme classes
@@ -63,15 +64,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     if (initialTheme !== currentTheme) {
       setCurrentTheme(initialTheme);
     }
-  }, [initialTheme]);
+  }, [initialTheme, currentTheme]);
 
   // Load theme from localStorage on mount (only if no initialTheme provided)
   useEffect(() => {
-    if (initialTheme === Theme.BLUE_GRADIENT) {
+    if (!hasLoadedFromStorage.current && initialTheme === Theme.BLUE_GRADIENT) {
       const savedTheme = localStorage.getItem('miniature-tracker-theme') as Theme;
       if (savedTheme && Object.values(Theme).includes(savedTheme)) {
         setCurrentTheme(savedTheme);
       }
+      hasLoadedFromStorage.current = true;
     }
   }, [initialTheme]);
 
