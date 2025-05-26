@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS } from '../types';
 import StatusHistory from './StatusHistory';
-import EditMiniatureForm from './EditMiniatureForm';
 
 interface MiniatureTableProps {
   miniatures: Miniature[];
@@ -23,7 +22,6 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
   const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
-  const [editingMiniature, setEditingMiniature] = useState<Miniature | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -60,19 +58,6 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
 
   const toggleHistoryExpansion = (id: string) => {
     setExpandedHistoryId(expandedHistoryId === id ? null : id);
-  };
-
-  const handleEditMiniature = (miniature: Miniature) => {
-    setEditingMiniature(miniature);
-  };
-
-  const handleEditSave = (updatedMiniature: Miniature) => {
-    onEdit(updatedMiniature);
-    setEditingMiniature(null);
-  };
-
-  const handleEditCancel = () => {
-    setEditingMiniature(null);
   };
 
   const renderEditableCell = (miniature: Miniature, field: string, maxLength?: number) => {
@@ -232,7 +217,7 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
                   </td>
                   <td className="actions-cell">
                     <button 
-                      onClick={() => handleEditMiniature(miniature)}
+                      onClick={() => onEdit(miniature)}
                       className="edit-button-table"
                       title="Edit unit"
                     >
@@ -269,14 +254,6 @@ const MiniatureTable: React.FC<MiniatureTableProps> = ({
           })}
         </tbody>
       </table>
-
-      {editingMiniature && (
-        <EditMiniatureForm
-          miniature={editingMiniature}
-          onSave={handleEditSave}
-          onCancel={handleEditCancel}
-        />
-      )}
     </div>
   );
 };
