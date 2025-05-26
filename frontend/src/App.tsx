@@ -241,15 +241,16 @@ function App() {
 
   const handleUpdateMiniature = async (id: string, updates: any) => {
     console.log('handleUpdateMiniature called with:', { id, updates });
-    console.log('Current miniatures before update:', miniatures.map(m => ({ id: m.id, name: m.name, status: m.status })));
     try {
       const updatedMiniature = await miniatureApi.update(id, updates);
       console.log('API update successful:', updatedMiniature);
       
-      const newMiniatures = miniatures.map(m => m.id === id ? updatedMiniature : m);
-      console.log('New miniatures array:', newMiniatures.map(m => ({ id: m.id, name: m.name, status: m.status })));
-      
-      setMiniatures(newMiniatures);
+      setMiniatures(prev => {
+        console.log('Current miniatures before update:', prev.map(m => ({ id: m.id, name: m.name, status: m.status, quantity: m.quantity })));
+        const newMiniatures = prev.map(m => m.id === id ? updatedMiniature : m);
+        console.log('New miniatures array:', newMiniatures.map(m => ({ id: m.id, name: m.name, status: m.status, quantity: m.quantity })));
+        return newMiniatures;
+      });
       
       // Close the edit form after successful update
       setEditingMiniature(null);
