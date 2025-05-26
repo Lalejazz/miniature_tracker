@@ -4983,6 +4983,29 @@ body {
   }
 }
 
+@media (max-width: 480px) {
+  .account-deletion-section {
+    padding: 1rem;
+  }
+  
+  .deletion-process h4 {
+    font-size: 0.95rem;
+  }
+  
+  .deletion-process ul,
+  .deletion-process ol {
+    margin-left: 1rem;
+  }
+  
+  .confirmation-content {
+    padding: 1rem;
+  }
+  
+  .confirmation-content h3 {
+    font-size: 1.1rem;
+  }
+}
+
 /* Availability and Hosting Preferences Styles */
 .availability-grid {
   display: grid;
@@ -5483,5 +5506,310 @@ body {
   .hosting-detail {
     padding: 0.15rem 0.3rem;
     font-size: 0.7rem;
+  }
+}
+
+/* Account Management and Deletion Styles */
+.account-management-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.account-management-section h3 {
+  color: #374151;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.account-management-section p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.show-deletion-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.show-deletion-link:hover {
+  color: #374151;
+}
+
+/* Account Deletion Section */
+.account-deletion-section {
+  margin-top: 2rem;
+  padding: 2rem;
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(251, 191, 36, 0.1));
+}
+
+.account-deletion-section h3 {
+  color: #92400e;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.deletion-info {
+  margin-bottom: 2rem;
+}
+
+.deletion-info > p {
+  color: #374151;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.deletion-process h4 {
+  color: #92400e;
+  margin: 1.5rem 0 0.75rem 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.deletion-process ul,
+.deletion-process ol {
+  margin: 0.75rem 0 1.5rem 1.5rem;
+  color: #374151;
+}
+
+.deletion-process li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.deletion-note {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+.deletion-note p {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.deletion-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.delete-request-button {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-request-button:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Confirmation Modal */
+.account-deletion-confirmation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.confirmation-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 2px solid #dc3545;
+}
+
+.confirmation-content h3 {
+  color: #dc3545;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.confirmation-content p {
+  margin-bottom: 1rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.confirmation-content ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  color: #374151;
+}
+
+.confirmation-content li {
+  margin-bottom: 0.5rem;
+}
+
+.confirmation-input {
+  margin: 1.5rem 0;
+}
+
+.confirmation-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.confirmation-input input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.confirmation-input input:focus {
+  outline: none;
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.cancel-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.confirm-delete-button {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirm-delete-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c82333, #a71e2a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.confirm-delete-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cancel-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .account-deletion-section {
+    padding: 1.5rem;
+  }
+  
+  .deletion-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-button,
+  .delete-request-button {
+    width: 100%;
+  }
+  
+  .confirmation-content {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .confirmation-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-button,
+  .confirm-delete-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-deletion-section {
+    padding: 1rem;
+  }
+  
+  .deletion-process h4 {
+    font-size: 0.95rem;
+  }
+  
+  .deletion-process ul,
+  .deletion-process ol {
+    margin-left: 1rem;
+  }
+  
+  .confirmation-content {
+    padding: 1rem;
+  }
+  
+  .confirmation-content h3 {
+    font-size: 1.1rem;
   }
 }
