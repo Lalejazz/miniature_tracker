@@ -4,7 +4,16 @@ import {
   GAME_SYSTEM_LABELS,
   GameType, 
   UserPreferences, 
-  UserPreferencesCreate
+  UserPreferencesCreate,
+  DayOfWeek,
+  TimeOfDay,
+  HostingPreference,
+  AvailabilitySlot,
+  HostingDetails,
+  DAY_OF_WEEK_LABELS,
+  TIME_OF_DAY_LABELS,
+  HOSTING_PREFERENCE_LABELS,
+  HOSTING_PREFERENCE_DESCRIPTIONS
 } from '../types';
 import { playerApi } from '../services/api';
 import AccountDeletion from './AccountDeletion';
@@ -72,7 +81,15 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
     location: existingPreferences?.location || '',
     game_type: existingPreferences?.game_type || 'competitive' as GameType,
     bio: existingPreferences?.bio || '',
-    show_email: existingPreferences?.show_email || false
+    show_email: existingPreferences?.show_email || false,
+    availability: existingPreferences?.availability || [],
+    hosting: existingPreferences?.hosting || {
+      preferences: [],
+      has_gaming_space: false,
+      has_boards_scenery: false,
+      max_players: undefined,
+      notes: ''
+    }
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +145,61 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       games: prev.games.includes(gameId)
         ? prev.games.filter(id => id !== gameId)
         : [...prev.games, gameId]
+    }));
+  };
+
+  const handleAvailabilityToggle = (day: DayOfWeek, time: TimeOfDay) => {
+    setFormData(prev => {
+      const availability = [...(prev.availability || [])];
+      const dayIndex = availability.findIndex(slot => slot.day === day);
+      
+      if (dayIndex === -1) {
+        // Day doesn't exist, create new slot
+        availability.push({ day, times: [time] });
+      } else {
+        // Day exists, toggle time
+        const daySlot = availability[dayIndex];
+        if (daySlot.times.includes(time)) {
+          // Remove time
+          daySlot.times = daySlot.times.filter(t => t !== time);
+          // Remove day if no times left
+          if (daySlot.times.length === 0) {
+            availability.splice(dayIndex, 1);
+          }
+        } else {
+          // Add time
+          daySlot.times.push(time);
+        }
+      }
+      
+      return { ...prev, availability };
+    });
+  };
+
+  const isTimeSelected = (day: DayOfWeek, time: TimeOfDay): boolean => {
+    const daySlot = formData.availability?.find(slot => slot.day === day);
+    return daySlot?.times.includes(time) || false;
+  };
+
+  const handleHostingPreferenceToggle = (preference: HostingPreference) => {
+    setFormData(prev => ({
+      ...prev,
+      hosting: {
+        ...prev.hosting!,
+        preferences: prev.hosting!.preferences.includes(preference)
+          ? prev.hosting!.preferences.filter(p => p !== preference)
+          : [...prev.hosting!.preferences, preference]
+      }
+    }));
+  };
+
+  const handleHostingDetailChange = (field: keyof HostingDetails, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      hosting: {
+        ...prev.hosting!,
+        [field]: value
+      }
     }));
   };
 
@@ -213,6 +285,101 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
           </label>
           <small>When enabled, other players will see your email as a contact option</small>
         </div>
+
+        <div className="form-group">
+          <label>When are you available to play?</label>
+          <div className="availability-grid">
+            {Object.values(DayOfWeek).map(day => (
+              <div key={day} className="day-availability">
+                <h4>{DAY_OF_WEEK_LABELS[day]}</h4>
+                <div className="time-slots">
+                  {Object.values(TimeOfDay).map(time => (
+                    <label key={`${day}-${time}`} className="time-slot-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={isTimeSelected(day, time)}
+                        onChange={() => handleAvailabilityToggle(day, time)}
+                      />
+                      <span>{TIME_OF_DAY_LABELS[time]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <small>Select the days and times when you're typically available to play games</small>
+        </div>
+
+        <div className="form-group">
+          <label>Gaming Location Preferences</label>
+          <div className="hosting-preferences">
+            {Object.values(HostingPreference).map(preference => (
+              <label key={preference} className="hosting-preference-checkbox">
+                <input
+                  type="checkbox"
+                  checked={formData.hosting!.preferences.includes(preference)}
+                  onChange={() => handleHostingPreferenceToggle(preference)}
+                />
+                <div className="preference-content">
+                  <span className="preference-name">{HOSTING_PREFERENCE_LABELS[preference]}</span>
+                  <small className="preference-description">{HOSTING_PREFERENCE_DESCRIPTIONS[preference]}</small>
+                </div>
+              </label>
+            ))}
+          </div>
+          <small>Select all options that apply to your gaming preferences</small>
+        </div>
+
+        {formData.hosting!.preferences.includes(HostingPreference.CAN_HOST) && (
+          <div className="form-group hosting-details">
+            <label>Hosting Details</label>
+            <div className="hosting-details-grid">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.hosting!.has_gaming_space || false}
+                  onChange={(e) => handleHostingDetailChange('has_gaming_space', e.target.checked)}
+                />
+                <span>I have a dedicated gaming space</span>
+              </label>
+              
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.hosting!.has_boards_scenery || false}
+                  onChange={(e) => handleHostingDetailChange('has_boards_scenery', e.target.checked)}
+                />
+                <span>I have gaming boards and scenery</span>
+              </label>
+              
+              <div className="max-players-input">
+                <label htmlFor="max_players">Maximum players I can host</label>
+                <input
+                  type="number"
+                  id="max_players"
+                  min="2"
+                  max="12"
+                  value={formData.hosting!.max_players || ''}
+                  onChange={(e) => handleHostingDetailChange('max_players', e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="e.g., 4"
+                />
+              </div>
+              
+              <div className="hosting-notes">
+                <label htmlFor="hosting_notes">Additional hosting notes</label>
+                <textarea
+                  id="hosting_notes"
+                  value={formData.hosting!.notes || ''}
+                  onChange={(e) => handleHostingDetailChange('notes', e.target.value)}
+                  placeholder="e.g., 'Large dining table, parking available, pets friendly'"
+                  maxLength={200}
+                  rows={3}
+                />
+                <small>{(formData.hosting!.notes || '').length}/200 characters</small>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button 

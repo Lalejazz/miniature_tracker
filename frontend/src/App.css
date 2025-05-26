@@ -4982,3 +4982,506 @@ body {
     width: 100%;
   }
 }
+
+/* Availability and Hosting Preferences Styles */
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.day-availability {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.day-availability h4 {
+  margin: 0 0 0.75rem 0;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.time-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-slot-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.time-slot-checkbox:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.time-slot-checkbox input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.time-slot-checkbox span {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.time-slot-checkbox input[type="checkbox"]:checked + span {
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Hosting Preferences */
+.hosting-preferences {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.hosting-preference-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+}
+
+.hosting-preference-checkbox:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateY(-1px);
+}
+
+.hosting-preference-checkbox input[type="checkbox"] {
+  margin: 0.25rem 0 0 0;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.hosting-preference-checkbox:has(input[type="checkbox"]:checked) {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.preference-content {
+  flex: 1;
+}
+
+.preference-name {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.preference-description {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.hosting-preference-checkbox input[type="checkbox"]:checked + .preference-content .preference-name {
+  color: #1e40af;
+}
+
+/* Hosting Details */
+.hosting-details {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.hosting-details > label {
+  color: #0c4a6e;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+}
+
+.hosting-details-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.hosting-details .checkbox-label {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e0f2fe;
+  transition: background-color 0.2s ease;
+}
+
+.hosting-details .checkbox-label:hover {
+  background: #f8fafc;
+}
+
+.max-players-input {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e0f2fe;
+}
+
+.max-players-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.max-players-input input {
+  width: 100px;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.hosting-notes {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e0f2fe;
+}
+
+.hosting-notes label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.hosting-notes textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.hosting-notes small {
+  display: block;
+  text-align: right;
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* Responsive Design for Availability and Hosting */
+@media (max-width: 768px) {
+  .availability-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .day-availability {
+    padding: 0.75rem;
+  }
+  
+  .time-slot-checkbox {
+    padding: 0.4rem;
+  }
+  
+  .time-slot-checkbox span {
+    font-size: 0.8rem;
+  }
+  
+  .hosting-preference-checkbox {
+    padding: 0.75rem;
+  }
+  
+  .preference-name {
+    font-size: 0.9rem;
+  }
+  
+  .preference-description {
+    font-size: 0.8rem;
+  }
+  
+  .hosting-details-grid {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-grid {
+    gap: 0.5rem;
+  }
+  
+  .day-availability {
+    padding: 0.5rem;
+  }
+  
+  .day-availability h4 {
+    font-size: 0.85rem;
+  }
+  
+  .time-slot-checkbox {
+    padding: 0.3rem;
+  }
+  
+  .time-slot-checkbox span {
+    font-size: 0.75rem;
+  }
+  
+  .hosting-preference-checkbox {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .hosting-details {
+    padding: 1rem;
+  }
+}
+
+/* Player Search Filter Styles */
+.availability-days-filter,
+.availability-times-filter,
+.hosting-preferences-filter {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.day-checkbox,
+.time-checkbox,
+.hosting-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+}
+
+.day-checkbox:hover,
+.time-checkbox:hover,
+.hosting-checkbox:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateY(-1px);
+}
+
+.day-checkbox input[type="checkbox"],
+.time-checkbox input[type="checkbox"],
+.hosting-checkbox input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.day-checkbox:has(input[type="checkbox"]:checked),
+.time-checkbox:has(input[type="checkbox"]:checked),
+.hosting-checkbox:has(input[type="checkbox"]:checked) {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.day-checkbox span,
+.time-checkbox span,
+.hosting-checkbox span {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.day-checkbox input[type="checkbox"]:checked + span,
+.time-checkbox input[type="checkbox"]:checked + span,
+.hosting-checkbox input[type="checkbox"]:checked + span {
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Responsive Design for Player Search Filters */
+@media (max-width: 768px) {
+  .availability-days-filter,
+  .availability-times-filter,
+  .hosting-preferences-filter {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.4rem;
+  }
+  
+  .day-checkbox,
+  .time-checkbox,
+  .hosting-checkbox {
+    padding: 0.4rem;
+  }
+  
+  .day-checkbox span,
+  .time-checkbox span,
+  .hosting-checkbox span {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-days-filter,
+  .availability-times-filter,
+  .hosting-preferences-filter {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+  }
+  
+  .day-checkbox,
+  .time-checkbox,
+  .hosting-checkbox {
+    padding: 0.3rem;
+  }
+  
+  .day-checkbox span,
+  .time-checkbox span,
+  .hosting-checkbox span {
+    font-size: 0.75rem;
+  }
+}
+
+/* Player Card Availability and Hosting Styles */
+.player-availability,
+.player-hosting {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.availability-summary {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.availability-slot {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.availability-slot .day {
+  font-weight: 600;
+  color: #0c4a6e;
+  margin-right: 0.5rem;
+}
+
+.availability-slot .times {
+  color: #0369a1;
+}
+
+.hosting-summary {
+  margin-top: 0.5rem;
+}
+
+.hosting-tag {
+  display: inline-block;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-right: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.hosting-details {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hosting-detail {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Responsive Design for Player Card Details */
+@media (max-width: 768px) {
+  .availability-summary {
+    gap: 0.4rem;
+  }
+  
+  .availability-slot {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .hosting-tag {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    margin-right: 0.4rem;
+  }
+  
+  .hosting-details {
+    gap: 0.4rem;
+  }
+  
+  .hosting-detail {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-slot {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .availability-slot .day {
+    margin-right: 0.3rem;
+  }
+  
+  .hosting-tag {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    margin-right: 0.3rem;
+  }
+  
+  .hosting-detail {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.7rem;
+  }
+}

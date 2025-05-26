@@ -5,7 +5,13 @@ import {
   GameType, 
   PlayerSearchRequest, 
   PlayerSearchResult,
-  GAME_TYPE_LABELS
+  GAME_TYPE_LABELS,
+  DayOfWeek,
+  TimeOfDay,
+  HostingPreference,
+  DAY_OF_WEEK_LABELS,
+  TIME_OF_DAY_LABELS,
+  HOSTING_PREFERENCE_LABELS
 } from '../types';
 import { playerApi } from '../services/api';
 
@@ -62,7 +68,10 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
   const [searchRequest, setSearchRequest] = useState<PlayerSearchRequest>({
     games: [],
     game_type: undefined,
-    max_distance_km: 50
+    max_distance_km: 50,
+    availability_days: [],
+    availability_times: [],
+    hosting_preferences: []
   });
   const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,6 +109,33 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
     setSearchRequest(prev => ({
       ...prev,
       game_type: prev.game_type === gameType ? undefined : gameType
+    }));
+  };
+
+  const handleAvailabilityDayToggle = (day: DayOfWeek) => {
+    setSearchRequest(prev => ({
+      ...prev,
+      availability_days: prev.availability_days?.includes(day)
+        ? prev.availability_days.filter(d => d !== day)
+        : [...(prev.availability_days || []), day]
+    }));
+  };
+
+  const handleAvailabilityTimeToggle = (time: TimeOfDay) => {
+    setSearchRequest(prev => ({
+      ...prev,
+      availability_times: prev.availability_times?.includes(time)
+        ? prev.availability_times.filter(t => t !== time)
+        : [...(prev.availability_times || []), time]
+    }));
+  };
+
+  const handleHostingPreferenceToggle = (preference: HostingPreference) => {
+    setSearchRequest(prev => ({
+      ...prev,
+      hosting_preferences: prev.hosting_preferences?.includes(preference)
+        ? prev.hosting_preferences.filter(p => p !== preference)
+        : [...(prev.hosting_preferences || []), preference]
     }));
   };
 
@@ -178,6 +214,57 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
               </label>
             </div>
           </div>
+
+          <div className="form-group">
+            <label>Filter by Availability Days (optional)</label>
+            <div className="availability-days-filter">
+              {Object.values(DayOfWeek).map(day => (
+                <label key={day} className="day-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={searchRequest.availability_days?.includes(day) || false}
+                    onChange={() => handleAvailabilityDayToggle(day)}
+                  />
+                  <span>{DAY_OF_WEEK_LABELS[day]}</span>
+                </label>
+              ))}
+            </div>
+            <small>Find players available on these days</small>
+          </div>
+
+          <div className="form-group">
+            <label>Filter by Availability Times (optional)</label>
+            <div className="availability-times-filter">
+              {Object.values(TimeOfDay).map(time => (
+                <label key={time} className="time-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={searchRequest.availability_times?.includes(time) || false}
+                    onChange={() => handleAvailabilityTimeToggle(time)}
+                  />
+                  <span>{TIME_OF_DAY_LABELS[time]}</span>
+                </label>
+              ))}
+            </div>
+            <small>Find players available during these times</small>
+          </div>
+
+          <div className="form-group">
+            <label>Filter by Hosting Preferences (optional)</label>
+            <div className="hosting-preferences-filter">
+              {Object.values(HostingPreference).map(preference => (
+                <label key={preference} className="hosting-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={searchRequest.hosting_preferences?.includes(preference) || false}
+                    onChange={() => handleHostingPreferenceToggle(preference)}
+                  />
+                  <span>{HOSTING_PREFERENCE_LABELS[preference]}</span>
+                </label>
+              ))}
+            </div>
+            <small>Find players with these hosting preferences</small>
+          </div>
         </div>
 
         <button type="submit" disabled={isLoading}>
@@ -252,6 +339,42 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({ userHasPreferences }) => {
                   <div className="player-location">
                     <strong>Area:</strong> {player.location}
                   </div>
+                  
+                  {player.availability && player.availability.length > 0 && (
+                    <div className="player-availability">
+                      <strong>Available:</strong>
+                      <div className="availability-summary">
+                        {player.availability.map((slot, index) => (
+                          <div key={index} className="availability-slot">
+                            <span className="day">{DAY_OF_WEEK_LABELS[slot.day]}</span>
+                            <span className="times">
+                              {slot.times.map(time => TIME_OF_DAY_LABELS[time]).join(', ')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.hosting && player.hosting.preferences.length > 0 && (
+                    <div className="player-hosting">
+                      <strong>Hosting:</strong>
+                      <div className="hosting-summary">
+                        {player.hosting.preferences.map(pref => (
+                          <span key={pref} className="hosting-tag">
+                            {HOSTING_PREFERENCE_LABELS[pref]}
+                          </span>
+                        ))}
+                        {player.hosting.preferences.includes(HostingPreference.CAN_HOST) && (
+                          <div className="hosting-details">
+                            {player.hosting.has_gaming_space && <span className="hosting-detail">🏠 Gaming space</span>}
+                            {player.hosting.has_boards_scenery && <span className="hosting-detail">🎲 Boards & scenery</span>}
+                            {player.hosting.max_players && <span className="hosting-detail">👥 Up to {player.hosting.max_players} players</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

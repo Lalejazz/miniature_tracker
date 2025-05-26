@@ -539,6 +539,43 @@ export interface ChangelogEntry {
 
 export type GameType = "competitive" | "narrative";
 
+// Availability and Hosting Types
+export enum DayOfWeek {
+  MONDAY = "monday",
+  TUESDAY = "tuesday", 
+  WEDNESDAY = "wednesday",
+  THURSDAY = "thursday",
+  FRIDAY = "friday",
+  SATURDAY = "saturday",
+  SUNDAY = "sunday"
+}
+
+export enum TimeOfDay {
+  MORNING = "morning",     // 6:00 AM - 12:00 PM
+  AFTERNOON = "afternoon", // 12:00 PM - 6:00 PM
+  EVENING = "evening"      // 6:00 PM - 11:00 PM
+}
+
+export enum HostingPreference {
+  CAN_HOST = "can_host",           // Can host at home with boards/scenery
+  PREFER_STORE = "prefer_store",   // Prefer to play in game stores
+  VISIT_OTHERS = "visit_others",   // Happy to play at other players' homes
+  STORE_ONLY = "store_only"        // Only play in stores (no home games)
+}
+
+export interface AvailabilitySlot {
+  day: DayOfWeek;
+  times: TimeOfDay[];
+}
+
+export interface HostingDetails {
+  preferences: HostingPreference[];
+  has_gaming_space?: boolean;
+  has_boards_scenery?: boolean;
+  max_players?: number;
+  notes?: string;
+}
+
 export interface Game {
   id: string;
   name: string;
@@ -552,6 +589,8 @@ export interface UserPreferencesCreate {
   game_type: GameType;
   bio?: string;
   show_email?: boolean;
+  availability?: AvailabilitySlot[];
+  hosting?: HostingDetails;
 }
 
 export interface UserPreferencesUpdate {
@@ -560,6 +599,8 @@ export interface UserPreferencesUpdate {
   game_type?: GameType;
   bio?: string;
   show_email?: boolean;
+  availability?: AvailabilitySlot[];
+  hosting?: HostingDetails;
 }
 
 export interface UserPreferences {
@@ -572,6 +613,8 @@ export interface UserPreferences {
   show_email: boolean;
   latitude?: number;
   longitude?: number;
+  availability?: AvailabilitySlot[];
+  hosting?: HostingDetails;
   created_at: string;
   updated_at: string;
 }
@@ -580,6 +623,9 @@ export interface PlayerSearchRequest {
   games?: string[];
   game_type?: GameType;
   max_distance_km: number;
+  availability_days?: DayOfWeek[];
+  availability_times?: TimeOfDay[];
+  hosting_preferences?: HostingPreference[];
 }
 
 export interface PlayerSearchResult {
@@ -591,9 +637,41 @@ export interface PlayerSearchResult {
   bio?: string;
   distance_km: number;
   location: string;
+  availability?: AvailabilitySlot[];
+  hosting?: HostingDetails;
 }
 
 export const GAME_TYPE_LABELS = {
   competitive: "Competitive",
   narrative: "Narrative"
+} as const;
+
+export const DAY_OF_WEEK_LABELS = {
+  [DayOfWeek.MONDAY]: "Monday",
+  [DayOfWeek.TUESDAY]: "Tuesday", 
+  [DayOfWeek.WEDNESDAY]: "Wednesday",
+  [DayOfWeek.THURSDAY]: "Thursday",
+  [DayOfWeek.FRIDAY]: "Friday",
+  [DayOfWeek.SATURDAY]: "Saturday",
+  [DayOfWeek.SUNDAY]: "Sunday"
+} as const;
+
+export const TIME_OF_DAY_LABELS = {
+  [TimeOfDay.MORNING]: "Morning (6 AM - 12 PM)",
+  [TimeOfDay.AFTERNOON]: "Afternoon (12 PM - 6 PM)",
+  [TimeOfDay.EVENING]: "Evening (6 PM - 11 PM)"
+} as const;
+
+export const HOSTING_PREFERENCE_LABELS = {
+  [HostingPreference.CAN_HOST]: "Can host at home",
+  [HostingPreference.PREFER_STORE]: "Prefer game stores",
+  [HostingPreference.VISIT_OTHERS]: "Happy to visit others",
+  [HostingPreference.STORE_ONLY]: "Game stores only"
+} as const;
+
+export const HOSTING_PREFERENCE_DESCRIPTIONS = {
+  [HostingPreference.CAN_HOST]: "I have space, boards, and scenery to host games at my place",
+  [HostingPreference.PREFER_STORE]: "I prefer playing in game stores but am flexible",
+  [HostingPreference.VISIT_OTHERS]: "I'm happy to play at other players' homes",
+  [HostingPreference.STORE_ONLY]: "I only play in public game stores, no home games"
 } as const; 
