@@ -603,6 +603,7 @@ export interface UserPreferencesCreate {
   show_email?: boolean;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
+  theme?: Theme;
 }
 
 export interface UserPreferencesUpdate {
@@ -613,6 +614,7 @@ export interface UserPreferencesUpdate {
   show_email?: boolean;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
+  theme?: Theme;
 }
 
 export interface UserPreferences {
@@ -627,6 +629,7 @@ export interface UserPreferences {
   longitude?: number;
   availability?: AvailabilitySlot[];
   hosting?: HostingDetails;
+  theme?: Theme;
   created_at: string;
   updated_at: string;
 }
@@ -755,4 +758,22 @@ export interface ProjectWithStats extends Project {
   miniature_count: number;
   completion_percentage: number;
   status_breakdown: { [key in PaintingStatus]?: number };
-} 
+}
+
+export enum Theme {
+  BLUE_GRADIENT = "blue_gradient",
+  LIGHT = "light", 
+  DARK = "dark"
+}
+
+export const THEME_LABELS = {
+  [Theme.BLUE_GRADIENT]: "Blue Gradient (Current)",
+  [Theme.LIGHT]: "Light Theme",
+  [Theme.DARK]: "Dark Theme"
+};
+
+export const THEME_DESCRIPTIONS = {
+  [Theme.BLUE_GRADIENT]: "Beautiful blue gradient background with glassmorphism effects",
+  [Theme.LIGHT]: "Clean white background with subtle shadows and light colors",
+  [Theme.DARK]: "Dark background with light text and modern contrast"
+}; 

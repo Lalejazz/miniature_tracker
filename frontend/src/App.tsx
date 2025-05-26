@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Miniature, MiniatureCreate, UserCreate, LoginRequest, UserPreferences } from './types';
+import './themes.css';
+import { Miniature, MiniatureCreate, UserCreate, LoginRequest, UserPreferences, Theme } from './types';
 import { miniatureApi, authApi, tokenManager, playerApi } from './services/api';
 import MiniatureList from './components/MiniatureList';
 import UnitForm from './components/UnitForm';
@@ -16,6 +17,7 @@ import { FeedbackForm } from './components/FeedbackForm';
 import PlayerSearch from './components/PlayerSearch';
 import Changelog from './components/Changelog';
 import Projects from './components/Projects';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
 type Tab = 'units' | 'statistics' | 'projects' | 'preferences' | 'players' | 'changelog';
@@ -50,6 +52,30 @@ function App() {
   const [miniaturesError, setMiniaturesError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // Get initial theme from user preferences or default
+  const getInitialTheme = (): Theme => {
+    return userPreferences?.theme || Theme.BLUE_GRADIENT;
+  };
+
+  // Handle theme updates from user preferences
+  const handleThemeUpdate = (newTheme: Theme) => {
+    // The theme will be updated through user preferences
+    // The ThemeProvider will handle the actual theme switching
+  };
+
+  // Handle user preferences save
+  const handleUserPreferencesSave = async (preferences: UserPreferences) => {
+    setUserPreferences(preferences);
+    
+    // If theme changed, update the theme context
+    if (preferences.theme) {
+      // The theme context will be updated through the ThemeProvider
+      // which watches for changes in the initialTheme prop
+    }
+    
+    setActiveTab('units');
+  };
 
   // Check for existing token on app load
   useEffect(() => {
@@ -141,9 +167,14 @@ function App() {
     try {
       const preferences = await playerApi.getPreferences();
       setUserPreferences(preferences);
+      
+      // Update theme if preferences have a theme set
+      if (preferences?.theme) {
+        // The ThemeProvider will handle the actual theme application
+        // We just need to make sure the theme context is updated
+      }
     } catch (error) {
-      // User preferences might not exist yet, that's okay
-      setUserPreferences(null);
+      console.log('No user preferences found or error loading preferences');
     }
   };
 
@@ -369,152 +400,154 @@ function App() {
 
   // Main authenticated app
   return (
-    <div className="app">
-      <header className="App-header">
-        <h1>🎨 Miniature Tracker</h1>
-        <p>Track your miniature painting progress and connect with fellow hobbyists</p>
-      </header>
+    <ThemeProvider initialTheme={userPreferences?.theme || Theme.BLUE_GRADIENT}>
+      <div className="app">
+        <header className="App-header">
+          <h1>🎨 Miniature Tracker</h1>
+          <p>Track your miniature painting progress and connect with fellow hobbyists</p>
+        </header>
 
-      <UserHeader 
-        user={authState.user} 
-        onLogout={handleLogout}
-      />
+        <UserHeader 
+          user={authState.user} 
+          onLogout={handleLogout}
+        />
 
-      <nav className="main-nav">
-        <button 
-          className={activeTab === 'units' ? 'active' : ''}
-          onClick={() => setActiveTab('units')}
-        >
-          🎨 My Units
-        </button>
-        <button 
-          className={activeTab === 'statistics' ? 'active' : ''}
-          onClick={() => setActiveTab('statistics')}
-        >
-          📊 Statistics
-        </button>
-        <button 
-          className={activeTab === 'projects' ? 'active' : ''}
-          onClick={() => setActiveTab('projects')}
-        >
-          📅 Projects
-        </button>
-        <button 
-          className={activeTab === 'players' ? 'active' : ''}
-          onClick={() => setActiveTab('players')}
-        >
-          🔍 Player Search
-        </button>
-        <button 
-          className={activeTab === 'preferences' ? 'active' : ''}
-          onClick={() => setActiveTab('preferences')}
-        >
-          ⚙️ User Preferences
-        </button>
-      </nav>
+        <nav className="main-nav">
+          <button 
+            className={activeTab === 'units' ? 'active' : ''}
+            onClick={() => setActiveTab('units')}
+          >
+            🎨 My Units
+          </button>
+          <button 
+            className={activeTab === 'statistics' ? 'active' : ''}
+            onClick={() => setActiveTab('statistics')}
+          >
+            📊 Statistics
+          </button>
+          <button 
+            className={activeTab === 'projects' ? 'active' : ''}
+            onClick={() => setActiveTab('projects')}
+          >
+            📅 Projects
+          </button>
+          <button 
+            className={activeTab === 'players' ? 'active' : ''}
+            onClick={() => setActiveTab('players')}
+          >
+            🔍 Player Search
+          </button>
+          <button 
+            className={activeTab === 'preferences' ? 'active' : ''}
+            onClick={() => setActiveTab('preferences')}
+          >
+            ⚙️ User Preferences
+          </button>
+        </nav>
 
-      <main className="App-main">
-        {activeTab === 'units' && (
-          <>
-            {miniaturesError && (
-              <div className="error-message">
-                {miniaturesError}
-                <button onClick={() => setMiniaturesError(null)}>×</button>
+        <main className="App-main">
+          {activeTab === 'units' && (
+            <>
+              {miniaturesError && (
+                <div className="error-message">
+                  {miniaturesError}
+                  <button onClick={() => setMiniaturesError(null)}>×</button>
+                </div>
+              )}
+
+              <div className="units-header">
+                <h2>My Miniature Collection</h2>
+                <button 
+                  className="add-button"
+                  onClick={() => setShowForm(true)}
+                >
+                  + Add Unit
+                </button>
               </div>
-            )}
 
-            <div className="units-header">
-              <h2>My Miniature Collection</h2>
+              {showForm && (
+                <UnitForm
+                  onSubmit={handleCreateMiniature}
+                  onCancel={() => setShowForm(false)}
+                />
+              )}
+
+              {editingMiniature && (
+                <UnitForm
+                  miniature={editingMiniature}
+                  onSubmit={(data) => handleUpdateMiniature(editingMiniature.id, data)}
+                  onCancel={() => setEditingMiniature(null)}
+                  isEditing={true}
+                />
+              )}
+
+              <MiniatureList
+                miniatures={miniatures}
+                onEdit={setEditingMiniature}
+                onDelete={handleDeleteMiniature}
+                onRefresh={loadMiniatures}
+              />
+            </>
+          )}
+
+          {activeTab === 'statistics' && (
+            <Statistics onError={setMiniaturesError} />
+          )}
+
+          {activeTab === 'projects' && (
+            <Projects onError={setMiniaturesError} />
+          )}
+
+          {activeTab === 'preferences' && (
+            <UserPreferencesForm
+              existingPreferences={userPreferences}
+              onSave={handleUserPreferencesSave}
+              onAccountDeleted={handleLogout}
+            />
+          )}
+
+          {activeTab === 'players' && (
+            <PlayerSearch userHasPreferences={!!userPreferences} />
+          )}
+
+          {activeTab === 'changelog' && (
+            <Changelog />
+          )}
+        </main>
+
+        <footer className="App-footer">
+          <div className="footer-content">
+            <div className="footer-info">
+              <p>&copy; 2024 Miniature Tracker. Built for hobbyists, by hobbyists.</p>
+              <p>Track your progress, connect with players, and level up your painting game!</p>
+            </div>
+            <div className="footer-links">
               <button 
-                className="add-button"
-                onClick={() => setShowForm(true)}
+                className="footer-link"
+                onClick={() => setActiveTab('changelog')}
               >
-                + Add Unit
+                What's New
+              </button>
+              <button 
+                className="footer-link"
+                onClick={() => setShowFeedbackModal(true)}
+              >
+                Send Feedback
               </button>
             </div>
-
-            {showForm && (
-              <UnitForm
-                onSubmit={handleCreateMiniature}
-                onCancel={() => setShowForm(false)}
-              />
-            )}
-
-            {editingMiniature && (
-              <UnitForm
-                miniature={editingMiniature}
-                onSubmit={(data) => handleUpdateMiniature(editingMiniature.id, data)}
-                onCancel={() => setEditingMiniature(null)}
-                isEditing={true}
-              />
-            )}
-
-            <MiniatureList
-              miniatures={miniatures}
-              onEdit={setEditingMiniature}
-              onDelete={handleDeleteMiniature}
-              onRefresh={loadMiniatures}
-            />
-          </>
-        )}
-
-        {activeTab === 'statistics' && (
-          <Statistics onError={setMiniaturesError} />
-        )}
-
-        {activeTab === 'projects' && (
-          <Projects onError={setMiniaturesError} />
-        )}
-
-        {activeTab === 'preferences' && (
-          <UserPreferencesForm
-            existingPreferences={userPreferences}
-            onSave={loadUserPreferences}
-            onAccountDeleted={handleLogout}
-          />
-        )}
-
-        {activeTab === 'players' && (
-          <PlayerSearch userHasPreferences={!!userPreferences} />
-        )}
-
-        {activeTab === 'changelog' && (
-          <Changelog />
-        )}
-      </main>
-
-      <footer className="App-footer">
-        <div className="footer-content">
-          <div className="footer-info">
-            <p>&copy; 2024 Miniature Tracker. Built for hobbyists, by hobbyists.</p>
-            <p>Track your progress, connect with players, and level up your painting game!</p>
           </div>
-          <div className="footer-links">
-            <button 
-              className="footer-link"
-              onClick={() => setActiveTab('changelog')}
-            >
-              What's New
-            </button>
-            <button 
-              className="footer-link"
-              onClick={() => setShowFeedbackModal(true)}
-            >
-              Send Feedback
-            </button>
-          </div>
-        </div>
-      </footer>
+        </footer>
 
-      {/* Feedback Modal */}
-      {showFeedbackModal && (
-        <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
-          <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
-            <FeedbackForm onClose={() => setShowFeedbackModal(false)} />
+        {/* Feedback Modal */}
+        {showFeedbackModal && (
+          <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+            <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+              <FeedbackForm onClose={() => setShowFeedbackModal(false)} />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 

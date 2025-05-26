@@ -408,6 +408,13 @@ class GameType(str, Enum):
     NARRATIVE = "narrative"
 
 
+class Theme(str, Enum):
+    """Available UI themes."""
+    BLUE_GRADIENT = "blue_gradient"
+    LIGHT = "light"
+    DARK = "dark"
+
+
 class Game(BaseModel):
     """Model for a wargame/tabletop game."""
     
@@ -431,6 +438,7 @@ class UserPreferencesCreate(BaseModel):
     game_type: GameType = Field(description="Type of games user is interested in")
     bio: Optional[str] = Field(None, max_length=160, description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
+    theme: Theme = Field(default=Theme.BLUE_GRADIENT, description="UI theme preference")
 
 
 class UserPreferencesUpdate(BaseModel):
@@ -441,6 +449,7 @@ class UserPreferencesUpdate(BaseModel):
     game_type: Optional[GameType] = None
     bio: Optional[str] = Field(None, max_length=160)
     show_email: Optional[bool] = None
+    theme: Optional[Theme] = None
 
 
 class UserPreferences(BaseModel):
@@ -460,10 +469,11 @@ class UserPreferences(BaseModel):
     game_type: GameType = Field(description="Type of games user is interested in")
     bio: Optional[str] = Field(description="Short bio about the user")
     show_email: bool = Field(default=False, description="Whether to show email in player discovery")
+    theme: Theme = Field(default=Theme.BLUE_GRADIENT, description="UI theme preference")
     latitude: Optional[float] = Field(None, description="Calculated latitude from location")
     longitude: Optional[float] = Field(None, description="Calculated longitude from location")
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now) 
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 class PlayerSearchRequest(BaseModel):

@@ -1,0 +1,364 @@
+/* Theme System for Miniature Tracker */
+
+/* Default theme (Blue Gradient) */
+:root {
+  --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-secondary: rgba(255, 255, 255, 0.1);
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-form: rgba(255, 255, 255, 0.95);
+  --bg-nav: rgba(255, 255, 255, 0.2);
+  --bg-button: rgba(255, 255, 255, 0.2);
+  --bg-button-hover: rgba(255, 255, 255, 0.3);
+  --bg-button-primary: #4f46e5;
+  --bg-button-primary-hover: #4338ca;
+  --bg-input: rgba(255, 255, 255, 0.9);
+  --bg-modal: rgba(0, 0, 0, 0.5);
+  
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-light: #999;
+  --text-white: #fff;
+  --text-nav: #fff;
+  --text-button: #fff;
+  
+  --border-color: rgba(255, 255, 255, 0.3);
+  --border-input: #ddd;
+  --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-info: #3b82f6;
+}
+
+/* Light Theme */
+.theme-light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-form: #ffffff;
+  --bg-nav: #ffffff;
+  --bg-button: #e2e8f0;
+  --bg-button-hover: #cbd5e1;
+  --bg-button-primary: #4f46e5;
+  --bg-button-primary-hover: #4338ca;
+  --bg-input: #ffffff;
+  --bg-modal: rgba(0, 0, 0, 0.5);
+  
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-light: #64748b;
+  --text-white: #ffffff;
+  --text-nav: #1e293b;
+  --text-button: #1e293b;
+  
+  --border-color: #e2e8f0;
+  --border-input: #d1d5db;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.05);
+  
+  --accent-success: #059669;
+  --accent-warning: #d97706;
+  --accent-error: #dc2626;
+  --accent-info: #2563eb;
+}
+
+/* Dark Theme */
+.theme-dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #334155;
+  --bg-form: #334155;
+  --bg-nav: #1e293b;
+  --bg-button: #475569;
+  --bg-button-hover: #64748b;
+  --bg-button-primary: #6366f1;
+  --bg-button-primary-hover: #5b21b6;
+  --bg-input: #475569;
+  --bg-modal: rgba(0, 0, 0, 0.8);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-light: #94a3b8;
+  --text-white: #ffffff;
+  --text-nav: #f8fafc;
+  --text-button: #f8fafc;
+  
+  --border-color: #475569;
+  --border-input: #64748b;
+  --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.2);
+  
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #f87171;
+  --accent-info: #60a5fa;
+}
+
+/* Blue Gradient Theme (explicit class for consistency) */
+.theme-blue-gradient {
+  --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-secondary: rgba(255, 255, 255, 0.1);
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-form: rgba(255, 255, 255, 0.95);
+  --bg-nav: rgba(255, 255, 255, 0.2);
+  --bg-button: rgba(255, 255, 255, 0.2);
+  --bg-button-hover: rgba(255, 255, 255, 0.3);
+  --bg-button-primary: #4f46e5;
+  --bg-button-primary-hover: #4338ca;
+  --bg-input: rgba(255, 255, 255, 0.9);
+  --bg-modal: rgba(0, 0, 0, 0.5);
+  
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-light: #999;
+  --text-white: #fff;
+  --text-nav: #fff;
+  --text-button: #fff;
+  
+  --border-color: rgba(255, 255, 255, 0.3);
+  --border-input: #ddd;
+  --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-info: #3b82f6;
+}
+
+/* Apply theme variables to body and main elements */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-aware component styles */
+.app {
+  background: var(--bg-primary);
+  min-height: 100vh;
+}
+
+/* Navigation */
+.main-nav {
+  background: var(--bg-nav);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+}
+
+.main-nav button {
+  background: var(--bg-button);
+  color: var(--text-button);
+  border: 1px solid var(--border-color);
+}
+
+.main-nav button:hover {
+  background: var(--bg-button-hover);
+}
+
+.main-nav button.active {
+  background: var(--bg-button-primary);
+  color: var(--text-white);
+}
+
+/* Cards and containers */
+.miniature-card,
+.project-card,
+.statistics-card,
+.preferences-form,
+.player-search {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  color: var(--text-primary);
+}
+
+/* Forms */
+.unit-form,
+.project-form,
+.login-form,
+.register-form {
+  background: var(--bg-form);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  color: var(--text-primary);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--bg-button-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Buttons */
+button {
+  background: var(--bg-button);
+  color: var(--text-button);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-button);
+}
+
+button:hover {
+  background: var(--bg-button-hover);
+}
+
+button.primary,
+button[type="submit"] {
+  background: var(--bg-button-primary);
+  color: var(--text-white);
+  border-color: var(--bg-button-primary);
+}
+
+button.primary:hover,
+button[type="submit"]:hover {
+  background: var(--bg-button-primary-hover);
+}
+
+/* Status colors remain consistent across themes */
+.status-want_to_buy { background-color: #e0e0e0; color: #000; }
+.status-purchased { background-color: #ff9800; color: #fff; }
+.status-assembled { background-color: #2196f3; color: #fff; }
+.status-primed { background-color: #9c27b0; color: #fff; }
+.status-game_ready { background-color: #4caf50; color: #fff; }
+.status-parade_ready { background-color: #ffd700; color: #000; }
+
+/* Theme selector specific styles */
+.theme-selector {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.theme-options {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-option:hover {
+  border-color: var(--bg-button-primary);
+  transform: translateY(-2px);
+}
+
+.theme-option.selected {
+  border-color: var(--bg-button-primary);
+  background: var(--bg-secondary);
+}
+
+.theme-preview {
+  width: 60px;
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.theme-preview.blue-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.theme-preview.light {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+}
+
+.theme-preview.dark {
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+}
+
+.theme-info h5 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.theme-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Modal overlays */
+.modal-overlay,
+.feedback-modal-overlay {
+  background: var(--bg-modal);
+}
+
+.modal-content,
+.feedback-modal-content {
+  background: var(--bg-form);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+}
+
+/* Tables */
+table {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+th {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+td {
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Success/Error/Warning messages */
+.success-message {
+  background: var(--accent-success);
+  color: var(--text-white);
+}
+
+.error-message {
+  background: var(--accent-error);
+  color: var(--text-white);
+}
+
+.warning-message {
+  background: var(--accent-warning);
+  color: var(--text-white);
+}
+
+.info-message {
+  background: var(--accent-info);
+  color: var(--text-white);
+}
+
+/* Ensure smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Override for elements that shouldn't transition */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+} 

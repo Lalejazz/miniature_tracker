@@ -407,6 +407,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 game_type TEXT,
                 bio TEXT CHECK (length(bio) <= 160),
                 show_email BOOLEAN DEFAULT FALSE,
+                theme VARCHAR(20) DEFAULT 'blue_gradient',
                 latitude DECIMAL(10, 8),
                 longitude DECIMAL(11, 8),
                 created_at TIMESTAMP DEFAULT NOW(),
@@ -414,10 +415,13 @@ class PostgreSQLDatabase(DatabaseInterface):
             )
         """)
         
-        # Migrate from postcode to location field
+        # Migrate from postcode to location field and add theme column
         try:
             # Add location column if it doesn't exist
             await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS location VARCHAR(100)")
+            
+            # Add theme column if it doesn't exist
+            await self._pool.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'blue_gradient'")
             
             # Copy existing postcode data to location if location is null
             await self._pool.execute("""
@@ -1195,7 +1199,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
+                "SELECT id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at FROM user_preferences WHERE user_id = $1",
                 user_id
             )
             if row:
@@ -1224,12 +1228,12 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             try:
                 row = await conn.fetchrow(
-                    """INSERT INTO user_preferences (id, user_id, games, location, game_type, bio, show_email, latitude, longitude) 
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-                       RETURNING id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at""",
+                    """INSERT INTO user_preferences (id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+                       RETURNING id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at""",
                     preferences_id, user_id, [str(g) for g in preferences_create.games], preferences_create.location, 
                     preferences_create.game_type, preferences_create.bio, preferences_create.show_email,
-                    latitude, longitude
+                    preferences_create.theme, latitude, longitude
                 )
                 print(f"💾 Database saved: lat={row['latitude']}, lon={row['longitude']}")
                 return UserPreferences(**dict(row))
@@ -1279,7 +1283,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 UPDATE user_preferences 
                 SET {', '.join(set_clauses)}, updated_at = ${len(values)-1}
                 WHERE user_id = ${len(values)}
-                RETURNING id, user_id, games, location, game_type, bio, show_email, latitude, longitude, created_at, updated_at
+                RETURNING id, user_id, games, location, game_type, bio, show_email, theme, latitude, longitude, created_at, updated_at
             """
             
             row = await conn.fetchrow(query, *values)
@@ -1336,7 +1340,7 @@ class PostgreSQLDatabase(DatabaseInterface):
         query = f"""
             SELECT 
                 u.id, u.username, u.email, u.created_at,
-                up.bio, up.location, up.game_type, up.games, up.show_email,
+                up.bio, up.location, up.game_type, up.games, up.show_email, up.theme,
                 ({distance_formula}) as distance
             FROM users u
             JOIN user_preferences up ON u.id = up.user_id
@@ -2279,6 +2283,7 @@ class FileDatabase(DatabaseInterface):
             game_type=preferences_create.game_type,
             bio=preferences_create.bio,
             show_email=preferences_create.show_email,
+            theme=preferences_create.theme,
             latitude=latitude,
             longitude=longitude
         )

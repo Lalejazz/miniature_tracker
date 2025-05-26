@@ -10,7 +10,8 @@ from app.models import (
     Miniature, MiniatureCreate, MiniatureUpdate, 
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
     PasswordResetToken, CollectionStatistics, TrendAnalysis,
-    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats
+    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats,
+    UserPreferences, UserPreferencesCreate, UserPreferencesUpdate
 )
 from app.database import get_database
 
@@ -210,6 +211,23 @@ class MiniatureDB:
         return await self.db.remove_miniature_from_project(project_id, miniature_id, user_id)
     
     async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
-        """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
+        """Add multiple miniatures to a project."""
         await self._ensure_db_initialized()
-        return await self.db.add_multiple_miniatures_to_project(project_id, miniature_ids, user_id) 
+        return await self.db.add_multiple_miniatures_to_project(project_id, miniature_ids, user_id)
+    
+    # User Preferences Methods
+    
+    async def get_user_preferences(self, user_id: UUID) -> Optional[UserPreferences]:
+        """Get user preferences for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.get_user_preferences(user_id)
+    
+    async def create_user_preferences(self, user_id: UUID, preferences: UserPreferencesCreate) -> UserPreferences:
+        """Create user preferences for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.create_user_preferences(user_id, preferences)
+    
+    async def update_user_preferences(self, user_id: UUID, updates: UserPreferencesUpdate) -> Optional[UserPreferences]:
+        """Update user preferences for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.update_user_preferences(user_id, updates) 

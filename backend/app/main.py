@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.crud import MiniatureDB
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics, ProjectWithStats, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
@@ -839,4 +839,47 @@ else:
             "message": "Welcome to the Miniature Tracker API! Track your Warhammer miniature collection and painting progress.",
             "docs": "/docs",
             "version": "0.1.0"
-        } 
+        }
+
+
+# User Preferences endpoints
+
+@app.get("/user/preferences", response_model=UserPreferences)
+async def get_user_preferences(
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> UserPreferences:
+    """Get user preferences for the authenticated user."""
+    preferences = await db.get_user_preferences(current_user_id)
+    if not preferences:
+        raise HTTPException(status_code=404, detail="User preferences not found")
+    return preferences
+
+
+@app.post("/user/preferences", response_model=UserPreferences, status_code=status.HTTP_201_CREATED)
+async def create_user_preferences(
+    preferences: UserPreferencesCreate,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> UserPreferences:
+    """Create user preferences for the authenticated user."""
+    try:
+        return await db.create_user_preferences(current_user_id, preferences)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/user/preferences", response_model=UserPreferences)
+async def update_user_preferences(
+    preferences_update: UserPreferencesUpdate,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> UserPreferences:
+    """Update user preferences for the authenticated user."""
+    updated_preferences = await db.update_user_preferences(current_user_id, preferences_update)
+    if not updated_preferences:
+        raise HTTPException(status_code=404, detail="User preferences not found")
+    return updated_preferences
+
+
+# Admin endpoints 

@@ -12,10 +12,12 @@ import {
   DAY_OF_WEEK_LABELS,
   TIME_OF_DAY_LABELS,
   HOSTING_PREFERENCE_LABELS,
-  HOSTING_PREFERENCE_DESCRIPTIONS
+  HOSTING_PREFERENCE_DESCRIPTIONS,
+  Theme
 } from '../types';
 import { playerApi } from '../services/api';
 import AccountDeletion from './AccountDeletion';
+import ThemeSelector from './ThemeSelector';
 
 interface UserPreferencesFormProps {
   existingPreferences?: UserPreferences | null;
@@ -89,7 +91,8 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
       has_boards_scenery: false,
       max_players: undefined,
       notes: ''
-    }
+    },
+    theme: existingPreferences?.theme || Theme.BLUE_GRADIENT
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +206,13 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
     }));
   };
 
+  const handleThemeChange = (theme: Theme) => {
+    setFormData(prev => ({
+      ...prev,
+      theme
+    }));
+  };
+
   const isFormValid = formData.games.length > 0 && formData.location.trim().length > 0;
 
   return (
@@ -273,6 +283,11 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({
           />
           <small>{(formData.bio || '').length}/160 characters</small>
         </div>
+
+        <ThemeSelector
+          selectedTheme={formData.theme || Theme.BLUE_GRADIENT}
+          onThemeChange={handleThemeChange}
+        />
 
         <div className="form-group">
           <label className="checkbox-label">
