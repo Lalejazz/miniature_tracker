@@ -32,6 +32,7 @@ interface UnitFormData {
   cost?: number;
   status: PaintingStatus;
   notes?: string;
+  purchase_date?: string; // ISO date string for when the miniature was purchased
 }
 
 const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEditing = false }) => {
@@ -47,7 +48,8 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
     custom_base_size: miniature?.custom_base_size || '',
     cost: miniature?.cost || undefined,
     status: miniature?.status || PaintingStatus.WANT_TO_BUY,
-    notes: miniature?.notes || ''
+    notes: miniature?.notes || '',
+    purchase_date: miniature?.purchase_date || undefined
   });
 
   const [availableFactions, setAvailableFactions] = useState<string[]>([]);
@@ -65,7 +67,8 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
         custom_base_size: miniature.custom_base_size || '',
         cost: miniature.cost || undefined,
         status: miniature.status || PaintingStatus.WANT_TO_BUY,
-        notes: miniature.notes || ''
+        notes: miniature.notes || '',
+        purchase_date: miniature.purchase_date || undefined
       });
     }
   }, [miniature]);
@@ -111,7 +114,8 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
       custom_base_size: formData.custom_base_size || undefined,
       cost: formData.cost && formData.cost > 0 ? formData.cost : undefined,
       status: formData.status,
-      notes: formData.notes || undefined
+      notes: formData.notes || undefined,
+      purchase_date: formData.purchase_date || undefined
     };
 
     console.log('UnitForm submitting data:', { isEditing, cleanedData });
@@ -278,6 +282,17 @@ const UnitForm: React.FC<UnitFormProps> = ({ onSubmit, onCancel, miniature, isEd
               placeholder="0.00"
             />
             <small>Purchase cost in your local currency</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="purchase_date">Purchase Date</label>
+            <input
+              type="date"
+              id="purchase_date"
+              value={formData.purchase_date || ''}
+              onChange={(e) => handleChange('purchase_date', e.target.value || undefined)}
+            />
+            <small>When you purchased this miniature (leave empty for current date)</small>
           </div>
         </div>
 

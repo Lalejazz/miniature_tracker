@@ -303,6 +303,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS base_dimension VARCHAR(50)")
             await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS custom_base_size VARCHAR(50)")
             await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS cost DECIMAL(10,2)")
+            await self._pool.execute("ALTER TABLE miniatures ADD COLUMN IF NOT EXISTS purchase_date TIMESTAMP")
             
             # Copy description to notes if notes is empty and description exists
             await self._pool.execute("""
@@ -625,7 +626,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             # Get miniatures
             miniature_rows = await conn.fetch(
                 """SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
-                   game_system, unit_type, quantity, base_dimension, custom_base_size, cost 
+                   game_system, unit_type, quantity, base_dimension, custom_base_size, cost, purchase_date 
                    FROM miniatures WHERE user_id = $1 ORDER BY created_at""",
                 user_id
             )
@@ -666,7 +667,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                     quantity=row.get('quantity', 1),
                     base_dimension=row.get('base_dimension'),
                     custom_base_size=row.get('custom_base_size'),
-                    cost=row.get('cost')
+                    cost=row.get('cost'),
+                    purchase_date=row.get('purchase_date')
                 )
                 miniatures.append(miniature)
             
@@ -680,7 +682,7 @@ class PostgreSQLDatabase(DatabaseInterface):
         async with self._pool.acquire() as conn:
             # Get miniature
             row = await conn.fetchrow(
-                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at, game_system, unit_type, quantity, base_dimension, custom_base_size, cost FROM miniatures WHERE id = $1 AND user_id = $2",
+                "SELECT id, name, faction, model_type, status, notes, user_id, created_at, updated_at, game_system, unit_type, quantity, base_dimension, custom_base_size, cost, purchase_date FROM miniatures WHERE id = $1 AND user_id = $2",
                 miniature_id, user_id
             )
             if not row:
@@ -720,7 +722,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                 quantity=row.get('quantity', 1),
                 base_dimension=row.get('base_dimension'),
                 custom_base_size=row.get('custom_base_size'),
-                cost=row.get('cost')
+                cost=row.get('cost'),
+                purchase_date=row.get('purchase_date')
             )
     
     async def create_miniature(self, miniature: MiniatureCreate, user_id: UUID) -> Miniature:
@@ -736,10 +739,10 @@ class PostgreSQLDatabase(DatabaseInterface):
                 # Insert miniature - use unit_type for both model_type and unit_type for backward compatibility
                 miniature_row = await conn.fetchrow(
                     """INSERT INTO miniatures (id, name, faction, model_type, status, notes, user_id, 
-                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost) 
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost, purchase_date) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
                        RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
-                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost""",
+                       game_system, unit_type, quantity, base_dimension, custom_base_size, cost, purchase_date""",
                     miniature_id, miniature.name, miniature.faction, 
                     miniature.unit_type.value if miniature.unit_type else None,  # Use unit_type for model_type
                     miniature.status.value, miniature.notes, user_id,
@@ -748,7 +751,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                     getattr(miniature, 'quantity', 1),
                     miniature.base_dimension.value if miniature.base_dimension else None,
                     getattr(miniature, 'custom_base_size', None),
-                    getattr(miniature, 'cost', None)
+                    getattr(miniature, 'cost', None),
+                    getattr(miniature, 'purchase_date', None)
                 )
                 
                 # Add initial status log entry
@@ -783,7 +787,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                     quantity=miniature_row.get('quantity', 1),
                     base_dimension=miniature_row.get('base_dimension'),
                     custom_base_size=miniature_row.get('custom_base_size'),
-                    cost=miniature_row.get('cost')
+                    cost=miniature_row.get('cost'),
+                    purchase_date=miniature_row.get('purchase_date')
                 )
     
     async def update_miniature(self, miniature_id: UUID, updates: MiniatureUpdate, user_id: UUID) -> Optional[Miniature]:
@@ -847,7 +852,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                     SET {', '.join(set_clauses)}, updated_at = ${updated_at_index}
                     WHERE id = ${miniature_id_index} AND user_id = ${user_id_index}
                     RETURNING id, name, faction, model_type, status, notes, user_id, created_at, updated_at,
-                    game_system, unit_type, quantity, base_dimension, custom_base_size, cost
+                    game_system, unit_type, quantity, base_dimension, custom_base_size, cost, purchase_date
                 """
                 
                 miniature_row = await conn.fetchrow(query, *values)
@@ -896,7 +901,8 @@ class PostgreSQLDatabase(DatabaseInterface):
                     quantity=miniature_row.get('quantity', 1),
                     base_dimension=miniature_row.get('base_dimension'),
                     custom_base_size=miniature_row.get('custom_base_size'),
-                    cost=miniature_row.get('cost')
+                    cost=miniature_row.get('cost'),
+                    purchase_date=miniature_row.get('purchase_date')
                 )
     
     async def delete_miniature(self, miniature_id: UUID, user_id: UUID) -> bool:

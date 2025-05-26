@@ -297,6 +297,7 @@ export interface UnitBase {
   cost?: number;
   status: PaintingStatus;
   notes?: string;
+  purchase_date?: string; // ISO date string for when the miniature was purchased
 }
 
 export interface UnitCreate extends UnitBase {}
@@ -312,6 +313,7 @@ export interface UnitUpdate {
   cost?: number;
   status?: PaintingStatus;
   notes?: string;
+  purchase_date?: string; // ISO date string for when the miniature was purchased
 }
 
 export interface Unit extends UnitBase {

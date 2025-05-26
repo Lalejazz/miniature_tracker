@@ -340,6 +340,7 @@ class UnitBase(BaseModel):
     cost: Optional[Decimal] = Field(None, ge=0, description="Cost in local currency")
     status: PaintingStatus = PaintingStatus.WANT_TO_BUY
     notes: Optional[str] = Field(None, max_length=1000)
+    purchase_date: Optional[datetime] = Field(None, description="Date when the miniature was purchased (for backdating)")
 
 
 class UnitCreate(UnitBase):
