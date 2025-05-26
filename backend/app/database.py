@@ -1593,38 +1593,37 @@ class PostgreSQLDatabase(DatabaseInterface):
 
     async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
         """Get project statistics for a user."""
-        if self._pool is None:
-            raise RuntimeError("Database not initialized")
+        projects = await self.get_all_projects(user_id)
         
-        async with self._pool.acquire() as conn:
-            # Get project count
-            project_count = await conn.fetchval(
-                "SELECT COUNT(*) FROM projects WHERE user_id = $1",
-                user_id
-            )
+        total_projects = len(projects)
+        active_projects = 0
+        completed_projects = 0
+        total_miniatures_in_projects = 0
+        completion_rates = []
+        
+        for project in projects:
+            total_miniatures_in_projects += project.miniature_count
             
-            # Get miniatures in projects count
-            miniatures_in_projects = await conn.fetchval(
-                """SELECT COUNT(DISTINCT pm.miniature_id) 
-                   FROM project_miniatures pm 
-                   JOIN projects p ON pm.project_id = p.id 
-                   WHERE p.user_id = $1""",
-                user_id
-            )
+            # A project is "completed" if it has miniatures and 100% completion
+            if project.miniature_count > 0 and project.completion_percentage >= 100.0:
+                completed_projects += 1
+            # A project is "active" if it's not completed (either has no miniatures or < 100% complete)
+            else:
+                active_projects += 1
             
-            # Get completion stats (projects with target dates)
-            completed_projects = await conn.fetchval(
-                """SELECT COUNT(*) FROM projects 
-                   WHERE user_id = $1 AND target_completion_date < NOW()""",
-                user_id
-            )
-            
-            return ProjectStatistics(
-                total_projects=project_count or 0,
-                total_miniatures_in_projects=miniatures_in_projects or 0,
-                completed_projects=completed_projects or 0,
-                average_completion_rate=0.0  # Can be calculated later if needed
-            )
+            # Only include projects with miniatures in completion rate calculations
+            if project.miniature_count > 0:
+                completion_rates.append(project.completion_percentage)
+        
+        average_completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0.0
+        
+        return ProjectStatistics(
+            total_projects=total_projects,
+            active_projects=active_projects,
+            completed_projects=completed_projects,
+            total_miniatures_in_projects=total_miniatures_in_projects,
+            average_completion_rate=round(average_completion_rate, 1)
+        )
 
     async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
         """Get a specific project by ID for a user."""
@@ -2728,19 +2727,24 @@ class FileDatabase(DatabaseInterface):
         miniatures = await self.get_all_miniatures(user_id)
         
         total_projects = len(projects)
-        active_projects = len([p for p in projects if hasattr(p, 'target_date') and p.target_date])
-        completed_projects = 0  # We'll calculate this based on project completion
-        
-        # Calculate completion rates for projects with miniatures
+        active_projects = 0
+        completed_projects = 0
+        total_miniatures_in_projects = 0
         completion_rates = []
+        
         for project in projects:
-            project_miniatures = await self._get_project_miniatures(project.id, user_id)
-            if project_miniatures:
-                completed_count = len([m for m in project_miniatures if m.status.value in ['game_ready', 'parade_ready']])
-                completion_rate = (completed_count / len(project_miniatures)) * 100
-                completion_rates.append(completion_rate)
-                if completion_rate == 100:
-                    completed_projects += 1
+            total_miniatures_in_projects += project.miniature_count
+            
+            # A project is "completed" if it has miniatures and 100% completion
+            if project.miniature_count > 0 and project.completion_percentage >= 100.0:
+                completed_projects += 1
+            # A project is "active" if it's not completed (either has no miniatures or < 100% complete)
+            else:
+                active_projects += 1
+            
+            # Only include projects with miniatures in completion rate calculations
+            if project.miniature_count > 0:
+                completion_rates.append(project.completion_percentage)
         
         average_completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0.0
         
@@ -2748,6 +2752,7 @@ class FileDatabase(DatabaseInterface):
             total_projects=total_projects,
             active_projects=active_projects,
             completed_projects=completed_projects,
+            total_miniatures_in_projects=total_miniatures_in_projects,
             average_completion_rate=round(average_completion_rate, 1)
         )
     

@@ -725,4 +725,5 @@ class ProjectStatistics(BaseModel):
     total_projects: int = 0
     active_projects: int = 0
     completed_projects: int = 0
+    total_miniatures_in_projects: int = 0
     average_completion_rate: float = 0.0 

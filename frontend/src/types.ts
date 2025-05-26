@@ -748,12 +748,6 @@ export interface ProjectStatistics {
   completed_projects: number;
   total_miniatures_in_projects: number;
   average_completion_rate: number;
-  projects_by_status: {
-    not_started: number;
-    in_progress: number;
-    nearly_complete: number;
-    completed: number;
-  };
 }
 
 export interface ProjectWithStats extends Project {
