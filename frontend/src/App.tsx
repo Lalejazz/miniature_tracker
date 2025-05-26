@@ -13,9 +13,11 @@ import { EmailVerification } from './components/EmailVerification';
 import { UserHeader } from './components/UserHeader';
 import UserPreferencesForm from './components/UserPreferencesForm';
 import { FeedbackForm } from './components/FeedbackForm';
+import PlayerSearch from './components/PlayerSearch';
+import Changelog from './components/Changelog';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'email-verification';
-type Tab = 'units' | 'statistics' | 'preferences';
+type Tab = 'units' | 'statistics' | 'preferences' | 'players' | 'changelog';
 
 interface AuthState {
   user: any;
@@ -373,16 +375,16 @@ function App() {
           📊 Statistics
         </button>
         <button 
+          className={activeTab === 'players' ? 'active' : ''}
+          onClick={() => setActiveTab('players')}
+        >
+          🔍 Player Search
+        </button>
+        <button 
           className={activeTab === 'preferences' ? 'active' : ''}
           onClick={() => setActiveTab('preferences')}
         >
           ⚙️ User Preferences
-        </button>
-        <button
-          onClick={() => setShowFeedbackModal(true)}
-          style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'white' }}
-        >
-          💬 Feedback
         </button>
       </nav>
 
@@ -440,6 +442,14 @@ function App() {
             onSave={loadUserPreferences}
           />
         )}
+
+        {activeTab === 'players' && (
+          <PlayerSearch userHasPreferences={!!userPreferences} />
+        )}
+
+        {activeTab === 'changelog' && (
+          <Changelog />
+        )}
       </main>
 
       <footer className="App-footer">
@@ -449,6 +459,12 @@ function App() {
             <p>Track your progress, connect with players, and level up your painting game!</p>
           </div>
           <div className="footer-links">
+            <button 
+              className="footer-link"
+              onClick={() => setActiveTab('changelog')}
+            >
+              What's New
+            </button>
             <button 
               className="footer-link"
               onClick={() => setShowFeedbackModal(true)}

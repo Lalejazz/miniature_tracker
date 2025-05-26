@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Miniature, PaintingStatus, STATUS_INFO, UNIT_TYPE_LABELS, GAME_SYSTEM_LABELS } from '../types';
+import { miniatureApi } from '../services/api';
 import MiniatureCard from './MiniatureCard';
 import MiniatureTable from './MiniatureTable';
 
@@ -30,6 +31,7 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [isExporting, setIsExporting] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -138,6 +140,18 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
     });
   };
 
+  const handleExport = async (format: 'json' | 'csv') => {
+    setIsExporting(true);
+    try {
+      await miniatureApi.exportCollection(format);
+    } catch (error) {
+      console.error(`Export failed:`, error);
+      alert(`Failed to export collection as ${format.toUpperCase()}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (miniatures.length === 0) {
     return (
       <div className="empty-state">
@@ -168,6 +182,26 @@ const MiniatureList: React.FC<MiniatureListProps> = ({
           >
             📊 Table
           </button>
+          
+          {/* Export Controls */}
+          <div className="export-controls">
+            <button 
+              className="export-button"
+              onClick={() => handleExport('csv')}
+              disabled={isExporting || miniatures.length === 0}
+              title="Export as CSV"
+            >
+              {isExporting ? '⏳' : '📄'} CSV
+            </button>
+            <button 
+              className="export-button"
+              onClick={() => handleExport('json')}
+              disabled={isExporting || miniatures.length === 0}
+              title="Export as JSON"
+            >
+              {isExporting ? '⏳' : '📋'} JSON
+            </button>
+          </div>
         </div>
       </div>
 

@@ -916,39 +916,38 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.list-header h2 {
+  color: #1e293b !important;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-shadow: none !important;
+  background: linear-gradient(135deg, #1e293b, #374151);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .view-controls {
   display: flex;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.25rem;
+  align-items: center;
 }
 
-.view-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  transition: all 0.2s ease;
-}
-
-.view-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.view-button.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: 600;
+.view-controls .export-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Search and Filters */
@@ -4475,4 +4474,60 @@ body {
   .option-description {
     font-size: 0.8rem;
   }
+}
+
+.view-controls .export-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.view-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e293b;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.view-button:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #1e293b;
+}
+
+.view-button.active {
+  background: rgba(59, 130, 246, 0.3);
+  color: #1e293b;
+  font-weight: 600;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.export-button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: rgba(34, 197, 94, 0.1);
+  color: #1e293b;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.export-button:hover {
+  background: rgba(34, 197, 94, 0.2);
+  color: #1e293b;
+}
+
+.export-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
