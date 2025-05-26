@@ -19,7 +19,8 @@ from app.models import (
     Unit, UnitCreate, UnitUpdate,
     Game, UserPreferences, UserPreferencesCreate, UserPreferencesUpdate,
     PlayerSearchRequest, PlayerSearchResult, GameType, CollectionStatistics, TrendAnalysis,
-    TrendDataPoint, StatusTrendData, TrendRequest
+    TrendDataPoint, StatusTrendData, TrendRequest,
+    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniature, ProjectMiniatureCreate, ProjectStatistics
 )
 from app.geocoding import GeocodingService
 
@@ -137,6 +138,57 @@ class DatabaseInterface(ABC):
     @abstractmethod
     async def search_players(self, request: PlayerSearchRequest, user_id: UUID) -> List[PlayerSearchResult]:
         """Search for players based on location and game preferences."""
+        pass
+
+    # Project management methods
+    @abstractmethod
+    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+        """Get all projects for a user."""
+        pass
+
+    @abstractmethod
+    async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
+        """Get project statistics for a user."""
+        pass
+
+    @abstractmethod
+    async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
+        """Get a specific project by ID for a user."""
+        pass
+
+    @abstractmethod
+    async def get_project_with_miniatures(self, project_id: UUID, user_id: UUID) -> Optional[ProjectWithMiniatures]:
+        """Get a project with its associated miniatures."""
+        pass
+
+    @abstractmethod
+    async def create_project(self, project: ProjectCreate, user_id: UUID) -> Project:
+        """Create a new project."""
+        pass
+
+    @abstractmethod
+    async def update_project(self, project_id: UUID, updates: ProjectUpdate, user_id: UUID) -> Optional[Project]:
+        """Update an existing project."""
+        pass
+
+    @abstractmethod
+    async def delete_project(self, project_id: UUID, user_id: UUID) -> bool:
+        """Delete a project."""
+        pass
+
+    @abstractmethod
+    async def add_miniature_to_project(self, project_miniature: ProjectMiniatureCreate, user_id: UUID) -> bool:
+        """Add a miniature to a project."""
+        pass
+
+    @abstractmethod
+    async def remove_miniature_from_project(self, project_id: UUID, miniature_id: UUID, user_id: UUID) -> bool:
+        """Remove a miniature from a project."""
+        pass
+
+    @abstractmethod
+    async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
+        """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
         pass
 
 
@@ -1348,6 +1400,49 @@ class PostgreSQLDatabase(DatabaseInterface):
                     name, description
                 )
 
+    # Project management methods - PostgreSQL implementation
+    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+        """Get all projects for a user."""
+        # For now, return empty list since PostgreSQL tables don't exist yet
+        return []
+    
+    async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
+        """Get project statistics for a user."""
+        # For now, return empty statistics
+        return ProjectStatistics()
+    
+    async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
+        """Get a specific project by ID for a user."""
+        return None
+    
+    async def get_project_with_miniatures(self, project_id: UUID, user_id: UUID) -> Optional[ProjectWithMiniatures]:
+        """Get a project with its associated miniatures."""
+        return None
+    
+    async def create_project(self, project: ProjectCreate, user_id: UUID) -> Project:
+        """Create a new project."""
+        raise NotImplementedError("PostgreSQL project support not yet implemented")
+    
+    async def update_project(self, project_id: UUID, updates: ProjectUpdate, user_id: UUID) -> Optional[Project]:
+        """Update an existing project."""
+        return None
+    
+    async def delete_project(self, project_id: UUID, user_id: UUID) -> bool:
+        """Delete a project."""
+        return False
+    
+    async def add_miniature_to_project(self, project_miniature: ProjectMiniatureCreate, user_id: UUID) -> bool:
+        """Add a miniature to a project."""
+        return False
+    
+    async def remove_miniature_from_project(self, project_id: UUID, miniature_id: UUID, user_id: UUID) -> bool:
+        """Remove a miniature from a project."""
+        return False
+    
+    async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
+        """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
+        return 0
+
 
 class FileDatabase(DatabaseInterface):
     """File-based database implementation (for development)."""
@@ -1589,13 +1684,30 @@ class FileDatabase(DatabaseInterface):
                 for j, data in enumerate(miniature_data):
                     if data.get("id") == str(miniature_id):
                         update_data = updates.model_dump(exclude_unset=True)
+                        print(f"🔍 [FileDB] Raw update_data: {update_data}")
+                        
                         if update_data:
+                            # Convert enum fields to their string values for file storage
+                            for field in ['status', 'game_system', 'unit_type', 'base_dimension']:
+                                if field in update_data and update_data[field] is not None:
+                                    if hasattr(update_data[field], 'value'):
+                                        update_data[field] = update_data[field].value
+                                        print(f"🔄 [FileDB] Converted {field} to: {update_data[field]}")
+                            
+                            # Ensure quantity is an integer
+                            if 'quantity' in update_data and update_data['quantity'] is not None:
+                                update_data['quantity'] = int(update_data['quantity'])
+                                print(f"🔢 [FileDB] Converted quantity to int: {update_data['quantity']}")
+                            
+                            # Update the data
                             data.update(update_data)
                             data["updated_at"] = datetime.utcnow().isoformat()
                             miniature_data[j] = data
                             user_data["updated_at"] = datetime.utcnow().isoformat()
                             users[i] = user_data
                             self._save_users(users)
+                            
+                            print(f"💾 [FileDB] Saved data: {data}")
                         
                         return Miniature(**data)
         return None
@@ -2061,6 +2173,280 @@ class FileDatabase(DatabaseInterface):
             average_monthly_purchases=round(average_monthly_purchases, 1),
             average_monthly_spending=round(average_monthly_spending, 2) if average_monthly_spending else None
         )
+
+    # Project management methods
+    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+        """Get all projects for a user."""
+        users = self._load_users()
+        
+        for user_data in users:
+            if user_data.get("id") == str(user_id):
+                projects_data = user_data.get("projects", [])
+                projects = []
+                for data in projects_data:
+                    try:
+                        project = Project(**data)
+                        projects.append(project)
+                    except Exception as e:
+                        print(f"Error loading project {data.get('id', 'unknown')}: {e}")
+                        continue
+                return projects
+        return []
+    
+    async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
+        """Get project statistics for a user."""
+        projects = await self.get_all_projects(user_id)
+        miniatures = await self.get_all_miniatures(user_id)
+        
+        total_projects = len(projects)
+        active_projects = len([p for p in projects if hasattr(p, 'target_date') and p.target_date])
+        completed_projects = 0  # We'll calculate this based on project completion
+        
+        # Calculate completion rates for projects with miniatures
+        completion_rates = []
+        for project in projects:
+            project_miniatures = await self._get_project_miniatures(project.id, user_id)
+            if project_miniatures:
+                completed_count = len([m for m in project_miniatures if m.status.value in ['game_ready', 'parade_ready']])
+                completion_rate = (completed_count / len(project_miniatures)) * 100
+                completion_rates.append(completion_rate)
+                if completion_rate == 100:
+                    completed_projects += 1
+        
+        average_completion_rate = sum(completion_rates) / len(completion_rates) if completion_rates else 0.0
+        
+        return ProjectStatistics(
+            total_projects=total_projects,
+            active_projects=active_projects,
+            completed_projects=completed_projects,
+            average_completion_rate=round(average_completion_rate, 1)
+        )
+    
+    async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
+        """Get a specific project by ID for a user."""
+        users = self._load_users()
+        
+        for user_data in users:
+            if user_data.get("id") == str(user_id):
+                projects_data = user_data.get("projects", [])
+                for data in projects_data:
+                    if data.get("id") == str(project_id):
+                        try:
+                            return Project(**data)
+                        except Exception as e:
+                            print(f"Error loading project {project_id}: {e}")
+                            return None
+        return None
+    
+    async def get_project_with_miniatures(self, project_id: UUID, user_id: UUID) -> Optional[ProjectWithMiniatures]:
+        """Get a project with its associated miniatures."""
+        project = await self.get_project(project_id, user_id)
+        if not project:
+            return None
+        
+        project_miniatures = await self._get_project_miniatures(project_id, user_id)
+        
+        return ProjectWithMiniatures(
+            **project.model_dump(),
+            miniatures=project_miniatures
+        )
+    
+    async def _get_project_miniatures(self, project_id: UUID, user_id: UUID) -> List[Miniature]:
+        """Helper method to get miniatures for a project."""
+        users = self._load_users()
+        
+        for user_data in users:
+            if user_data.get("id") == str(user_id):
+                project_miniatures_data = user_data.get("project_miniatures", [])
+                miniature_ids = [
+                    pm["miniature_id"] for pm in project_miniatures_data 
+                    if pm.get("project_id") == str(project_id)
+                ]
+                
+                # Get the actual miniature objects
+                miniatures_data = user_data.get("miniatures", [])
+                project_miniatures = []
+                for data in miniatures_data:
+                    if data.get("id") in miniature_ids:
+                        try:
+                            miniature = Miniature(**data)
+                            project_miniatures.append(miniature)
+                        except Exception as e:
+                            print(f"Error loading miniature {data.get('id', 'unknown')}: {e}")
+                            continue
+                return project_miniatures
+        return []
+    
+    async def create_project(self, project: ProjectCreate, user_id: UUID) -> Project:
+        """Create a new project."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                projects_data = user_data.get("projects", [])
+                
+                # Check for duplicate names
+                for existing_project in projects_data:
+                    if existing_project.get("name") == project.name:
+                        raise ValueError("Project with this name already exists")
+                
+                # Create new project
+                new_project = Project(
+                    **project.model_dump(),
+                    user_id=user_id
+                )
+                
+                projects_data.append(new_project.model_dump())
+                user_data["projects"] = projects_data
+                users[i] = user_data
+                self._save_users(users)
+                
+                return new_project
+        
+        raise ValueError("User not found")
+    
+    async def update_project(self, project_id: UUID, updates: ProjectUpdate, user_id: UUID) -> Optional[Project]:
+        """Update an existing project."""
+        users = self._load_users()
+        
+        update_data = updates.model_dump(exclude_unset=True)
+        if not update_data:
+            return await self.get_project(project_id, user_id)
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                projects_data = user_data.get("projects", [])
+                for j, data in enumerate(projects_data):
+                    if data.get("id") == str(project_id):
+                        # Check for duplicate names if name is being updated
+                        if "name" in update_data:
+                            for other_project in projects_data:
+                                if (other_project.get("id") != str(project_id) and 
+                                    other_project.get("name") == update_data["name"]):
+                                    raise ValueError("Project with this name already exists")
+                        
+                        # Update the project data
+                        data.update(update_data)
+                        data["updated_at"] = datetime.now().isoformat()
+                        
+                        projects_data[j] = data
+                        user_data["projects"] = projects_data
+                        users[i] = user_data
+                        self._save_users(users)
+                        
+                        return Project(**data)
+        return None
+    
+    async def delete_project(self, project_id: UUID, user_id: UUID) -> bool:
+        """Delete a project."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                projects_data = user_data.get("projects", [])
+                original_length = len(projects_data)
+                
+                # Remove the project
+                projects_data = [p for p in projects_data if p.get("id") != str(project_id)]
+                
+                if len(projects_data) < original_length:
+                    # Also remove all project_miniature associations
+                    project_miniatures_data = user_data.get("project_miniatures", [])
+                    project_miniatures_data = [
+                        pm for pm in project_miniatures_data 
+                        if pm.get("project_id") != str(project_id)
+                    ]
+                    
+                    user_data["projects"] = projects_data
+                    user_data["project_miniatures"] = project_miniatures_data
+                    users[i] = user_data
+                    self._save_users(users)
+                    return True
+        return False
+    
+    async def add_miniature_to_project(self, project_miniature: ProjectMiniatureCreate, user_id: UUID) -> bool:
+        """Add a miniature to a project."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                project_miniatures_data = user_data.get("project_miniatures", [])
+                
+                # Check if already exists
+                for pm in project_miniatures_data:
+                    if (pm.get("project_id") == str(project_miniature.project_id) and 
+                        pm.get("miniature_id") == str(project_miniature.miniature_id)):
+                        raise ValueError("Miniature already exists in project")
+                
+                # Add the association
+                new_association = ProjectMiniature(
+                    project_id=project_miniature.project_id,
+                    miniature_id=project_miniature.miniature_id
+                )
+                
+                project_miniatures_data.append(new_association.model_dump())
+                user_data["project_miniatures"] = project_miniatures_data
+                users[i] = user_data
+                self._save_users(users)
+                return True
+        return False
+    
+    async def remove_miniature_from_project(self, project_id: UUID, miniature_id: UUID, user_id: UUID) -> bool:
+        """Remove a miniature from a project."""
+        users = self._load_users()
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                project_miniatures_data = user_data.get("project_miniatures", [])
+                original_length = len(project_miniatures_data)
+                
+                # Remove the association
+                project_miniatures_data = [
+                    pm for pm in project_miniatures_data 
+                    if not (pm.get("project_id") == str(project_id) and 
+                           pm.get("miniature_id") == str(miniature_id))
+                ]
+                
+                if len(project_miniatures_data) < original_length:
+                    user_data["project_miniatures"] = project_miniatures_data
+                    users[i] = user_data
+                    self._save_users(users)
+                    return True
+        return False
+    
+    async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
+        """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
+        users = self._load_users()
+        added_count = 0
+        
+        for i, user_data in enumerate(users):
+            if user_data.get("id") == str(user_id):
+                project_miniatures_data = user_data.get("project_miniatures", [])
+                
+                for miniature_id in miniature_ids:
+                    # Check if already exists
+                    already_exists = any(
+                        pm.get("project_id") == str(project_id) and 
+                        pm.get("miniature_id") == str(miniature_id)
+                        for pm in project_miniatures_data
+                    )
+                    
+                    if not already_exists:
+                        # Add the association
+                        new_association = ProjectMiniature(
+                            project_id=project_id,
+                            miniature_id=miniature_id
+                        )
+                        project_miniatures_data.append(new_association.model_dump())
+                        added_count += 1
+                
+                if added_count > 0:
+                    user_data["project_miniatures"] = project_miniatures_data
+                    users[i] = user_data
+                    self._save_users(users)
+                break
+        
+        return added_count
 
 
 # Global database instance to ensure singleton pattern

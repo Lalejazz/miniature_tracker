@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.crud import MiniatureDB
-from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest
+from app.models import Miniature, MiniatureCreate, MiniatureUpdate, StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate, CollectionStatistics, TrendAnalysis, TrendRequest, Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics
 from app.auth_routes import router as auth_router
 from app.auth_dependencies import get_current_user_id
 from app.player_routes import router as player_router
@@ -463,6 +463,179 @@ async def delete_status_log(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Status log entry with ID {log_id} not found or cannot be deleted"
+        )
+
+
+# Project Management Endpoints
+
+@app.get("/projects", response_model=List[Project])
+async def get_all_projects(
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> List[Project]:
+    """Get all projects for the authenticated user."""
+    return await db.get_all_projects(current_user_id)
+
+
+@app.get("/projects/statistics", response_model=ProjectStatistics)
+async def get_project_statistics(
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> ProjectStatistics:
+    """Get project statistics for the authenticated user."""
+    return await db.get_project_statistics(current_user_id)
+
+
+@app.get("/projects/{project_id}", response_model=Project)
+async def get_project(
+    project_id: UUID,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> Project:
+    """Get a specific project by ID."""
+    project = await db.get_project(project_id, current_user_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    return project
+
+
+@app.get("/projects/{project_id}/miniatures", response_model=ProjectWithMiniatures)
+async def get_project_with_miniatures(
+    project_id: UUID,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> ProjectWithMiniatures:
+    """Get a project with its associated miniatures."""
+    project = await db.get_project_with_miniatures(project_id, current_user_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    return project
+
+
+@app.post("/projects", response_model=Project, status_code=status.HTTP_201_CREATED)
+async def create_project(
+    project: ProjectCreate,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> Project:
+    """Create a new project for the authenticated user."""
+    try:
+        return await db.create_project(project, current_user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@app.put("/projects/{project_id}", response_model=Project)
+async def update_project(
+    project_id: UUID,
+    project_update: ProjectUpdate,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> Project:
+    """Update an existing project."""
+    try:
+        project = await db.update_project(project_id, project_update, current_user_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        return project
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: UUID,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> None:
+    """Delete a project."""
+    success = await db.delete_project(project_id, current_user_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+
+
+@app.post("/projects/miniatures", status_code=status.HTTP_201_CREATED)
+async def add_miniature_to_project(
+    project_miniature: ProjectMiniatureCreate,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> dict:
+    """Add a miniature to a project."""
+    try:
+        success = await db.add_miniature_to_project(project_miniature, current_user_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project or miniature not found"
+            )
+        return {"message": "Miniature added to project successfully"}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@app.delete("/projects/{project_id}/miniatures/{miniature_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_miniature_from_project(
+    project_id: UUID,
+    miniature_id: UUID,
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> None:
+    """Remove a miniature from a project."""
+    success = await db.remove_miniature_from_project(project_id, miniature_id, current_user_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project, miniature, or association not found"
+        )
+
+
+@app.post("/projects/{project_id}/miniatures/bulk")
+async def add_multiple_miniatures_to_project(
+    project_id: UUID,
+    miniature_ids: dict,  # Expected format: {"miniature_ids": ["uuid1", "uuid2", ...]}
+    db: MiniatureDB = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id)
+) -> dict:
+    """Add multiple miniatures to a project."""
+    try:
+        ids = [UUID(id_str) for id_str in miniature_ids.get("miniature_ids", [])]
+        if not ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No miniature IDs provided"
+            )
+        
+        added_count = await db.add_multiple_miniatures_to_project(project_id, ids, current_user_id)
+        return {
+            "message": f"Successfully added {added_count} miniatures to project",
+            "added_count": added_count,
+            "total_requested": len(ids)
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
 
 

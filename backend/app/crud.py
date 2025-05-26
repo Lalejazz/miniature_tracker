@@ -9,7 +9,8 @@ from uuid import UUID
 from app.models import (
     Miniature, MiniatureCreate, MiniatureUpdate, 
     StatusLogEntry, StatusLogEntryCreate, StatusLogEntryUpdate,
-    PasswordResetToken, CollectionStatistics, TrendAnalysis
+    PasswordResetToken, CollectionStatistics, TrendAnalysis,
+    Project, ProjectCreate, ProjectUpdate, ProjectWithMiniatures, ProjectMiniatureCreate, ProjectStatistics
 )
 from app.database import get_database
 
@@ -159,4 +160,56 @@ class MiniatureDB:
     async def get_trend_analysis(self, user_id: UUID, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: str = "month") -> TrendAnalysis:
         """Get trend analysis for a user's collection."""
         await self._ensure_db_initialized()
-        return await self.db.get_trend_analysis(user_id, from_date, to_date, group_by) 
+        return await self.db.get_trend_analysis(user_id, from_date, to_date, group_by)
+
+    # Project Management Methods
+    
+    async def get_all_projects(self, user_id: UUID) -> List[Project]:
+        """Get all projects for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.get_all_projects(user_id)
+    
+    async def get_project_statistics(self, user_id: UUID) -> ProjectStatistics:
+        """Get project statistics for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.get_project_statistics(user_id)
+    
+    async def get_project(self, project_id: UUID, user_id: UUID) -> Optional[Project]:
+        """Get a specific project by ID for a user."""
+        await self._ensure_db_initialized()
+        return await self.db.get_project(project_id, user_id)
+    
+    async def get_project_with_miniatures(self, project_id: UUID, user_id: UUID) -> Optional[ProjectWithMiniatures]:
+        """Get a project with its associated miniatures."""
+        await self._ensure_db_initialized()
+        return await self.db.get_project_with_miniatures(project_id, user_id)
+    
+    async def create_project(self, project: ProjectCreate, user_id: UUID) -> Project:
+        """Create a new project."""
+        await self._ensure_db_initialized()
+        return await self.db.create_project(project, user_id)
+    
+    async def update_project(self, project_id: UUID, updates: ProjectUpdate, user_id: UUID) -> Optional[Project]:
+        """Update an existing project."""
+        await self._ensure_db_initialized()
+        return await self.db.update_project(project_id, updates, user_id)
+    
+    async def delete_project(self, project_id: UUID, user_id: UUID) -> bool:
+        """Delete a project."""
+        await self._ensure_db_initialized()
+        return await self.db.delete_project(project_id, user_id)
+    
+    async def add_miniature_to_project(self, project_miniature: ProjectMiniatureCreate, user_id: UUID) -> bool:
+        """Add a miniature to a project."""
+        await self._ensure_db_initialized()
+        return await self.db.add_miniature_to_project(project_miniature, user_id)
+    
+    async def remove_miniature_from_project(self, project_id: UUID, miniature_id: UUID, user_id: UUID) -> bool:
+        """Remove a miniature from a project."""
+        await self._ensure_db_initialized()
+        return await self.db.remove_miniature_from_project(project_id, miniature_id, user_id)
+    
+    async def add_multiple_miniatures_to_project(self, project_id: UUID, miniature_ids: List[UUID], user_id: UUID) -> int:
+        """Add multiple miniatures to a project. Returns count of successfully added miniatures."""
+        await self._ensure_db_initialized()
+        return await self.db.add_multiple_miniatures_to_project(project_id, miniature_ids, user_id) 

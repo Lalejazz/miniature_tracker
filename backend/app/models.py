@@ -553,5 +553,86 @@ class TrendRequest(BaseModel):
 
 # Helper function to get factions for a game system
 def get_factions_for_game_system(game_system: GameSystem) -> List[str]:
-    """Get available factions for a specific game system."""
-    return GAME_SYSTEM_FACTIONS.get(game_system, ["Other"]) 
+    """Get available factions for a given game system."""
+    return GAME_SYSTEM_FACTIONS.get(game_system, ["Other"])
+
+
+# Project Management Models
+
+class ProjectBase(BaseModel):
+    """Base model for project data."""
+    
+    name: str = Field(..., min_length=1, max_length=200, description="Project name")
+    description: Optional[str] = Field(None, max_length=1000, description="Project description")
+    target_date: Optional[datetime] = Field(None, description="Target completion date")
+    color: str = Field(default="#6366f1", description="Project color for UI theming")
+    notes: Optional[str] = Field(None, max_length=2000, description="Additional project notes")
+
+
+class ProjectCreate(ProjectBase):
+    """Model for creating a new project."""
+    pass
+
+
+class ProjectUpdate(BaseModel):
+    """Model for updating an existing project."""
+    
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    target_date: Optional[datetime] = None
+    color: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class Project(ProjectBase):
+    """Complete project model with metadata."""
+    
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            UUID: lambda v: str(v),
+        }
+    )
+    
+    id: UUID = Field(default_factory=uuid4)
+    user_id: UUID  # Owner of this project
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class ProjectMiniatureCreate(BaseModel):
+    """Model for adding a miniature to a project."""
+    
+    project_id: UUID
+    miniature_id: UUID
+
+
+class ProjectMiniature(BaseModel):
+    """Model for a miniature within a project."""
+    
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            UUID: lambda v: str(v),
+        }
+    )
+    
+    id: UUID = Field(default_factory=uuid4)
+    project_id: UUID
+    miniature_id: UUID
+    added_at: datetime = Field(default_factory=datetime.now)
+
+
+class ProjectWithMiniatures(Project):
+    """Project model with associated miniatures."""
+    
+    miniatures: List[Miniature] = Field(default_factory=list)
+
+
+class ProjectStatistics(BaseModel):
+    """Model for project statistics."""
+    
+    total_projects: int = 0
+    active_projects: int = 0
+    completed_projects: int = 0
+    average_completion_rate: float = 0.0 
