@@ -746,6 +746,84 @@ async def migrate_games_endpoint(
         raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
 
 
+@app.post("/admin/check-user-by-email")
+async def check_user_by_email(
+    request: dict,  # Expected format: {"email": "user@example.com"}
+    db: DatabaseInterface = Depends(get_database)
+):
+    """Admin endpoint to check if a user exists by email."""
+    try:
+        await db.initialize()
+        
+        email = request.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Check if user exists
+        user = await db.get_user_by_email(email)
+        
+        if user:
+            return {
+                "exists": True,
+                "user_id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None
+            }
+        else:
+            return {
+                "exists": False,
+                "message": f"No user found with email: {email}"
+            }
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking user: {str(e)}")
+
+
+@app.delete("/admin/delete-user-by-email")
+async def delete_user_by_email(
+    request: dict,  # Expected format: {"email": "user@example.com", "confirm": true}
+    db: DatabaseInterface = Depends(get_database)
+):
+    """Admin endpoint to delete a user and all their data by email."""
+    try:
+        await db.initialize()
+        
+        email = request.get("email")
+        confirm = request.get("confirm", False)
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        if not confirm:
+            raise HTTPException(status_code=400, detail="Confirmation required. Set 'confirm': true")
+        
+        # Check if user exists
+        user = await db.get_user_by_email(email)
+        
+        if not user:
+            return {
+                "success": True,
+                "message": f"No user found with email: {email} (nothing to delete)"
+            }
+        
+        # Delete the user and all their data
+        success = await db.delete_user(user.id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"Successfully deleted user {email} and all associated data",
+                "deleted_user_id": str(user.id)
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete user")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
+
+
 @app.delete("/admin/users/{user_id}")
 async def delete_user(
     user_id: UUID,
